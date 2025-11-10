@@ -8,8 +8,19 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-.top-bar{
+.top-bar {
+    /* 重新启用标题栏拖动功能 */
+    -webkit-app-region: drag;
     height: 40px;
     background-color: rgba(0,0,0,0.01);
-    app-region: drag;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 16px;
+}
+
+/* 为按钮等可交互元素添加 no-drag 属性，确保它们可以正常响应点击事件 */
+.top-bar button,
+.top-bar .no-drag {
+    -webkit-app-region: no-drag;
 }
