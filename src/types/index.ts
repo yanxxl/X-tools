@@ -6,11 +6,3 @@ export interface FileNode {
   isDirectory: boolean;
   children?: FileNode[];
 }
-
-// Tree组件数据类型
-export interface TreeNodeData {
-    title: string;
-    key: string;
-    icon?: string;
-    children?: TreeNodeData[];
-}

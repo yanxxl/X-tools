@@ -47,3 +47,34 @@ export function getFileTree(dirPath: string): FileNode {
 
   return node;
 }
+
+// 预览已改为直接使用 local-file:// 访问，不再读取文件内容
+
+/**
+ * 获取文件/目录的基本信息
+ */
+export function getFileInfo(targetPath: string) {
+  const stats = fs.statSync(targetPath);
+  const name = path.basename(targetPath);
+  const isDirectory = stats.isDirectory();
+  const ext = isDirectory ? '' : (path.extname(name).replace('.', '').toLowerCase());
+  let childrenCount = 0;
+  if (isDirectory) {
+    try {
+      childrenCount = fs.readdirSync(targetPath).filter(n => !n.startsWith('.')).length;
+    } catch {
+      childrenCount = 0;
+    }
+  }
+  return {
+    path: targetPath,
+    name,
+    isDirectory,
+    size: stats.size,
+    mtimeMs: stats.mtimeMs,
+    ctimeMs: stats.ctimeMs,
+    atimeMs: stats.atimeMs,
+    ext,
+    childrenCount
+  };
+}

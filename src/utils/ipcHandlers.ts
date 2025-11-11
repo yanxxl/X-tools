@@ -1,5 +1,5 @@
 import { ipcMain, dialog } from 'electron';
-import { getFileTree } from './fileUtils';
+import { getFileTree, getFileInfo } from './fileUtils';
 import { addRecentFolder, getRecentFolders, getLastOpenedFolder, updateFolderTimestamp, removeRecentFolder } from './configManager';
 
 /**
@@ -58,6 +58,16 @@ export function registerIpcHandlers() {
       return getFileTree(dirPath);
     } catch (error) {
       console.error('获取文件树失败:', error);
+      throw error;
+    }
+  });
+
+  // 获取文件/目录基本信息
+  ipcMain.handle('getFileInfo', async (event, filePath: string) => {
+    try {
+      return getFileInfo(filePath);
+    } catch (error) {
+      console.error('获取文件信息失败:', error);
       throw error;
     }
   });

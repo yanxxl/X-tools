@@ -1,8 +1,19 @@
-import {app, BrowserWindow} from 'electron';
+import {app, BrowserWindow, protocol} from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './utils/ipcHandlers';
-import { updateFolderTimestamp } from './utils/configManager';
+
+protocol.registerSchemesAsPrivileged([
+    {
+        scheme: 'local-file',
+        privileges: {
+            standard: true,
+            secure: true,
+            supportFetchAPI: true,
+            stream: true
+        }
+    }
+]);
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -35,13 +46,26 @@ const createWindow = () => {
     // mainWindow.webContents.openDevTools();
 };
 
+const registerLocalFileProtocol = () => {
+    protocol.registerFileProtocol('local-file', (request, callback) => {
+        try {
+            const url = request.url.replace('local-file://', '');
+            const decodedPath = decodeURIComponent(url);
+            callback({ path: decodedPath });
+        } catch (error) {
+            console.error('解析本地文件协议失败:', error);
+            callback({ error: -6 }); // FILE_NOT_FOUND
+        }
+    });
+};
+
 // 注册IPC处理程序
 registerIpcHandlers();
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.whenReady().then(() => {
+    registerLocalFileProtocol();
+    createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There,
 // it's common for applications and their menu bar to stay active until the user quits

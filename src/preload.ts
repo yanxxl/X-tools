@@ -16,7 +16,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // 更新文件夹的最后打开时间戳
   updateFolderTimestamp: (folderPath: string) => ipcRenderer.invoke('updateFolderTimestamp', folderPath),
   // 从最近文件夹列表中删除指定文件夹
-  removeRecentFolder: (folderPath: string) => ipcRenderer.invoke('removeRecentFolder', folderPath)
+  removeRecentFolder: (folderPath: string) => ipcRenderer.invoke('removeRecentFolder', folderPath),
+  // 获取文件/目录基本信息
+  getFileInfo: (filePath: string) => ipcRenderer.invoke('getFileInfo', filePath),
 });
 
 // 导入API类型定义

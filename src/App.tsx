@@ -1,13 +1,22 @@
 import React, {useState, useEffect} from 'react';
-import {ConfigProvider, Splitter, Button, Tree, message, Space, Dropdown, MenuProps} from "antd";
-import {DownOutlined, FolderOpenOutlined, PlusOutlined, DeleteOutlined} from '@ant-design/icons';
-import { FileNode, TreeNodeData } from './types';
-import { RecentFolder } from './types/api';
+import {ConfigProvider, Splitter, Button, Tree, message, Space, Dropdown, MenuProps, Typography} from "antd";
+import {DownOutlined, FolderOpenOutlined, PlusOutlined, DeleteOutlined, FileTextOutlined} from '@ant-design/icons';
+import type { DataNode, TreeProps } from 'antd/es/tree';
+import { FileNode } from './types';
+import { RecentFolder, FileInfo } from './types/api';
+import { FilePreview } from './components/FilePreview';
+
+type TreeNodeWithMeta = (DataNode & { meta: FileNode; children?: TreeNodeWithMeta[] });
 
 export const App: React.FC = () => {
     const [fileTree, setFileTree] = useState<FileNode | null>(null);
     const [loading, setLoading] = useState(false);
     const [recentFolders, setRecentFolders] = useState<RecentFolder[]>([]);
+    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+    const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
+    const [selectedInfo, setSelectedInfo] = useState<FileInfo | null>(null);
+
+    const { Text } = Typography;
     
     // 限制文件夹名称长度，中文10个字符以内，英文20个字符以内
     const truncateFolderName = (name: string): string => {
@@ -298,11 +307,13 @@ export const App: React.FC = () => {
     ];
 
     // 转换文件节点为Tree组件需要的数据格式
-    const transformToTreeData = (node: FileNode): TreeNodeData => {
-        const result: TreeNodeData = {
+    const transformToTreeData = (node: FileNode): TreeNodeWithMeta => {
+        const result: TreeNodeWithMeta = {
             title: node.name,
             key: node.id,
-            icon: node.isDirectory ? 'folder' : 'file'
+            icon: node.isDirectory ? <FolderOpenOutlined /> : <FileTextOutlined />,
+            meta: node,
+            isLeaf: !node.isDirectory
         };
 
         if (node.isDirectory && node.children && node.children.length > 0) {
@@ -311,6 +322,45 @@ export const App: React.FC = () => {
 
         return result;
     };
+
+    // 选择文件后读取内容
+    const handleTreeSelect: TreeProps<TreeNodeWithMeta>['onSelect'] = async (keys, info) => {
+        const stringKeys = keys.map(String);
+        setSelectedKeys(stringKeys);
+
+        if (!info || !info.node) {
+            setSelectedFile(null);
+            setSelectedInfo(null);
+            return;
+        }
+
+        const nodeMeta: FileNode | undefined = info.node.meta;
+
+        if (!nodeMeta) {
+            return;
+        }
+
+        // 设置当前选择（文件或目录）
+        setSelectedFile(nodeMeta);
+        setSelectedInfo(null);
+
+        // 获取右侧信息
+        try {
+            if (window.electronAPI?.getFileInfo) {
+                const info = await window.electronAPI.getFileInfo(nodeMeta.path);
+                setSelectedInfo(info);
+            }
+        } catch {
+            // 忽略错误
+        }
+    };
+
+    // 文件树变化时重置选择状态
+    useEffect(() => {
+        setSelectedKeys([]);
+        setSelectedFile(null);
+        setSelectedInfo(null);
+    }, [fileTree?.id]);
 
     return (
         <ConfigProvider
@@ -337,12 +387,14 @@ export const App: React.FC = () => {
                     <div style={{padding: 16, height: 'calc(100% - 40px)', overflow: 'auto'}}>
                         {fileTree ? (
                             <Tree
-                                // defaultExpandAll
                                 treeData={[transformToTreeData(fileTree)]}
                                 style={{maxHeight: '100%'}}
                                 blockNode
                                 showLine
                                 switcherIcon={<DownOutlined/>}
+                                showIcon
+                                selectedKeys={selectedKeys}
+                                onSelect={handleTreeSelect}
                             />
                         ) : (
                             <div style={{textAlign: 'center', color: '#999', padding: 20}}>
@@ -352,26 +404,80 @@ export const App: React.FC = () => {
                     </div>
                 </Splitter.Panel>
                 <Splitter.Panel min={240}>
-                    <div className={'top-bar'}>中间区域</div>
-                    <div style={{padding: 16}}>
-                        {fileTree ? (
-                            <div>
-                                <h3>已选择文件夹</h3>
-                                <p>路径: {fileTree.path}</p>
-                                <p>包含项目: {fileTree.children ? fileTree.children.length : 0}</p>
+                    <div className={'top-bar'}>
+                        {selectedFile ? truncateFolderName(selectedFile.name) : '中间区域'}
+                    </div>
+                    <div style={{height: 'calc(100% - 40px)', padding: 0}}>
+                        {selectedFile ? (
+                            <div style={{height: '100%', padding: 16, background: '#f7f7f7'}}>
+                                <div style={{height: '100%'}}>
+                                    <FilePreview
+                                        filePath={selectedFile.path}
+                                        fileName={selectedFile.name}
+                                    />
+                                </div>
                             </div>
                         ) : (
-                            <div style={{color: '#999'}}>请先选择一个文件夹</div>
+                            <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999'}}>
+                                请在左侧选择一个文件以预览内容
+                            </div>
                         )}
                     </div>
                 </Splitter.Panel>
                 <Splitter.Panel defaultSize={320} min={80}>
                     <div className={'top-bar'}>右侧区域</div>
-                    <div style={{padding: 16, color: '#999'}}>
-                        详细信息区域
+                    <div style={{padding: 16}}>
+                        {selectedFile ? (
+                            <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
+                                <h3>基本信息</h3>
+                                <div><Text type="secondary">名称：</Text>{selectedFile.name}</div>
+                                <div style={{wordBreak: 'break-all'}}><Text type="secondary">路径：</Text>{selectedFile.path}</div>
+                                <div><Text type="secondary">类型：</Text>{selectedFile.isDirectory ? '目录' : '文件'}</div>
+                                {!selectedFile.isDirectory && selectedInfo && (
+                                  <>
+                                    <div><Text type="secondary">扩展名：</Text>{selectedInfo.ext || '-'}</div>
+                                    <div><Text type="secondary">大小：</Text>{formatFileSize(selectedInfo.size)}</div>
+                                  </>
+                                )}
+                                {selectedFile.isDirectory && selectedInfo && (
+                                  <div><Text type="secondary">子项数量：</Text>{selectedInfo.childrenCount ?? 0}</div>
+                                )}
+                                {selectedInfo && (
+                                    <>
+                                        <div><Text type="secondary">创建日期：</Text>{formatDate(selectedInfo.ctimeMs)}</div>
+                                        <div><Text type="secondary">修改日期：</Text>{formatDate(selectedInfo.mtimeMs)}</div>
+                                        <div><Text type="secondary">访问日期：</Text>{formatDate(selectedInfo.atimeMs)}</div>
+                                    </>
+                                )}
+                            </div>
+                        ) : (
+                            <div style={{color: '#999'}}>请选择一个文件或目录查看信息</div>
+                        )}
                     </div>
                 </Splitter.Panel>
             </Splitter>
         </ConfigProvider>
     );
 };
+
+function formatFileSize(size: number): string {
+    if (size < 1024) return `${size} B`;
+    if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+    if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+function formatDate(ms: number): string {
+    try {
+        return new Date(ms).toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+    } catch {
+        return '-';
+    }
+}

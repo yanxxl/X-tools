@@ -7,6 +7,21 @@ export interface RecentFolder {
   timestamp: number;
 }
 
+// 预览改为使用 local-file:// 直接访问，不再返回文件内容数据
+
+// 基本文件信息
+export interface FileInfo {
+  path: string;
+  name: string;
+  isDirectory: boolean;
+  size: number;
+  mtimeMs: number;
+  ctimeMs: number;
+  atimeMs: number;
+  ext: string;
+  childrenCount?: number;
+}
+
 /**
  * 暴露给渲染进程的Electron API接口
  */
@@ -23,6 +38,8 @@ export interface ElectronAPI {
   updateFolderTimestamp: (folderPath: string) => Promise<void>;
   // 从最近文件夹列表中删除指定文件夹
   removeRecentFolder: (folderPath: string) => Promise<void>;
+  // 获取文件/目录基本信息
+  getFileInfo: (filePath: string) => Promise<FileInfo>;
 }
 
 // 扩展Window接口
