@@ -37,6 +37,5 @@ export function isTextFile(name: string): boolean {
 }
 
 export function toFileUrl(absolutePath: string): string {
-  if (absolutePath.startsWith('local-file://')) return absolutePath;
-  return 'local-file://' + encodeURI(absolutePath);
+  return 'file://' + encodeURI(absolutePath);
 }

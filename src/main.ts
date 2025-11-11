@@ -1,19 +1,7 @@
-import {app, BrowserWindow, protocol} from 'electron';
+import {app, BrowserWindow} from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './utils/ipcHandlers';
-
-protocol.registerSchemesAsPrivileged([
-    {
-        scheme: 'local-file',
-        privileges: {
-            standard: true,
-            secure: true,
-            supportFetchAPI: true,
-            stream: true
-        }
-    }
-]);
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -27,6 +15,7 @@ const createWindow = () => {
         height: 720,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
+            webSecurity:false, // 可以访问本地文件
         },
         titleBarStyle: 'hidden',
         trafficLightPosition: {x: 12, y: 12},
@@ -46,24 +35,10 @@ const createWindow = () => {
     // mainWindow.webContents.openDevTools();
 };
 
-const registerLocalFileProtocol = () => {
-    protocol.registerFileProtocol('local-file', (request, callback) => {
-        try {
-            const url = request.url.replace('local-file://', '');
-            const decodedPath = decodeURIComponent(url);
-            callback({ path: decodedPath });
-        } catch (error) {
-            console.error('解析本地文件协议失败:', error);
-            callback({ error: -6 }); // FILE_NOT_FOUND
-        }
-    });
-};
-
 // 注册IPC处理程序
 registerIpcHandlers();
 
 app.whenReady().then(() => {
-    registerLocalFileProtocol();
     createWindow();
 });
 

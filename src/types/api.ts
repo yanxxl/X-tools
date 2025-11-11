@@ -7,8 +7,6 @@ export interface RecentFolder {
   timestamp: number;
 }
 
-// 预览改为使用 local-file:// 直接访问，不再返回文件内容数据
-
 // 基本文件信息
 export interface FileInfo {
   path: string;

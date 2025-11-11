@@ -48,8 +48,6 @@ export function getFileTree(dirPath: string): FileNode {
   return node;
 }
 
-// 预览已改为直接使用 local-file:// 访问，不再读取文件内容
-
 /**
  * 获取文件/目录的基本信息
  */
