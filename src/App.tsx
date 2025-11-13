@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {ConfigProvider, Splitter, Button, Tree, message, Space, Dropdown, MenuProps, Typography, Flex} from "antd";
-import {DownOutlined, PlusOutlined, DeleteOutlined, FolderOpenOutlined, FileTextOutlined} from '@ant-design/icons';
+import {DownOutlined, PlusOutlined, DeleteOutlined, FolderOpenOutlined, FileTextOutlined, EyeInvisibleOutlined, EyeOutlined} from '@ant-design/icons';
 import type {TreeProps, DataNode} from 'antd/es/tree';
 import {FileNode} from './types';
 import {RecentFolder, FileInfo} from './types/api';
@@ -21,6 +21,8 @@ export const App: React.FC = () => {
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
     const [selectedInfo, setSelectedInfo] = useState<FileInfo | null>(null);
+    // 标题栏显示状态
+    const [titleBarVisible, setTitleBarVisible] = useState(true);
 
     const {Text} = Typography;
 
@@ -290,27 +292,65 @@ export const App: React.FC = () => {
                 },
             }}
         >
-            {/*标题栏*/}
-            <Flex className={'top-bar'} style={{height: 40}} align={'center'}>
-                <div style={{flex:'0 0 72px'}}></div>
-                <div style={{paddingRight: 16}}>
-                    <Dropdown menu={{items: menuItems}} placement="bottomLeft">
-                        <Button
-                            type="link"
-                            loading={loading}
-                        >
-                            {fileTree ? truncateFolderName(fileTree.name) : '选择文件夹'} <DownOutlined/>
-                        </Button>
-                    </Dropdown>
-                </div>
-                <div style={{flex: '1 3 auto', minWidth: 0}}>
-                    <div className="one-line">
-                        {selectedFile ? selectedFile.name : ''}
+            {/*顶部透明区域 - 用于捕捉鼠标靠近顶部的事件，当标题栏隐藏时显示*/}
+            {!titleBarVisible && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 15,
+                        backgroundColor: 'transparent',
+                        zIndex: 200,
+                        cursor: 'default'
+                    }}
+                    onMouseEnter={() => {
+                        // 鼠标进入顶部区域时显示标题栏
+                        setTitleBarVisible(true);
+                    }}
+                />
+            )}
+
+            {/*标题栏 - 条件渲染*/}
+            {titleBarVisible && (
+                <Flex
+                    className={'top-bar'}
+                    style={{height: 40, position: 'relative', zIndex: 100}}
+                    align={'center'}
+
+                >
+                    <div style={{flex: '0 0 72px'}}></div>
+                    <div style={{paddingRight: 16}}>
+                        <Dropdown menu={{items: menuItems}} placement="bottomLeft">
+                            <Button
+                                type="link"
+                                loading={loading}
+                            >
+                                {fileTree ? truncateFolderName(fileTree.name) : '选择文件夹'} <DownOutlined/>
+                            </Button>
+                        </Dropdown>
                     </div>
-                </div>
-                <div style={{flex: '0 0 auto', paddingLeft: 16, paddingRight: 16}}></div>
-            </Flex>
-            <Splitter style={{height: '100vh'}}>
+                    <div style={{flex: '1 3 auto', minWidth: 0}}>
+                        <div className="one-line">
+                            {selectedFile ? selectedFile.name : ''}
+                        </div>
+                    </div>
+                    <div style={{flex: '0 0 auto', paddingLeft: 16, paddingRight: 16, display: 'flex', alignItems: 'center'}}>
+                        <Button
+                            type="text"
+                            icon={<EyeInvisibleOutlined/>}
+                            title="隐藏标题栏"
+                            onClick={() => {
+                                // 点击按钮直接隐藏标题栏
+                                setTitleBarVisible(false);
+                            }}
+                            style={{padding: 0, width: 24, height: 24, borderRadius: 4}}
+                        />
+                    </div>
+                </Flex>
+            )}
+            <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
                 <Splitter.Panel defaultSize={320} min={80}>
                     <div style={{padding: 16, height: 'calc(100% - 40px)', overflowY: 'auto'}}>
                         {fileTree ? (
@@ -333,7 +373,7 @@ export const App: React.FC = () => {
                 </Splitter.Panel>
                 {/*panel 默认有个 padding 0 1，中间去掉，避免边缘一条白线。*/}
                 <Splitter.Panel min={240} style={{padding: 0}}>
-                                       <div style={{height: 'calc(100% - 40px)', padding: 0}}>
+                    <div style={{height: 'calc(100% - 40px)', padding: 0}}>
                         {selectedFile ? (
                             <div style={{height: '100%', padding: 0, background: '#f7f7f7'}}>
                                 <div style={{height: '100%'}}>
