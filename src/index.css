@@ -29,3 +29,7 @@ body {
     text-overflow: ellipsis;
     width: auto;
 }
+
+.border{
+    border:1px solid;
+}

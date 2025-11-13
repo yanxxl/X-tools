@@ -351,22 +351,24 @@ export const App: React.FC = () => {
             )}
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
                 <Splitter.Panel defaultSize={320} min={80}>
-                    {fileTree ? (
-                        <Tree<TreeNodeWithMeta>
-                            treeData={[transformToTreeData(fileTree)]}
-                            style={{maxHeight: '100%'}}
-                            blockNode
-                            showLine
-                            switcherIcon={<DownOutlined/>}
-                            selectedKeys={selectedKeys}
-                            onSelect={handleTreeSelect}
-                            defaultExpandAll={false}
-                        />
-                    ) : (
-                        <div style={{textAlign: 'center', color: '#999', padding: 20}}>
-                            请点击上方按钮选择文件夹
-                        </div>
-                    )}
+                    <div style={{height: '100%', backgroundColor: 'white', overflow: 'hidden'}}>
+                        {fileTree ? (
+                            <Tree<TreeNodeWithMeta>
+                                treeData={transformToTreeData(fileTree).children}
+                                style={{maxHeight: '100%'}}
+                                blockNode
+                                showLine
+                                switcherIcon={<DownOutlined/>}
+                                selectedKeys={selectedKeys}
+                                onSelect={handleTreeSelect}
+                                defaultExpandAll={false}
+                            />
+                        ) : (
+                            <div style={{textAlign: 'center', color: '#999', padding: 20}}>
+                                请点击上方按钮选择文件夹
+                            </div>
+                        )}
+                    </div>
                 </Splitter.Panel>
                 {/*panel 默认有个 padding 0 1，中间去掉，避免边缘一条白线。*/}
                 <Splitter.Panel min={240} style={{padding: 0}}>
