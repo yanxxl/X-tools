@@ -318,7 +318,6 @@ export const App: React.FC = () => {
                     className={'top-bar'}
                     style={{height: 40, position: 'relative', zIndex: 100}}
                     align={'center'}
-
                 >
                     <div style={{flex: '0 0 72px'}}></div>
                     <div style={{paddingRight: 16}}>
@@ -352,43 +351,39 @@ export const App: React.FC = () => {
             )}
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
                 <Splitter.Panel defaultSize={320} min={80}>
-                    <div style={{padding: 16, height: 'calc(100% - 40px)', overflowY: 'auto'}}>
-                        {fileTree ? (
-                            <Tree<TreeNodeWithMeta>
-                                treeData={[transformToTreeData(fileTree)]}
-                                style={{maxHeight: '100%'}}
-                                blockNode
-                                showLine
-                                switcherIcon={<DownOutlined/>}
-                                selectedKeys={selectedKeys}
-                                onSelect={handleTreeSelect}
-                                defaultExpandAll={false}
-                            />
-                        ) : (
-                            <div style={{textAlign: 'center', color: '#999', padding: 20}}>
-                                请点击上方按钮选择文件夹
-                            </div>
-                        )}
-                    </div>
+                    {fileTree ? (
+                        <Tree<TreeNodeWithMeta>
+                            treeData={[transformToTreeData(fileTree)]}
+                            style={{maxHeight: '100%'}}
+                            blockNode
+                            showLine
+                            switcherIcon={<DownOutlined/>}
+                            selectedKeys={selectedKeys}
+                            onSelect={handleTreeSelect}
+                            defaultExpandAll={false}
+                        />
+                    ) : (
+                        <div style={{textAlign: 'center', color: '#999', padding: 20}}>
+                            请点击上方按钮选择文件夹
+                        </div>
+                    )}
                 </Splitter.Panel>
                 {/*panel 默认有个 padding 0 1，中间去掉，避免边缘一条白线。*/}
                 <Splitter.Panel min={240} style={{padding: 0}}>
-                    <div style={{height: 'calc(100% - 40px)', padding: 0}}>
-                        {selectedFile ? (
-                            <div style={{height: '100%', padding: 0, background: '#f7f7f7'}}>
-                                <div style={{height: '100%'}}>
-                                    <FilePreview
-                                        filePath={selectedFile.path}
-                                        fileName={selectedFile.name}
-                                    />
-                                </div>
+                    {selectedFile ? (
+                        <div style={{height: '100%', padding: 0, background: '#f7f7f7'}}>
+                            <div style={{height: '100%'}}>
+                                <FilePreview
+                                    filePath={selectedFile.path}
+                                    fileName={selectedFile.name}
+                                />
                             </div>
-                        ) : (
-                            <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999'}}>
-                                请在左侧选择一个文件以预览内容
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999'}}>
+                            请在左侧选择一个文件以预览内容
+                        </div>
+                    )}
                 </Splitter.Panel>
                 <Splitter.Panel defaultSize={320} min={80}>
                     <div style={{padding: 16}}>
@@ -424,5 +419,3 @@ export const App: React.FC = () => {
         </ConfigProvider>
     );
 };
-
-// formatFileSize 函数已从 utils/format.ts 导入
