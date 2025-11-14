@@ -1,12 +1,13 @@
-import React, {useState, useEffect} from 'react';
-import {ConfigProvider, Splitter, Button, Tree, message, Space, Dropdown, MenuProps, Typography, Flex} from "antd";
-import {DownOutlined, PlusOutlined, DeleteOutlined, FolderOpenOutlined, FileTextOutlined, EyeInvisibleOutlined, EyeOutlined} from '@ant-design/icons';
-import type {TreeProps, DataNode} from 'antd/es/tree';
+import React, {useEffect, useState} from 'react';
+import {Button, ConfigProvider, Dropdown, Flex, MenuProps, message, Splitter, Tree, Typography} from "antd";
+import {DeleteOutlined, DownOutlined, EyeInvisibleOutlined, FileTextOutlined, FolderOpenOutlined, PlusOutlined} from '@ant-design/icons';
+import type {DataNode, TreeProps} from 'antd/es/tree';
 import {FileNode} from './types';
-import {RecentFolder, FileInfo} from './types/api';
+import {FileInfo, RecentFolder} from './types/api';
 import {FilePreview} from './components/FilePreview';
-import {formatFileSize, formatDate} from './utils/format';
+import {formatDate, formatFileSize} from './utils/format';
 import {truncateFolderName} from './utils/uiUtils';
+import {Config, removeFolderPath, updateFolderPath} from "./utils/config";
 
 // 为Tree组件定义的节点类型
 export type TreeNodeWithMeta = DataNode & {
@@ -17,96 +18,53 @@ export type TreeNodeWithMeta = DataNode & {
 export const App: React.FC = () => {
     const [fileTree, setFileTree] = useState<FileNode | null>(null);
     const [loading, setLoading] = useState(false);
+    const [config, setConfig] = useState<Config | null>(null);
     const [recentFolders, setRecentFolders] = useState<RecentFolder[]>([]);
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [selectedFile, setSelectedFile] = useState<FileNode | null>(null);
     const [selectedInfo, setSelectedInfo] = useState<FileInfo | null>(null);
-    // 标题栏显示状态
     const [titleBarVisible, setTitleBarVisible] = useState(true);
 
     const {Text} = Typography;
 
-    // 组件加载时获取最近文件夹列表和上次打开的文件夹
+    // 加载配置文件
+    // useEffect(() => {
+    //     console.log('loading config')
+    //     setLoading(true);
+    //     window.electronAPI.loadConfig().then(async (config) => {
+    //         console.log('get config', config);
+    //         setConfig(config);
+    //         setLoading(false);
+    //     })
+    // }, []);
+
     useEffect(() => {
-        loadRecentFolders().then(() => {
-            loadLastOpenedFolder();
-        });
-    }, []);
+        console.log('config changed', config);
+        if (config == null) return
+        setLoading(true);
+        setRecentFolders(config.recentFolders);
+        loadFolderTree().then(() => {
+            setLoading(false);
+        })
+    }, [config]);
 
-    // 加载最近文件夹列表
-    const loadRecentFolders = async () => {
-        try {
-            if (!window.electronAPI || !window.electronAPI.getRecentFolders) {
-                console.warn('electronAPI 不可用，无法获取最近文件夹');
-                setRecentFolders([]);
-                return [];
-            }
-
-            const folders = await window.electronAPI.getRecentFolders();
-            // 按时间戳降序排序，确保最新的文件夹在前面
-            const sortedFolders = folders.sort((a, b) => b.timestamp - a.timestamp);
-            setRecentFolders(sortedFolders);
-            return sortedFolders;
-        } catch (error) {
-            console.error('获取最近文件夹失败:', error);
-            message.error('获取最近文件夹失败');
-            setRecentFolders([]);
-            return [];
-        }
-    };
-
-    // 加载上次打开的文件夹
-    const loadLastOpenedFolder = async () => {
-        try {
-            if (!window.electronAPI || !window.electronAPI.getLastOpenedFolder) {
-                console.warn('electronAPI 不可用，无法获取上次打开的文件夹');
-                useFirstRecentFolder();
-                return;
-            }
-
-            const lastFolder = await window.electronAPI.getLastOpenedFolder();
-
-            if (lastFolder) {
-                // 验证文件夹是否仍然存在
-                try {
-                    if (window.electronAPI && window.electronAPI.getFileTree) {
-                        const tree = await window.electronAPI.getFileTree(lastFolder.path);
-                        setFileTree(tree);
-                    } else {
-                        console.warn('无法获取文件树');
-                    }
-                } catch (error) {
-                    console.error('上次打开的文件夹不存在或无法访问:', error);
-                    // 如果上次文件夹无法访问，尝试使用第一个最近文件夹
-                    useFirstRecentFolder();
-                }
-            } else {
-                // 如果没有lastOpenedFolder但有recentFolders，使用第一个最近文件夹
-                useFirstRecentFolder();
-            }
-        } catch (error) {
-            console.error('获取上次打开文件夹失败:', error);
-            // 出错时也尝试使用第一个最近文件夹
-            useFirstRecentFolder();
-        }
-    };
-
-    // 使用第一个最近文件夹
-    const useFirstRecentFolder = async () => {
-        if (recentFolders.length > 0) {
+    async function loadFolderTree() {
+        console.log('loading folder tree');
+        if (config.recentFolders.length > 0) {
             try {
-                const firstFolder = recentFolders[0];
-
-                if (window.electronAPI && window.electronAPI.getFileTree) {
-                    const tree = await window.electronAPI.getFileTree(firstFolder.path);
-                    setFileTree(tree);
-                }
+                setLoading(true);
+                const tree = await window.electronAPI.getFileTree(config.recentFolders[0].path);
+                setFileTree(tree);
             } catch (error) {
-                console.error('加载第一个最近文件夹失败:', error);
-                message.error('加载文件夹失败');
+                console.error('选择文件夹失败:', error);
+                message.error('选择文件夹失败，请重试');
+            } finally {
+                setLoading(false);
             }
+        }else{
+            console.log('no folder to load');
         }
-    };
+    }
 
     // 处理选择文件夹
     const handleSelectDirectory = async () => {
@@ -117,12 +75,9 @@ export const App: React.FC = () => {
             const dirPath = await window.electronAPI.selectDirectory();
 
             if (dirPath) {
-                // 获取文件树结构
-                const tree = await window.electronAPI.getFileTree(dirPath);
-                setFileTree(tree);
-                message.success(`已加载文件夹: ${tree.name}`);
-                // 重新加载最近文件夹列表
-                loadRecentFolders();
+                const c = updateFolderPath(config, dirPath);
+                setConfig(c)
+                window.electronAPI.saveConfig(c)
             }
         } catch (error) {
             console.error('选择文件夹失败:', error);
@@ -137,17 +92,9 @@ export const App: React.FC = () => {
         try {
             setLoading(true);
 
-            // 获取文件树结构
-            const tree = await window.electronAPI.getFileTree(folder.path);
-            setFileTree(tree);
-            message.success(`已加载文件夹: ${folder.name}`);
-
-            // 更新文件夹的最后打开时间
-            if (window.electronAPI && window.electronAPI.updateFolderTimestamp) {
-                await window.electronAPI.updateFolderTimestamp(folder.path);
-            }
-            // 重新加载最近文件夹列表，以更新时间戳和排序
-            await loadRecentFolders();
+            const c = updateFolderPath(config, folder.path);
+            setConfig(c)
+            // await window.electronAPI.saveConfig(c)
         } catch (error) {
             console.error('加载文件夹失败:', error);
             message.error('加载文件夹失败，请重试');
@@ -161,17 +108,9 @@ export const App: React.FC = () => {
         e.stopPropagation(); // 阻止事件冒泡，避免触发文件夹选择
 
         try {
-            if (window.electronAPI && window.electronAPI.removeRecentFolder) {
-                await window.electronAPI.removeRecentFolder(folderPath);
-                message.success('文件夹已从最近列表中删除');
-                // 重新加载最近文件夹列表
-                await loadRecentFolders();
-
-                // 如果删除的是当前打开的文件夹，清空fileTree
-                if (fileTree && fileTree.path === folderPath) {
-                    setFileTree(null);
-                }
-            }
+            removeFolderPath(config, folderPath);
+            setConfig(config)
+            await window.electronAPI.saveConfig(config)
         } catch (error) {
             console.error('删除文件夹失败:', error);
             message.error('删除文件夹失败，请重试');
@@ -179,53 +118,6 @@ export const App: React.FC = () => {
     };
 
     // 下拉菜单选项
-    const menuItems: MenuProps['items'] = [
-        {
-            key: 'new',
-            icon: <PlusOutlined/>,
-            label: '选择新文件夹',
-            onClick: handleSelectDirectory
-        },
-        ...recentFolders.length > 0 ? [
-            {
-                type: 'divider' as const
-            },
-            ...recentFolders.map((folder) => ({
-                key: folder.path,
-                icon: <FolderOpenOutlined/>,
-                label: (
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '300px'}}>
-                        <div style={{flex: 1, display: 'flex', alignItems: 'center'}}>
-                            <span title={folder.path}>{truncateFolderName(folder.name || '')}</span>
-                        </div>
-                        <span style={{fontSize: '12px', color: '#999', marginRight: '8px'}}>{new Date(folder.timestamp).toLocaleString('zh-CN', {
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false
-                        })}</span>
-                        <DeleteOutlined
-                            style={{fontSize: '14px', color: '#666', cursor: 'pointer', transition: 'all 0.3s'}}
-                            title="从列表中删除"
-                            onClick={(e) => handleRemoveRecentFolder(folder.path, e)}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.transform = 'scale(1.6)';
-                                e.currentTarget.style.color = '#ff4d4f';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.transform = 'scale(1)';
-                                e.currentTarget.style.color = '#666';
-                            }}
-                        />
-                    </div>
-                ),
-                onClick: () => handleSelectRecentFolder(folder)
-            }))
-        ] : []
-    ];
-
-
     // 转换文件节点为Tree组件需要的数据格式
     const transformToTreeData = (node: FileNode): TreeNodeWithMeta => {
         const result: TreeNodeWithMeta = {
@@ -321,7 +213,56 @@ export const App: React.FC = () => {
                 >
                     <div style={{flex: '0 0 72px'}}></div>
                     <div style={{paddingRight: 16}}>
-                        <Dropdown menu={{items: menuItems}} placement="bottomLeft">
+                        <Dropdown
+                            menu={{
+                                items: [
+                                    {
+                                        key: 'new',
+                                        icon: <PlusOutlined/>,
+                                        label: '选择新文件夹',
+                                        onClick: handleSelectDirectory
+                                    },
+                                    ...recentFolders.length > 0 ? [
+                                        {
+                                            type: 'divider' as const
+                                        },
+                                        ...recentFolders.map((folder) => ({
+                                            key: folder.path,
+                                            icon: <FolderOpenOutlined/>,
+                                            label: (
+                                                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '300px'}}>
+                                                    <div style={{flex: 1, display: 'flex', alignItems: 'center'}}>
+                                                        <span title={folder.path}>{truncateFolderName(folder.name || '')}</span>
+                                                    </div>
+                                                    <span style={{fontSize: '12px', color: '#999', marginRight: '8px'}}>{new Date(folder.timestamp).toLocaleString('zh-CN', {
+                                                        month: '2-digit',
+                                                        day: '2-digit',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                        hour12: false
+                                                    })}</span>
+                                                    <DeleteOutlined
+                                                        style={{fontSize: '14px', color: '#666', cursor: 'pointer', transition: 'all 0.3s'}}
+                                                        title="从列表中删除"
+                                                        onClick={(e) => handleRemoveRecentFolder(folder.path, e)}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1.6)';
+                                                            e.currentTarget.style.color = '#ff4d4f';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1)';
+                                                            e.currentTarget.style.color = '#666';
+                                                        }}
+                                                    />
+                                                </div>
+                                            ),
+                                            onClick: () => handleSelectRecentFolder(folder)
+                                        }))
+                                    ] : []
+                                ]
+                            }}
+                            placement="bottomLeft"
+                        >
                             <Button
                                 type="link"
                                 loading={loading}
@@ -351,7 +292,7 @@ export const App: React.FC = () => {
             )}
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
                 <Splitter.Panel defaultSize={'25%'} min={'10%'} max={'45%'} collapsible>
-                    <div style={{height: '100%', backgroundColor: 'white', overflow: 'hidden',overflowY:'scroll'}}>
+                    <div style={{height: '100%', backgroundColor: 'white', overflow: 'hidden', overflowY: 'scroll'}}>
                         {fileTree ? (
                             <Tree<TreeNodeWithMeta>
                                 treeData={transformToTreeData(fileTree).children}
