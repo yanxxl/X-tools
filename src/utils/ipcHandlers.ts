@@ -1,7 +1,6 @@
 import {ipcMain, dialog} from 'electron';
 import {getFileTree, getFileInfo} from './fileUtils';
 import {loadConfig, saveConfig} from './configManager';
-import config from "../../forge.config";
 import {Config} from "./config";
 
 /**

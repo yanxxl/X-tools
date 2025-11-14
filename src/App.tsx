@@ -28,15 +28,22 @@ export const App: React.FC = () => {
     const {Text} = Typography;
 
     // 加载配置文件
-    // useEffect(() => {
-    //     console.log('loading config')
-    //     setLoading(true);
-    //     window.electronAPI.loadConfig().then(async (config) => {
-    //         console.log('get config', config);
-    //         setConfig(config);
-    //         setLoading(false);
-    //     })
-    // }, []);
+    useEffect(() => {
+        console.log('loading config')
+        setLoading(true);
+        window.electronAPI.loadConfig().then(async (config) => {
+            console.log('get config', config);
+            setConfig(config);
+            setLoading(false);
+        }).catch(error => {
+            console.error('加载配置失败:', error);
+            // 如果加载失败，设置一个默认配置
+            setConfig({
+                recentFolders: []
+            });
+            setLoading(false);
+        })
+    }, []);
 
     useEffect(() => {
         console.log('config changed', config);
@@ -50,7 +57,7 @@ export const App: React.FC = () => {
 
     async function loadFolderTree() {
         console.log('loading folder tree');
-        if (config.recentFolders.length > 0) {
+        if (config && config.recentFolders.length > 0) {
             try {
                 setLoading(true);
                 const tree = await window.electronAPI.getFileTree(config.recentFolders[0].path);
@@ -74,10 +81,14 @@ export const App: React.FC = () => {
             // 调用Electron API选择文件夹
             const dirPath = await window.electronAPI.selectDirectory();
 
-            if (dirPath) {
+            if (dirPath && config) {
                 const c = updateFolderPath(config, dirPath);
-                setConfig(c)
-                window.electronAPI.saveConfig(c)
+                setConfig(c);
+                await window.electronAPI.saveConfig(c);
+                
+                // 直接加载选择的文件夹树
+                const tree = await window.electronAPI.getFileTree(dirPath);
+                setFileTree(tree);
             }
         } catch (error) {
             console.error('选择文件夹失败:', error);
@@ -92,9 +103,15 @@ export const App: React.FC = () => {
         try {
             setLoading(true);
 
-            const c = updateFolderPath(config, folder.path);
-            setConfig(c)
-            // await window.electronAPI.saveConfig(c)
+            if (config) {
+                const c = updateFolderPath(config, folder.path);
+                setConfig(c);
+                await window.electronAPI.saveConfig(c);
+                
+                // 直接加载选择的文件夹树
+                const tree = await window.electronAPI.getFileTree(folder.path);
+                setFileTree(tree);
+            }
         } catch (error) {
             console.error('加载文件夹失败:', error);
             message.error('加载文件夹失败，请重试');
@@ -108,9 +125,13 @@ export const App: React.FC = () => {
         e.stopPropagation(); // 阻止事件冒泡，避免触发文件夹选择
 
         try {
-            removeFolderPath(config, folderPath);
-            setConfig(config)
-            await window.electronAPI.saveConfig(config)
+            if (config) {
+                // 创建新的配置对象副本，避免直接修改原对象
+                const newConfig = { ...config, recentFolders: [...config.recentFolders] };
+                removeFolderPath(newConfig, folderPath);
+                setConfig(newConfig);
+                await window.electronAPI.saveConfig(newConfig);
+            }
         } catch (error) {
             console.error('删除文件夹失败:', error);
             message.error('删除文件夹失败，请重试');

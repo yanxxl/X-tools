@@ -12,7 +12,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 获取最近使用的文件夹列表
     getRecentFolders: () => ipcRenderer.invoke('getRecentFolders'),
     loadConfig: () => ipcRenderer.invoke('loadConfig'),
-    saveConfig: () => ipcRenderer.invoke('saveConfig'),
+    saveConfig: (config: any) => ipcRenderer.invoke('saveConfig', config),
     // 获取上次打开的文件夹
     getLastOpenedFolder: () => ipcRenderer.invoke('getLastOpenedFolder'),
     // 更新文件夹的最后打开时间戳

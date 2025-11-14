@@ -28,5 +28,7 @@ export function updateFolderPath(config: Config, folderPath: string): Config {
 export function removeFolderPath(config: Config, folderPath: string): void {
     // 找到并更新recentFolders中的对应文件夹
     const folderIndex = config.recentFolders.findIndex(folder => folder.path === folderPath);
-    if (folderIndex !== -1) config.recentFolders.splice(folderIndex, 1);
+    if (folderIndex !== -1) {
+        config.recentFolders.splice(folderIndex, 1);
+    }
 }
