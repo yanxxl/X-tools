@@ -6,3 +6,6 @@ export interface FileNode {
   isDirectory: boolean;
   children?: FileNode[];
 }
+
+// 导出工具窗口相关类型
+export * from './toolWindow';
