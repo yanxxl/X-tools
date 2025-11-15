@@ -1,9 +1,7 @@
 .tool-windows-pane {
     display: flex;
     height: 100%;
-    background: #fff;
     border-left: 1px solid #d9d9d9;
-    position: relative;
 }
 
 .tool-windows-pane.empty {
@@ -25,58 +23,13 @@
 .tool-window-content {
     flex: 1;
     overflow: hidden;
-    transition: width 0.3s ease, min-width 0.3s ease;
-    background: #fafafa;
-}
-
-.tool-window-content.collapsed {
-    width: 0 !important;
-    min-width: 0 !important;
-    overflow: hidden;
+    background: #f8f9fa;
 }
 
 .tool-window-wrapper {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background: #fff;
-}
-
-.tool-window-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    border-bottom: 1px solid #e8e8e8;
-    background: #f5f5f5;
-    min-height: 40px;
-}
-
-.tool-window-title {
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-    font-size: 14px;
-    color: #262626;
-}
-
-.tool-window-icon {
-    margin-right: 8px;
-    display: flex;
-    align-items: center;
-}
-
-.close-button {
-    padding: 0;
-    width: 20px;
-    height: 20px;
-    border-radius: 2px;
-    transition: all 0.3s;
-}
-
-.close-button:hover {
-    background: #ff4d4f;
-    color: #fff;
 }
 
 .tool-window-body {
@@ -97,28 +50,6 @@
     gap: 4px;
 }
 
-.collapse-button {
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    transition: all 0.3s;
-}
-
-.collapse-button:hover {
-    background: #e6f7ff;
-    color: #1890ff;
-}
-
-.toolbar-separator {
-    width: 24px;
-    height: 1px;
-    background: #d9d9d9;
-    margin: 4px 0;
-}
-
 .toolbar-button {
     width: 32px;
     height: 32px;
@@ -126,8 +57,7 @@
     align-items: center;
     justify-content: center;
     border-radius: 4px;
-    transition: all 0.3s;
-    position: relative;
+    transition: background-color 0.2s;
 }
 
 .toolbar-button:hover {
@@ -138,48 +68,6 @@
 .toolbar-button.active {
     background: #1890ff;
     color: #fff;
-}
-
-.toolbar-button.active::before {
-    content: '';
-    position: absolute;
-    left: -4px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 16px;
-    background: #1890ff;
-    border-radius: 0 2px 2px 0;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-    .tool-window-toolbar {
-        width: 36px;
-        padding: 6px 3px;
-    }
-    
-    .toolbar-button,
-    .collapse-button {
-        width: 28px;
-        height: 28px;
-    }
-}
-
-/* 动画效果 */
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateX(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.tool-window-wrapper {
-    animation: slideIn 0.3s ease-out;
 }
 
 /* 滚动条样式 */

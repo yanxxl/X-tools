@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, List, Typography, Tag, Space } from 'antd';
 import { FileTextOutlined, ClockCircleOutlined, FolderOutlined } from '@ant-design/icons';
+import { useAppContext } from '../../contexts/AppContext';
 
 const { Text } = Typography;
 
@@ -130,25 +131,27 @@ export const SearchWindow: React.FC = () => {
 };
 
 // 属性工具窗口
-export const PropertiesWindow: React.FC<{ selectedFile?: any }> = ({ selectedFile }) => {
+export const PropertiesWindow: React.FC = () => {
+    const { currentFile } = useAppContext();
+    
     return (
         <div style={{ padding: '12px', height: '100%' }}>
             <Card title="属性" size="small" style={{ height: '100%' }}>
-                {selectedFile ? (
+                {currentFile ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         <div>
                             <Text strong>名称：</Text>
-                            <Text>{selectedFile.name || '-'}</Text>
+                            <Text>{currentFile.name || '-'}</Text>
                         </div>
                         <div>
                             <Text strong>路径：</Text>
                             <Text copyable style={{ wordBreak: 'break-all' }}>
-                                {selectedFile.path || '-'}
+                                {currentFile.path || '-'}
                             </Text>
                         </div>
                         <div>
                             <Text strong>类型：</Text>
-                            <Text>{selectedFile.isDirectory ? '目录' : '文件'}</Text>
+                            <Text>{currentFile.isDirectory ? '目录' : '文件'}</Text>
                         </div>
                     </div>
                 ) : (

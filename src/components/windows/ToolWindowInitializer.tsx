@@ -15,7 +15,7 @@ import {
 /**
  * 初始化并注册示例工具窗口
  */
-export const initializeSampleToolWindows = (selectedFile?: any) => {
+export const initializeSampleToolWindows = () => {
     // 文件历史工具窗口
     const fileHistoryWindow = new ToolWindow({
         id: 'file-history',
@@ -40,13 +40,13 @@ export const initializeSampleToolWindows = (selectedFile?: any) => {
         defaultWidth: 280
     });
 
-    // 属性工具窗口
+    // 属性工具窗口 - 初始化时不传入selectedFile，由组件内部从context获取
     const propertiesWindow = new ToolWindow({
         id: 'properties',
         name: '属性',
         description: '显示选中文件或文件夹的详细属性',
         isVisible: false,
-        view: <PropertiesWindow selectedFile={selectedFile} />,
+        view: <PropertiesWindow />,
         icon: <InfoCircleOutlined />,
         shortcut: 'Alt+Enter',
         defaultWidth: 320
@@ -62,14 +62,4 @@ export const initializeSampleToolWindows = (selectedFile?: any) => {
         searchWindow,
         propertiesWindow
     };
-};
-
-/**
- * 更新属性工具窗口的选中文件
- */
-export const updatePropertiesWindow = (selectedFile?: any) => {
-    const propertiesWindow = toolWindowManager.get('properties');
-    if (propertiesWindow) {
-        propertiesWindow.view = <PropertiesWindow selectedFile={selectedFile} />;
-    }
 };

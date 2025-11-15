@@ -1,46 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Flex, Tooltip } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { ToolOutlined } from '@ant-design/icons';
 import { ToolWindow } from '../../types/toolWindow';
 import { toolWindowManager } from '../../utils/toolWindowManager';
-import { initializeSampleToolWindows, updatePropertiesWindow } from './ToolWindowInitializer';
-import { useAppContext } from '../../contexts/AppContext';
+import { initializeSampleToolWindows } from './ToolWindowInitializer';
 import './ToolWindowsPane.css';
 
-interface ToolWindowsPaneProps {
-    /** 工具窗口管理器实例 */
-    manager?: typeof toolWindowManager;
-    /** 默认宽度 */
-    defaultWidth?: number;
-}
-
-export const ToolWindowsPane: React.FC<ToolWindowsPaneProps> = ({
-    manager = toolWindowManager,
-    defaultWidth = 300
-}) => {
-    const { currentFile } = useAppContext();
+export const ToolWindowsPane: React.FC = () => {
     const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
     const [availableWindows, setAvailableWindows] = useState<ToolWindow[]>([]);
 
     // 初始化工具窗口
     useEffect(() => {
-        initializeSampleToolWindows(currentFile);
+        initializeSampleToolWindows();
         
         const updateWindows = () => {
-            const windows = manager.getAll();
+            const windows = toolWindowManager.getAll();
             setAvailableWindows(windows);
             
             // 如果没有活跃窗口且有可用窗口，自动显示第一个窗口
             if (!activeWindowId && windows.length > 0) {
-                const firstWindow = windows[0];
-                manager.show(firstWindow.id);
-                setActiveWindowId(firstWindow.id);
-            }
-            // 如果当前活跃窗口不在可用窗口中，切换到第一个可用窗口
-            else if (activeWindowId && !windows.find(w => w.id === activeWindowId) && windows.length > 0) {
-                const firstWindow = windows[0];
-                manager.show(firstWindow.id);
-                setActiveWindowId(firstWindow.id);
+                setActiveWindowId(windows[0].id);
             }
         };
 
@@ -49,25 +29,15 @@ export const ToolWindowsPane: React.FC<ToolWindowsPaneProps> = ({
         // 定期检查工具窗口变化
         const interval = setInterval(updateWindows, 100);
         return () => clearInterval(interval);
-    }, [manager, activeWindowId, currentFile]);
+    }, [activeWindowId]);
 
-    // 当当前文件变化时，更新属性窗口
-    useEffect(() => {
-        updatePropertiesWindow(currentFile);
-    }, [currentFile]);
-
-    // 切换工具窗口显示
+    // 切换工具窗口
     const toggleWindow = (windowId: string) => {
-        const window = manager.get(windowId);
-        if (!window) return;
-
-        // 总是显示选中的窗口，不隐藏任何窗口
-        manager.show(windowId);
         setActiveWindowId(windowId);
     };
 
     // 获取当前活跃的工具窗口
-    const activeWindow = activeWindowId ? manager.get(activeWindowId) : null;
+    const activeWindow = availableWindows.find(w => w.id === activeWindowId);
 
     if (availableWindows.length === 0) {
         return (
@@ -83,23 +53,9 @@ export const ToolWindowsPane: React.FC<ToolWindowsPaneProps> = ({
     return (
         <div className="tool-windows-pane">
             {/* 工具窗口显示区域 */}
-            <div 
-                className="tool-window-content"
-                style={{ 
-                    width: defaultWidth,
-                    minWidth: 200
-                }}
-            >
+            <div className="tool-window-content">
                 {activeWindow && (
                     <div className="tool-window-wrapper">
-                        <div className="tool-window-header">
-                            <div className="tool-window-title">
-                                {activeWindow.icon && (
-                                    <span className="tool-window-icon">{activeWindow.icon}</span>
-                                )}
-                                <span>{activeWindow.name}</span>
-                            </div>
-                        </div>
                         <div className="tool-window-body">
                             {activeWindow.view}
                         </div>
