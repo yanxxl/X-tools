@@ -53,13 +53,7 @@ export const ToolWindowsPane: React.FC = () => {
         <div className="tool-windows-pane">
             {/* 工具窗口显示区域 */}
             <div className="tool-window-content">
-                {activeWindow && (
-                    <div className="tool-window-wrapper">
-                        <div className="tool-window-body">
-                            {activeWindow.view}
-                        </div>
-                    </div>
-                )}
+                {activeWindow && activeWindow.view}
             </div>
 
             {/* 右侧图标工具栏 */}

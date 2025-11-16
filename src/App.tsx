@@ -294,7 +294,7 @@ const AppContent: React.FC = () => {
                 </Flex>
             )}
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
-                <Splitter.Panel defaultSize={'25%'} min={'10%'} max={'45%'} collapsible>
+                <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
                     <div style={{height: '100%', backgroundColor: 'white', overflow: 'hidden', overflowY: 'scroll'}}>
                         {fileTree ? (
                             <Tree<TreeNodeWithMeta>
@@ -331,7 +331,7 @@ const AppContent: React.FC = () => {
                         </div>
                     )}
                 </Splitter.Panel>
-                <Splitter.Panel defaultSize={'25%'} min={'10%'} max={'45%'} collapsible>
+                <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
                     <ToolWindowsPane />
                 </Splitter.Panel>
             </Splitter>

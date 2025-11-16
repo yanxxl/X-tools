@@ -128,7 +128,7 @@ const FileInfoPanel: React.FC = () => {
     }
 
     return (
-        <div style={{ padding: 16, height: '100%', overflow: 'auto' }}>
+        <div style={{ padding: 8, height: '100%', overflow: 'auto' }}>
             <Card 
                 size="small" 
                 title={
