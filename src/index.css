@@ -24,10 +24,12 @@ body {
 /* 单行文本样式：保持一行，居中，边距16px，超出缩短 */
 .one-line {
     white-space: nowrap;
-    text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
-    width: auto;
+}
+
+.text-center {
+    text-align: center;
 }
 
 .border{

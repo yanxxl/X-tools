@@ -18,9 +18,9 @@ export type TreeNodeWithMeta = DataNode & {
 
 const AppContent: React.FC = () => {
     console.log('AppContent 组件开始渲染');
-    const { currentFolder, setCurrentFolder, currentFile, setCurrentFile } = useAppContext();
-    console.log('Context 数据:', { currentFolder, currentFile });
-    
+    const {currentFolder, setCurrentFolder, currentFile, setCurrentFile} = useAppContext();
+    console.log('Context 数据:', {currentFolder, currentFile});
+
     const [loading, setLoading] = useState(false);
     const [config, setConfig] = useState<Config | null>(null);
     const [recentFolders, setRecentFolders] = useState<RecentFolder[]>([]);
@@ -106,7 +106,7 @@ const AppContent: React.FC = () => {
             message.warning('此功能需要在 Electron 应用中使用');
             return;
         }
-        
+
         try {
             setLoading(true);
 
@@ -128,9 +128,12 @@ const AppContent: React.FC = () => {
     // 转换文件节点为Tree组件需要的数据格式
     const transformToTreeData = (node: FileNode): TreeNodeWithMeta => {
         const result: TreeNodeWithMeta = {
-            title: node.name,
+            title: (
+                <div className={'one-line'} title={node.name}>
+                    {node.name}
+                </div>
+            ),
             key: node.id,
-            icon: node.isDirectory ? <FolderOpenOutlined/> : <FileTextOutlined/>,
             meta: node,
             isLeaf: !node.isDirectory
         };
@@ -275,7 +278,7 @@ const AppContent: React.FC = () => {
                         </Dropdown>
                     </div>
                     <div style={{flex: '1 3 auto', minWidth: 0}}>
-                        <div className="one-line">
+                        <div className="one-line text-center">
                             {currentFile ? currentFile.name : ''}
                         </div>
                     </div>
@@ -332,7 +335,7 @@ const AppContent: React.FC = () => {
                     )}
                 </Splitter.Panel>
                 <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
-                    <ToolWindowsPane />
+                    <ToolWindowsPane/>
                 </Splitter.Panel>
             </Splitter>
         </ConfigProvider>
@@ -343,7 +346,7 @@ export const App: React.FC = () => {
     console.log('App 组件开始渲染');
     return (
         <AppProvider>
-            <AppContent />
+            <AppContent/>
         </AppProvider>
     );
 };
