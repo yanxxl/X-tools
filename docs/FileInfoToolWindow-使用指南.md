@@ -100,7 +100,7 @@ fileInfoWindow?.toggle();
 ### 验证脚本
 
 ```typescript
-import { runFileInfoToolWindowValidation } from 'src/utils/FileInfoToolWindowValidation';
+import { runFileInfoToolWindowValidation } from 'src/tests/FileInfoToolWindowValidation';
 ```
 // 运行完整验证
 const isValid = runFileInfoToolWindowValidation();

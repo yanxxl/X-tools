@@ -16,7 +16,7 @@ import {
 } from '@ant-design/icons';
 import { fileInfoToolWindow } from '../components/windows/FileInfoToolWindow';
 import { toolWindowManager } from '../components/windows/toolWindowManager';
-import { runFileInfoToolWindowValidation } from '../utils/FileInfoToolWindowValidation';
+import { runFileInfoToolWindowValidation } from './FileInfoToolWindowValidation';
 import { useAppContext } from '../contexts/AppContext';
 
 const { Title, Text, Paragraph } = Typography;
