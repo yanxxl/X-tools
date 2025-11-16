@@ -30,13 +30,11 @@ import { toolWindowManager } from './utils/toolWindowManager';
 toolWindowManager.register(fileInfoToolWindow);
 ```
 
-### 3. 或者使用初始化函数
+### 3. 或者使用初始化脚本
 
 ```typescript
-import { initializeSampleToolWindows } from './components/windows/ToolWindowInitializer';
-
-// 初始化所有工具窗口（包括文件信息窗口）
-initializeSampleToolWindows();
+// 工具窗口会在应用启动时自动注册
+// 初始化脚本位于: src/scripts/initializeToolWindows.ts
 ```
 
 ### 4. 程序化控制
@@ -114,7 +112,7 @@ fileInfoWindow?.toggle();
 
 ## 示例代码
 
-完整的使用示例可以参考 `src/components/FileInfoTest.tsx` 文件。
+完整的使用示例可以参考 `src/pages/FileInfoDemo.tsx` 和 `src/pages/FileInfoIntegrationTest.tsx` 文件。
 
 ## 注意事项
 
