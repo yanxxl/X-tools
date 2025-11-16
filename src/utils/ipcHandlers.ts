@@ -60,16 +60,14 @@ export function registerIpcHandlers() {
     });
 
     // 控制红绿灯的显示/隐藏
-    ipcMain.handle('setTrafficLightPosition', (_, visible: boolean) => {
+    ipcMain.handle('setWindowButtonVisibility', (_, visible: boolean) => {
         const mainWindow = (global as any).mainWindow as BrowserWindow;
         if (mainWindow) {
             try {
                 if (visible) {
-                    // 显示红绿灯：设置到正常位置
-                    mainWindow.setWindowButtonPosition({ x: 12, y: 12 });
+                    mainWindow.setWindowButtonVisibility(true)
                 } else {
-                    // 隐藏红绿灯：设置为null来隐藏
-                    mainWindow.setWindowButtonPosition(null);
+                    mainWindow.setWindowButtonVisibility(false)
                 }
                 console.log(`红绿灯位置已设置：${visible ? '显示' : '隐藏'}`);
             } catch (error) {

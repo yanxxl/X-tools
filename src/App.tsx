@@ -90,8 +90,8 @@ const AppContent: React.FC = () => {
 
     // 同步红绿灯显示状态与标题栏显示状态
     useEffect(() => {
-        if (window.electronAPI?.setTrafficLightPosition) {
-            window.electronAPI.setTrafficLightPosition(titleBarVisible);
+        if (window.electronAPI?.setWindowButtonVisibility) {
+            window.electronAPI.setWindowButtonVisibility(titleBarVisible);
         }
     }, [titleBarVisible]);
 
