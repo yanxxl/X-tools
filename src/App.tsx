@@ -250,7 +250,7 @@ const AppContent: React.FC = () => {
                         top: 0,
                         left: 0,
                         right: 0,
-                        height: 15,
+                        height: 8,
                         backgroundColor: 'transparent',
                         zIndex: 200,
                         cursor: 'default'

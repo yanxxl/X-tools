@@ -1,4 +1,4 @@
-import {app, BrowserWindow} from 'electron';
+import {app, BrowserWindow, screen} from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { registerIpcHandlers } from './utils/ipcHandlers';
@@ -8,11 +8,34 @@ if (started) {
     app.quit();
 }
 
+// 根据屏幕分辨率计算窗口尺寸
+const getWindowSize = () => {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
+    
+    // 判断是否大于1080p (1920x1080)
+    const isHigherThan1080p = screenWidth > 1920 || screenHeight > 1080;
+    
+    if (isHigherThan1080p) {
+        // 高分辨率显示器使用1080p窗口
+        return { width: 1920, height: 1080 };
+    } else {
+        // 1080p或更低分辨率使用720p窗口
+        return { width: 1280, height: 720 };
+    }
+};
+
 const createWindow = () => {
+    // 根据屏幕分辨率获取窗口尺寸
+    const { width, height } = getWindowSize();
+    
+    console.log(`屏幕分辨率: ${screen.getPrimaryDisplay().workAreaSize.width}x${screen.getPrimaryDisplay().workAreaSize.height}`);
+    console.log(`设置窗口尺寸: ${width}x${height}`);
+    
     // Create the browser window.
     const mainWindow = new BrowserWindow({
-        width: 1280,
-        height: 720,
+        width,
+        height,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             webSecurity:false, // 可以访问本地文件
@@ -60,4 +83,4 @@ app.on('activate', () => {
 });
 
 // In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
+// code. You can also put them in them in separate files and import them here.
