@@ -1,7 +1,7 @@
 import React from 'react';
 import { ConfigProvider, App, Card, Button, Space } from 'antd';
 import { AppProvider } from '../contexts/AppContext';
-import { toolWindowManager } from '../utils/toolWindowManager';
+import { toolWindowManager } from '../components/windows/toolWindowManager';
 import '../index.css';
 
 /**

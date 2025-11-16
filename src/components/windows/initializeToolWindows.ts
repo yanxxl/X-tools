@@ -3,8 +3,8 @@
  * 只注册文件信息工具窗口
  */
 
-import { toolWindowManager } from '../utils/toolWindowManager';
-import { fileInfoToolWindow } from '../components/FileInfoToolWindow';
+import { toolWindowManager } from './toolWindowManager';
+import { fileInfoToolWindow } from './FileInfoToolWindow';
 
 /**
  * 初始化并注册文件信息工具窗口

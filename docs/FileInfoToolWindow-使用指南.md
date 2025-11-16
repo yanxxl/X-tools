@@ -26,7 +26,7 @@
 ### 1. 导入工具窗口
 
 ```typescript
-import { fileInfoToolWindow } from './components/FileInfoToolWindow';
+import { fileInfoToolWindow } from './components/windows/FileInfoToolWindow';
 ```
 
 ### 2. 直接使用（已集成到系统）
@@ -36,8 +36,8 @@ import { fileInfoToolWindow } from './components/FileInfoToolWindow';
 ### 3. 手动注册（如果需要）
 
 ```typescript
-import { toolWindowManager } from './utils/toolWindowManager';
-import { fileInfoToolWindow } from './components/FileInfoToolWindow';
+import { toolWindowManager } from './components/windows/toolWindowManager';
+import { fileInfoToolWindow } from './components/windows/FileInfoToolWindow';
 
 // 注册到管理器
 toolWindowManager.register(fileInfoToolWindow);
@@ -100,8 +100,8 @@ fileInfoWindow?.toggle();
 ### 验证脚本
 
 ```typescript
-import { runFileInfoToolWindowValidation } from './utils/FileInfoToolWindowValidation';
-
+import { runFileInfoToolWindowValidation } from 'src/utils/FileInfoToolWindowValidation';
+```
 // 运行完整验证
 const isValid = runFileInfoToolWindowValidation();
 console.log('验证结果:', isValid);

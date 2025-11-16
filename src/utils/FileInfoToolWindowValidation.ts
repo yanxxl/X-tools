@@ -3,8 +3,8 @@
  * 用于验证工具窗口的基本功能
  */
 
-import { fileInfoToolWindow } from '../components/FileInfoToolWindow';
-import { toolWindowManager } from './toolWindowManager';
+import { fileInfoToolWindow } from '../components/windows/FileInfoToolWindow';
+import { toolWindowManager } from '../components/windows/toolWindowManager';
 
 // 验证工具窗口基本属性
 function validateToolWindowProperties() {

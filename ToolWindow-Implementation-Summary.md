@@ -11,7 +11,7 @@
 - `ToolWindowManager` 接口：定义工具窗口管理器的标准接口
 - `ToolWindowOptions` 接口：定义工具窗口的配置选项
 
-### 2. 工具窗口管理器 (`src/utils/toolWindowManager.ts`)
+### 2. 工具窗口管理器 (`src/components/windows/toolWindowManager.ts`)
 - `DefaultToolWindowManager` 类：实现了完整的工具窗口管理功能
 - 全局实例 `toolWindowManager`：提供单例访问
 - 支持注册、注销、显示、隐藏、切换工具窗口等操作
@@ -73,7 +73,7 @@
 
 ```typescript
 import { ToolWindow } from '../types/toolWindow';
-import { toolWindowManager } from '../utils/toolWindowManager';
+import { toolWindowManager } from '../components/windows/toolWindowManager';
 
 const myToolWindow = new ToolWindow({
     id: 'my-tool',
@@ -119,13 +119,14 @@ function App() {
 src/
 ├── types/
 │   └── toolWindow.ts              # 类型定义
-├── utils/
-│   └── toolWindowManager.ts       # 工具窗口管理器
 ├── components/windows/
 │   ├── ToolWindowsPane.tsx        # 主面板组件
 │   ├── ToolWindowsPane.css        # 样式文件
 │   ├── SampleToolWindows.tsx      # 示例工具窗口
-│   └── ToolWindowInitializer.tsx   # 初始化器
+│   ├── ToolWindowInitializer.tsx   # 初始化器
+│   ├── toolWindowManager.ts        # 工具窗口管理器
+│   ├── FileInfoToolWindow.tsx     # 文件信息工具窗口
+│   └── initializeToolWindows.ts    # 工具窗口初始化
 └── App.tsx                         # 主应用集成
 ```
 

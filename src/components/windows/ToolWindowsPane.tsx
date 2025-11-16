@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button, Tooltip } from 'antd';
 import { ToolOutlined } from '@ant-design/icons';
 import { ToolWindow } from '../../types/toolWindow';
-import { toolWindowManager } from '../../utils/toolWindowManager';
-import { initializeToolWindows } from '../scripts/initializeToolWindows';
+import { toolWindowManager } from './toolWindowManager';
 import './ToolWindowsPane.css';
 
 export const ToolWindowsPane: React.FC = () => {

@@ -9,11 +9,11 @@ import {
     CalendarOutlined,
     EyeOutlined
 } from '@ant-design/icons';
-import { ToolWindow } from '../types/toolWindow';
-import { FileInfo } from '../types/api';
-import { formatFileSize, formatDate } from '../utils/format';
-import { detectFileType, getExtension } from '../utils/fileType';
-import { useAppContext } from '../contexts/AppContext';
+import { ToolWindow } from '../../types/toolWindow';
+import { FileInfo } from '../../types/api';
+import { formatFileSize, formatDate } from '../../utils/format';
+import { detectFileType, getExtension } from '../../utils/fileType';
+import { useAppContext } from '../../contexts/AppContext';
 
 const { Title, Text } = Typography;
 

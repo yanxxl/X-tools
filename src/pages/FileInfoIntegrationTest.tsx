@@ -14,8 +14,8 @@ import {
     EyeInvisibleOutlined,
     ReloadOutlined
 } from '@ant-design/icons';
-import { fileInfoToolWindow } from '../components/FileInfoToolWindow';
-import { toolWindowManager } from '../utils/toolWindowManager';
+import { fileInfoToolWindow } from '../components/windows/FileInfoToolWindow';
+import { toolWindowManager } from '../components/windows/toolWindowManager';
 import { runFileInfoToolWindowValidation } from '../utils/FileInfoToolWindowValidation';
 import { useAppContext } from '../contexts/AppContext';
 

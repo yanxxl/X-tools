@@ -18,13 +18,13 @@
 ### 1. 导入工具窗口
 
 ```typescript
-import { fileInfoToolWindow } from './components/FileInfoToolWindow';
+import { fileInfoToolWindow } from './components/windows/FileInfoToolWindow';
 ```
 
 ### 2. 注册到工具窗口管理器
 
 ```typescript
-import { toolWindowManager } from './utils/toolWindowManager';
+import { toolWindowManager } from './components/windows/toolWindowManager';
 
 // 注册工具窗口
 toolWindowManager.register(fileInfoToolWindow);
@@ -34,7 +34,7 @@ toolWindowManager.register(fileInfoToolWindow);
 
 ```typescript
 // 工具窗口会在应用启动时自动注册
-// 初始化脚本位于: src/scripts/initializeToolWindows.ts
+// 初始化脚本位于: src/components/windows/initializeToolWindows.ts
 ```
 
 ### 4. 程序化控制
