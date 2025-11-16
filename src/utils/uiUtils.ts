@@ -1,6 +1,3 @@
-import type { DataNode } from 'antd/es/tree';
-import { FileNode } from '../types';
-
 /**
  * 限制文件夹名称长度，中文10个字符以内，英文20个字符以内
  */

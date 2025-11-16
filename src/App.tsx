@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from 'react';
-import {Button, ConfigProvider, Dropdown, Flex, message, Splitter, Tree, Typography} from "antd";
-import {DeleteOutlined, DownOutlined, EyeInvisibleOutlined, FileTextOutlined, FolderOpenOutlined, PlusOutlined} from '@ant-design/icons';
+import React, {useState, useEffect} from 'react';
+import {Button, ConfigProvider, Dropdown, Flex, message, Splitter, Tree} from "antd";
+import {DeleteOutlined, DownOutlined, EyeInvisibleOutlined, FolderOpenOutlined, PlusOutlined} from '@ant-design/icons';
 import type {DataNode, TreeProps} from 'antd/es/tree';
 import {FileNode} from './types';
-import {FileInfo, RecentFolder} from './types/api';
+import {RecentFolder} from './types/api';
 import {FilePreview} from './components/FilePreview';
 import {ToolWindowsPane} from './components/windows/ToolWindowsPane';
 import {AppProvider, useAppContext} from './contexts/AppContext';
@@ -26,12 +26,9 @@ const AppContent: React.FC = () => {
     const [recentFolders, setRecentFolders] = useState<RecentFolder[]>([]);
     const [fileTree, setFileTree] = useState<FileNode | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
-    const [selectedInfo, setSelectedInfo] = useState<FileInfo | null>(null);
     const [titleBarVisible, setTitleBarVisible] = useState(true);
     const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
     const [loadedKeys, setLoadedKeys] = useState<Set<string>>(new Set()); // 记录已加载的节点
-
-    const {Text} = Typography;
 
     // 加载配置文件
     useEffect(() => {
@@ -82,7 +79,6 @@ const AppContent: React.FC = () => {
             setFileTree(null)
             setSelectedKeys([]);
             setCurrentFile(null);
-            setSelectedInfo(null);
             setExpandedKeys([]);
             setLoadedKeys(new Set());
         }
@@ -203,7 +199,7 @@ const AppContent: React.FC = () => {
     };
 
     // 处理树节点展开
-    const handleExpand: TreeProps<TreeNodeWithMeta>['onExpand'] = (expandedKeysValue, info) => {
+    const handleExpand: TreeProps<TreeNodeWithMeta>['onExpand'] = (expandedKeysValue) => {
         setExpandedKeys(expandedKeysValue as string[]);
     };
 
@@ -214,7 +210,6 @@ const AppContent: React.FC = () => {
 
         if (!info || !info.node) {
             setCurrentFile(null);
-            setSelectedInfo(null);
             return;
         }
 
@@ -226,17 +221,6 @@ const AppContent: React.FC = () => {
 
         // 设置当前选择（文件或目录）
         setCurrentFile(nodeMeta);
-        setSelectedInfo(null);
-
-        // 获取右侧信息
-        try {
-            if (window.electronAPI?.getFileInfo) {
-                const info = await window.electronAPI.getFileInfo(nodeMeta.path);
-                setSelectedInfo(info);
-            }
-        } catch {
-            // 忽略错误
-        }
     };
 
     return (
