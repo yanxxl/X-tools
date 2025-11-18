@@ -1,4 +1,4 @@
-import {app, BrowserWindow, screen, ipcMain, dialog} from 'electron';
+import {app, BrowserWindow, screen, ipcMain, dialog, shell} from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import {getFileTree, getFileInfo, getDirectoryChildren} from './utils/fileUtils';
@@ -78,6 +78,28 @@ function registerIpcHandlers() {
         } else {
             console.error('主窗口引用不存在');
             throw new Error('主窗口引用不存在');
+        }
+    });
+
+    // 打开文件（使用系统默认应用）
+    ipcMain.handle('openFile', async (event, filePath: string) => {
+        try {
+            await shell.openPath(filePath);
+            console.log(`已打开文件: ${filePath}`);
+        } catch (error) {
+            console.error('打开文件失败:', error);
+            throw error;
+        }
+    });
+
+    // 显示文件所在文件夹
+    ipcMain.handle('showItemInFolder', async (event, filePath: string) => {
+        try {
+            shell.showItemInFolder(filePath);
+            console.log(`已显示文件所在文件夹: ${filePath}`);
+        } catch (error) {
+            console.error('显示文件夹失败:', error);
+            throw error;
         }
     });
 }

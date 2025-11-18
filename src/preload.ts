@@ -28,6 +28,12 @@ interface ElectronAPI {
     // === 窗口控制 ===
     /** 控制红绿灯（窗口控制按钮）的显示/隐藏 */
     setWindowButtonVisibility: (visible: boolean) => Promise<void>;
+    
+    // === 文件操作 ===
+    /** 使用系统默认应用打开文件 */
+    openFile: (filePath: string) => Promise<void>;
+    /** 显示文件所在文件夹 */
+    showItemInFolder: (filePath: string) => Promise<void>;
 }
 
 // 扩展Window接口，使electronAPI全局可用
@@ -53,6 +59,10 @@ const electronAPI: ElectronAPI = {
     
     // 窗口控制
     setWindowButtonVisibility: (visible: boolean) => ipcRenderer.invoke('setWindowButtonVisibility', visible) as Promise<void>,
+    
+    // 文件操作
+    openFile: (filePath: string) => ipcRenderer.invoke('openFile', filePath) as Promise<void>,
+    showItemInFolder: (filePath: string) => ipcRenderer.invoke('showItemInFolder', filePath) as Promise<void>,
 };
 
 // 暴露API给渲染进程

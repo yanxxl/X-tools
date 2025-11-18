@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Descriptions, Typography, Spin, Alert } from 'antd';
+import { Card, Descriptions, Typography, Spin, Alert, Button, Space } from 'antd';
 import { ToolWindow } from '../../types/toolWindow';
 import { FileInfo } from '../../types/api';
 import { formatFileSize, formatDate } from '../../utils/format';
 import { useAppContext } from '../../contexts/AppContext';
+import { FileOutlined, FolderOpenOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -15,6 +16,33 @@ const FileInfoPanel: React.FC = () => {
     const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    // 获取当前选中的路径
+    const targetPath = currentFile?.path || currentFolder;
+
+    // 处理打开文件
+    const handleOpenFile = async () => {
+        if (targetPath && window.electronAPI) {
+            try {
+                console.log('准备打开文件:', targetPath);
+                await window.electronAPI.openFile(targetPath);
+            } catch (error) {
+                console.error('打开文件失败:', error);
+            }
+        }
+    };
+
+    // 处理显示文件夹
+    const handleShowInFolder = async () => {
+        if (targetPath && window.electronAPI) {
+            try {
+                console.log('准备显示文件夹:', targetPath);
+                await window.electronAPI.showItemInFolder(targetPath);
+            } catch (error) {
+                console.error('显示文件夹失败:', error);
+            }
+        }
+    };
 
     // 获取文件信息
     useEffect(() => {
@@ -94,6 +122,24 @@ const FileInfoPanel: React.FC = () => {
             <Card 
                 size="small" 
                 title="文件信息"
+                extra={
+                    <Space>
+                        <Button 
+                            type="text" 
+                            size="small" 
+                            icon={<FileOutlined />}
+                            onClick={handleOpenFile}
+                            title="打开文件"
+                        />
+                        <Button 
+                            type="text" 
+                            size="small" 
+                            icon={<FolderOpenOutlined />}
+                            onClick={handleShowInFolder}
+                            title="在文件夹中显示"
+                        />
+                    </Space>
+                }
             >
                 <Descriptions size="small" column={1} labelStyle={{ width: '80px', textAlign: 'right' }}>
                     <Descriptions.Item label="名称">
