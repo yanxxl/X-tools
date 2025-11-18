@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Descriptions, Typography, Spin, Alert, Button, Space } from 'antd';
-import { ToolWindow } from '../../types/toolWindow';
-import { FileInfo } from '../../types/api';
+import { ToolWindow } from './toolWindow';
 import { formatFileSize, formatDate } from '../../utils/format';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileOutlined, FolderOpenOutlined } from '@ant-design/icons';
+import {FileInfo} from "../../types";
 
 const { Text } = Typography;
 

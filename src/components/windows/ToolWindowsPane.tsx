@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {Button, Tooltip} from 'antd';
 import {ToolOutlined} from '@ant-design/icons';
-import {ToolWindow} from '../../types/toolWindow';
+import {ToolWindow} from './toolWindow';
 import {toolWindowManager} from './toolWindowManager';
 import './ToolWindowsPane.css';
 

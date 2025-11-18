@@ -7,5 +7,21 @@ export interface FileNode {
   children?: FileNode[];
 }
 
-// 导出工具窗口相关类型
-export * from './toolWindow';
+// 最近文件夹类型
+export interface RecentFolder {
+    path: string;
+    name: string;
+    timestamp: number;
+}
+
+export interface FileInfo {
+    path: string;
+    name: string;
+    isDirectory: boolean;
+    size: number;
+    mtimeMs: number;
+    ctimeMs: number;
+    atimeMs: number;
+    ext: string;
+    childrenCount?: number;
+}

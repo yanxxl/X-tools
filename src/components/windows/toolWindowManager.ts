@@ -1,4 +1,4 @@
-import { ToolWindow, ToolWindowManager } from '../../types/toolWindow';
+import { ToolWindow, ToolWindowManager } from './toolWindow';
 
 /**
  * 工具窗口管理器实现
