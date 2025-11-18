@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Descriptions, Tag, Space, Typography, Spin, Alert, Divider } from 'antd';
-import { 
-    FileOutlined, 
-    FolderOutlined, 
-    InfoCircleOutlined,
-    ClockCircleOutlined,
-    DatabaseOutlined,
-    CalendarOutlined,
-    EyeOutlined
-} from '@ant-design/icons';
+import { Card, Descriptions, Typography, Spin, Alert } from 'antd';
 import { ToolWindow } from '../../types/toolWindow';
 import { FileInfo } from '../../types/api';
 import { formatFileSize, formatDate } from '../../utils/format';
-import { detectFileType, getExtension } from '../../utils/fileType';
 import { useAppContext } from '../../contexts/AppContext';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 /**
  * 文件基本信息工具窗口组件
@@ -64,34 +54,6 @@ const FileInfoPanel: React.FC = () => {
         fetchFileInfo();
     }, [currentFile, currentFolder]);
 
-    // 获取文件类型标签颜色
-    const getFileTypeColor = (isDirectory: boolean, ext: string) => {
-        if (isDirectory) return 'blue';
-        
-        const fileType = detectFileType(ext);
-        switch (fileType) {
-            case 'image': return 'green';
-            case 'video': return 'purple';
-            case 'pdf': return 'red';
-            case 'text': return 'orange';
-            default: return 'default';
-        }
-    };
-
-    // 获取文件类型文本
-    const getFileTypeText = (isDirectory: boolean, ext: string) => {
-        if (isDirectory) return '文件夹';
-        
-        const fileType = detectFileType(ext);
-        switch (fileType) {
-            case 'image': return '图片';
-            case 'video': return '视频';
-            case 'pdf': return 'PDF文档';
-            case 'text': return '文本文件';
-            default: return ext ? `${ext.toUpperCase()}文件` : '文件';
-        }
-    };
-
     // 渲染加载状态
     if (loading) {
         return (
@@ -119,9 +81,9 @@ const FileInfoPanel: React.FC = () => {
     if (!fileInfo) {
         return (
             <div style={{ padding: 16, textAlign: 'center' }}>
-                <InfoCircleOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
+                <div style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }}>📄</div>
                 <div>
-                    <Text type="secondary">请选择文件或文件夹查看详细信息</Text>
+                    <Text type="secondary">请选择文件或文件夹查看信息</Text>
                 </div>
             </div>
         );
@@ -131,100 +93,35 @@ const FileInfoPanel: React.FC = () => {
         <div style={{ padding: 8, height: '100%', overflow: 'auto' }}>
             <Card 
                 size="small" 
-                title={
-                    <Space>
-                        {fileInfo.isDirectory ? <FolderOutlined /> : <FileOutlined />}
-                        <span>文件信息</span>
-                    </Space>
-                }
-                style={{ marginBottom: 16 }}
+                title="文件信息"
             >
-                {/* 文件名和类型 */}
-                <div style={{ marginBottom: 16 }}>
-                    <Title level={5} style={{ marginBottom: 8, wordBreak: 'break-all' }}>
-                        {fileInfo.name}
-                    </Title>
-                    <Tag color={getFileTypeColor(fileInfo.isDirectory, fileInfo.ext)}>
-                        {getFileTypeText(fileInfo.isDirectory, fileInfo.ext)}
-                    </Tag>
-                </div>
+                <Descriptions size="small" column={1} labelStyle={{ width: '80px', textAlign: 'right' }}>
+                    <Descriptions.Item label="名称">
+                        <Text style={{ wordBreak: 'break-all' }}>{fileInfo.name}</Text>
+                    </Descriptions.Item>
 
-                <Divider style={{ margin: '12px 0' }} />
-
-                {/* 基本信息描述列表 */}
-                <Descriptions size="small" column={1}>
-                    <Descriptions.Item 
-                        label={<><FileOutlined style={{ marginRight: 4 }} />路径</>}
-                    >
+                    <Descriptions.Item label="路径">
                         <Text copyable style={{ fontSize: 12, wordBreak: 'break-all' }}>
                             {fileInfo.path}
                         </Text>
                     </Descriptions.Item>
 
-                    <Descriptions.Item 
-                        label={<><DatabaseOutlined style={{ marginRight: 4 }} />大小</>}
-                    >
+                    <Descriptions.Item label="大小">
                         {fileInfo.isDirectory 
                             ? `${fileInfo.childrenCount || 0} 个项目`
                             : formatFileSize(fileInfo.size)
                         }
                     </Descriptions.Item>
 
-                    <Descriptions.Item 
-                        label={<><CalendarOutlined style={{ marginRight: 4 }} />修改时间</>}
-                    >
+                    <Descriptions.Item label="修改时间">
                         {formatDate(fileInfo.mtimeMs)}
                     </Descriptions.Item>
 
-                    <Descriptions.Item 
-                        label={<><ClockCircleOutlined style={{ marginRight: 4 }} />创建时间</>}
-                    >
+                    <Descriptions.Item label="创建时间">
                         {formatDate(fileInfo.ctimeMs)}
                     </Descriptions.Item>
-
-                    <Descriptions.Item 
-                        label={<><EyeOutlined style={{ marginRight: 4 }} />访问时间</>}
-                    >
-                        {formatDate(fileInfo.atimeMs)}
-                    </Descriptions.Item>
-
-                    {!fileInfo.isDirectory && fileInfo.ext && (
-                        <Descriptions.Item label="扩展名">
-                            <Tag>{getExtension(fileInfo.name)}</Tag>
-                        </Descriptions.Item>
-                    )}
                 </Descriptions>
             </Card>
-
-            {/* 额外信息卡片 */}
-            {!fileInfo.isDirectory && (
-                <Card size="small" title="文件详情">
-                    <Descriptions size="small" column={1}>
-                        <Descriptions.Item label="文件类型">
-                            {detectFileType(fileInfo.ext)}
-                        </Descriptions.Item>
-                        <Descriptions.Item label="是否可读">
-                            <Tag color="green">是</Tag>
-                        </Descriptions.Item>
-                        <Descriptions.Item label="文件状态">
-                            <Tag color="blue">正常</Tag>
-                        </Descriptions.Item>
-                    </Descriptions>
-                </Card>
-            )}
-
-            {fileInfo.isDirectory && (
-                <Card size="small" title="文件夹详情">
-                    <Descriptions size="small" column={1}>
-                        <Descriptions.Item label="包含项目">
-                            {fileInfo.childrenCount || 0} 个
-                        </Descriptions.Item>
-                        <Descriptions.Item label="文件夹类型">
-                            <Tag color="blue">目录</Tag>
-                        </Descriptions.Item>
-                    </Descriptions>
-                </Card>
-            )}
         </div>
     );
 };
@@ -245,13 +142,13 @@ export const createFileInfoToolWindow = (): ToolWindow => {
     return new ToolWindow({
         id: 'file-info',
         name: '文件信息',
-        description: '显示选中文件或文件夹的详细基本信息',
+        description: '显示选中文件或文件夹的基本信息',
         isVisible: false,
         view: <FileInfoPanel />,
         icon: <FileInfoIcon />,
         shortcut: 'Ctrl+Shift+I',
-        defaultWidth: 350,
-        defaultHeight: 500
+        defaultWidth: 300,
+        defaultHeight: 400
     });
 };
 
