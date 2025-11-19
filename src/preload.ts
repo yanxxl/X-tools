@@ -34,6 +34,10 @@ interface ElectronAPI {
     openFile: (filePath: string) => Promise<void>;
     /** 显示文件所在文件夹 */
     showItemInFolder: (filePath: string) => Promise<void>;
+    /** 读取文件内容（用于文本文件） */
+    readFile: (filePath: string) => Promise<string>;
+    /** 打开外部链接 */
+    openExternal: (url: string) => Promise<void>;
 }
 
 // 扩展Window接口，使electronAPI全局可用
@@ -63,6 +67,8 @@ const electronAPI: ElectronAPI = {
     // 文件操作
     openFile: (filePath: string) => ipcRenderer.invoke('openFile', filePath) as Promise<void>,
     showItemInFolder: (filePath: string) => ipcRenderer.invoke('showItemInFolder', filePath) as Promise<void>,
+    readFile: (filePath: string) => ipcRenderer.invoke('readFile', filePath) as Promise<string>,
+    openExternal: (url: string) => ipcRenderer.invoke('openExternal', url) as Promise<void>,
 };
 
 // 暴露API给渲染进程

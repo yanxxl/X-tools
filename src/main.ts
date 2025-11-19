@@ -1,4 +1,5 @@
 import {app, BrowserWindow, screen, ipcMain, dialog, shell} from 'electron';
+import {promises as fs} from 'fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import {getFileTree, getFileInfo, getDirectoryChildren} from './utils/fileUtils';
@@ -70,7 +71,6 @@ function registerIpcHandlers() {
         if (mainWindow) {
             try {
                 mainWindow.setWindowButtonVisibility(visible);
-                console.log(`红绿灯位置已设置：${visible ? '显示' : '隐藏'}`);
             } catch (error) {
                 console.error('设置红绿灯位置失败:', error);
                 throw error;
@@ -85,7 +85,6 @@ function registerIpcHandlers() {
     ipcMain.handle('openFile', async (event, filePath: string) => {
         try {
             await shell.openPath(filePath);
-            console.log(`已打开文件: ${filePath}`);
         } catch (error) {
             console.error('打开文件失败:', error);
             throw error;
@@ -96,9 +95,29 @@ function registerIpcHandlers() {
     ipcMain.handle('showItemInFolder', async (event, filePath: string) => {
         try {
             shell.showItemInFolder(filePath);
-            console.log(`已显示文件所在文件夹: ${filePath}`);
         } catch (error) {
             console.error('显示文件夹失败:', error);
+            throw error;
+        }
+    });
+
+    // 读取文件内容
+    ipcMain.handle('readFile', async (event, filePath: string) => {
+        try {
+            const content = await fs.readFile(filePath, 'utf-8');
+            return content;
+        } catch (error) {
+            console.error('读取文件失败:', error);
+            throw error;
+        }
+    });
+
+    // 打开外部链接
+    ipcMain.handle('openExternal', async (event, url: string) => {
+        try {
+            await shell.openExternal(url);
+        } catch (error) {
+            console.error('打开外部链接失败:', error);
             throw error;
         }
     });
@@ -125,9 +144,6 @@ const createWindow = () => {
     // 根据屏幕分辨率获取窗口尺寸
     const {width, height} = getWindowSize();
 
-    console.log(`屏幕分辨率: ${screen.getPrimaryDisplay().workAreaSize.width}x${screen.getPrimaryDisplay().workAreaSize.height}`);
-    console.log(`设置窗口尺寸: ${width}x${height}`);
-
     // Create the browser window.
     const mainWindow = new BrowserWindow({
         width,
@@ -143,11 +159,6 @@ const createWindow = () => {
 
     // 保存窗口引用以便后续控制
     (global as any).mainWindow = mainWindow;
-
-    // 确保窗口完全显示后再设置红绿灯位置
-    mainWindow.once('ready-to-show', () => {
-        console.log('窗口已准备就绪，可以设置红绿灯位置');
-    });
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

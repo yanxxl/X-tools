@@ -21,5 +21,3 @@ root.render(
   </React.StrictMode>
 );
 
-console.log('React 应用已启动!');
-

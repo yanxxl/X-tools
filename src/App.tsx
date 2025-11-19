@@ -16,9 +16,7 @@ export type TreeNodeWithMeta = DataNode & {
 };
 
 const AppContent: React.FC = () => {
-    console.log('AppContent 组件开始渲染');
     const {currentFolder, setCurrentFolder, currentFile, setCurrentFile} = useAppContext();
-    console.log('Context 数据:', {currentFolder, currentFile});
 
     const [loading, setLoading] = useState(false);
     const [config, setConfig] = useState<Config | null>(null);
@@ -31,12 +29,10 @@ const AppContent: React.FC = () => {
 
     // 加载配置文件
     useEffect(() => {
-        console.log('config changed', config);
         setLoading(true);
         if (config == null) {
             if (window.electronAPI) {
                 window.electronAPI.loadConfig().then(async (loadedConfig) => {
-                    console.log('get config', loadedConfig);
                     setConfig(loadedConfig);
                 })
             } else {
@@ -49,10 +45,7 @@ const AppContent: React.FC = () => {
             setRecentFolders(config.recentFolders || []);
             // 修复：只有在recentFolders有内容时才设置currentFolder
             if (config.recentFolders && config.recentFolders.length > 0) {
-                console.log('设置currentFolder为:', config.recentFolders[0].path);
                 setCurrentFolder(config.recentFolders[0].path);
-            } else {
-                console.log('recentFolders为空，不设置currentFolder');
             }
             if (window.electronAPI) {
                 window.electronAPI.saveConfig(config);
@@ -62,7 +55,6 @@ const AppContent: React.FC = () => {
     }, [config]);
 
     useEffect(() => {
-        console.log('currentFolder changed', currentFolder);
         if (currentFolder) {
             setLoading(true);
             loadFolderTree().then(() => {
@@ -74,7 +66,6 @@ const AppContent: React.FC = () => {
             setExpandedKeys([]);
             setLoadedKeys(new Set());
         } else {
-            console.log('currentFolder为空，清空相关状态');
             setFileTree(null)
             setSelectedKeys([]);
             setCurrentFile(null);
@@ -91,12 +82,10 @@ const AppContent: React.FC = () => {
     }, [titleBarVisible]);
 
     async function loadFolderTree() {
-        console.log('loading folder tree, currentFolder:', currentFolder);
         if (currentFolder && window.electronAPI) {
             try {
                 setLoading(true);
                 const tree = await window.electronAPI.getFileTree(currentFolder);
-                console.log('获取到文件树:', tree);
                 setFileTree(tree);
             } catch (error) {
                 console.error('选择文件夹失败:', error);
@@ -104,8 +93,6 @@ const AppContent: React.FC = () => {
             } finally {
                 setLoading(false);
             }
-        } else {
-            console.log('没有文件夹可加载或window.electronAPI不存在');
         }
     }
 
@@ -390,7 +377,6 @@ const AppContent: React.FC = () => {
 };
 
 export const App: React.FC = () => {
-    console.log('App 组件开始渲染');
     return (
         <AppProvider>
             <AppContent/>

@@ -14,8 +14,6 @@ export const initializeToolWindows = () => {
     // 注册文件信息工具窗口
     toolWindowManager.register(fileInfoToolWindow);
     
-    console.log('文件信息工具窗口已注册');
-    
     return {
         fileInfoWindow: fileInfoToolWindow
     };

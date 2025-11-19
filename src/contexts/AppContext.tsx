@@ -21,8 +21,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [currentFile, setCurrentFile] = useState<any | null>(null);
 
-  console.log('AppProvider 渲染中，当前状态:', { currentFolder, currentFile });
-
   const value: AppContextType = {
     currentFolder,
     currentFile,

@@ -1,10 +1,8 @@
+import { RecentFolder } from '../types';
+
 // 配置类型定义
 export interface Config {
-    recentFolders: {
-        path: string;
-        name: string;
-        timestamp: number;
-    }[];
+    recentFolders: RecentFolder[];
 }
 
 export function updateFolderPath(config: Config, folderPath: string): Config {
@@ -21,17 +19,14 @@ export function updateFolderPath(config: Config, folderPath: string): Config {
     if (config.recentFolders.length > 10) {
         config.recentFolders = config.recentFolders.slice(0, 10);
     }
-    console.log('Recent folders updated', config);
     return {...config}
 }
 
 export function removeFolderPath(config: Config, folderPath: string): Config {
-    console.log(`Removing folder ${folderPath} from`, config);
     // 找到并更新recentFolders中的对应文件夹
     const folderIndex = config.recentFolders.findIndex(folder => folder.path === folderPath);
     if (folderIndex !== -1) {
         config.recentFolders.splice(folderIndex, 1);
     }
-    console.log(`Removed folder ${folderPath} from `, config);
     return {...config}
 }

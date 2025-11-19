@@ -24,7 +24,6 @@ const FileInfoPanel: React.FC = () => {
     const handleOpenFile = async () => {
         if (targetPath && window.electronAPI) {
             try {
-                console.log('准备打开文件:', targetPath);
                 await window.electronAPI.openFile(targetPath);
             } catch (error) {
                 console.error('打开文件失败:', error);
@@ -36,7 +35,6 @@ const FileInfoPanel: React.FC = () => {
     const handleShowInFolder = async () => {
         if (targetPath && window.electronAPI) {
             try {
-                console.log('准备显示文件夹:', targetPath);
                 await window.electronAPI.showItemInFolder(targetPath);
             } catch (error) {
                 console.error('显示文件夹失败:', error);
