@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {Card, Descriptions, Typography, Spin, Alert, Button, Space} from 'antd';
 import {ToolWindow} from './toolWindow';
-import {formatFileSize, formatDate} from '../../utils/format';
+import {formatFileSize, formatDate, countText, getSelectedText} from '../../utils/format';
 import {useAppContext} from '../../contexts/AppContext';
 import {FileOutlined, FolderOpenOutlined} from '@ant-design/icons';
 import {FileInfo} from "../../types";
@@ -16,6 +16,28 @@ const FileInfoPanel: React.FC = () => {
     const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedText, setSelectedText] = useState<string>('');
+    const [selectedTextCount, setSelectedTextCount] = useState<number>(0);
+
+    // 处理文本选择变化
+    const handleSelectionChange = () => {
+        const selectedText = getSelectedText();
+        setSelectedText(selectedText);
+        setSelectedTextCount(countText(selectedText));
+    };
+
+    // 监听文本选择事件
+    useEffect(() => {
+        // 监听鼠标选择事件
+        document.addEventListener('selectionchange', handleSelectionChange);
+        // 监听键盘选择事件
+        document.addEventListener('keyup', handleSelectionChange);
+
+        return () => {
+            document.removeEventListener('selectionchange', handleSelectionChange);
+            document.removeEventListener('keyup', handleSelectionChange);
+        };
+    }, []);
 
     // 获取当前选中的路径
     const targetPath = currentFile?.path || currentFolder;
@@ -163,6 +185,10 @@ const FileInfoPanel: React.FC = () => {
 
                 <Descriptions.Item label="创建时间">
                     {formatDate(fileInfo.ctimeMs)}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="选中字数">
+                    {selectedTextCount}
                 </Descriptions.Item>
             </Descriptions>
         </Card>
