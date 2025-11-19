@@ -41,7 +41,7 @@
     "@types/highlight.js": "^9.12.4",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
-    "antd": "^5.28.1",
+    "antd": "^5.29.1",
     "electron-squirrel-startup": "^1.0.1",
     "highlight.js": "^11.11.1",
     "marked": "^17.0.0",

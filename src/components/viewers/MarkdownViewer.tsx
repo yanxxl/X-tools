@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Spin, Empty, Menu, Layout, Typography, Button, Space, Splitter } from 'antd';
-import { FileTextOutlined, MenuOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons';
+import { FileTextOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { parseMarkdown, OutlineItem } from '../../utils/markdown';
 import 'highlight.js/styles/github.css';
@@ -19,7 +19,6 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
   const [content, setContent] = useState('');
   const [html, setHtml] = useState('');
   const [outline, setOutline] = useState<OutlineItem[]>([]);
-  const [outlineVisible, setOutlineVisible] = useState(true);
   const [viewMode, setViewMode] = useState<'rendered' | 'source'>('rendered');
   const [error, setError] = useState<string | null>(null);
 
@@ -245,34 +244,18 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
               原文
             </Button>
           </Button.Group>
-          
-          {outline.length > 0 && viewMode === 'rendered' && (
-            <div
-              style={{ 
-                cursor: 'pointer', 
-                padding: '4px 8px',
-                borderRadius: 4,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4
-              }}
-              onClick={() => setOutlineVisible(!outlineVisible)}
-            >
-              <MenuOutlined />
-              <span>大纲</span>
-            </div>
-          )}
         </Space>
       </div>
 
       <Layout>
-        {outlineVisible && outline.length > 0 && viewMode === 'rendered' ? (
+        {outline.length > 0 && viewMode === 'rendered' ? (
           <Splitter style={{ height: '100%' }}>
             <Splitter.Panel 
               defaultSize={250} 
-              min={150} 
-              max={500}
+              min={'10%'}
+              max={'50%'}
               style={{ background: '#fff' }}
+              collapsible
             >
               <Card 
                 title="文档大纲" 
