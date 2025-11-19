@@ -22,14 +22,25 @@ marked.setOptions({
 });
 
 // 生成锚点 ID
-function generateAnchorId(text: string): string {
-  return text
+function generateAnchorId(text: string, existingIds: Set<string> = new Set()): string {
+  let baseId = text
     .toLowerCase()
-    .replace(/[^\w\u4e00-\u9fa5\s-]/g, '') // 移除特殊字符，保留中文字符
-    .replace(/\s+/g, '-') // 空格替换为连字符
-    .replace(/-+/g, '-') // 多个连字符合并为一个
-    .replace(/^-|-$/g, '') // 移除开头和结尾的连字符
-    || 'heading'; // 如果结果为空，使用默认名称
+    .replace(/[^\w\u4e00-\u9fa5\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    || 'heading';
+
+  // 确保 ID 唯一性
+  let finalId = baseId;
+  let counter = 1;
+  while (existingIds.has(finalId)) {
+    finalId = `${baseId}-${counter}`;
+    counter++;
+  }
+  
+  existingIds.add(finalId);
+  return finalId;
 }
 
 // 解析 Markdown 并生成大纲
@@ -38,12 +49,13 @@ export function parseMarkdown(markdown: string): MarkdownParseResult {
   const renderer = new marked.Renderer();
   const outline: OutlineItem[] = [];
   const stack: OutlineItem[] = [];
+  const existingIds = new Set<string>();
 
   // 重写标题渲染方法
   renderer.heading = function(this: typeof marked.Renderer, { tokens, depth }: { tokens: any[], depth: number }) {
     const text = tokens.map((token: any) => token.text).join('');
     const level = depth;
-    const id = generateAnchorId(text);
+    const id = generateAnchorId(text, existingIds);
     const item: OutlineItem = {
       id,
       title: text,

@@ -125,33 +125,51 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
 
   // 处理大纲点击
   const handleOutlineClick = (item: OutlineItem) => {
-    // 添加延迟确保 DOM 已经渲染
+    // 增加延迟确保 DOM 已经完全渲染
     setTimeout(() => {
       const element = document.getElementById(item.id);
+      
       if (element) {
         element.scrollIntoView({
           behavior: 'smooth',
           block: 'start'
         });
-        // 添加一些视觉反馈
+        // 添加视觉反馈
         element.style.backgroundColor = '#fff3cd';
         setTimeout(() => {
           element.style.backgroundColor = '';
         }, 1000);
       }
-    }, 100);
+    }, 300);
   };
 
-  // 生成大纲菜单项
+  // 生成大纲菜单项 - 使用扁平化结构避免事件冒泡
   const generateMenuItems = (items: OutlineItem[]): MenuProps['items'] => {
-    return items.map(item => ({
-      key: item.id,
-      label: item.title,
-      onClick: () => handleOutlineClick(item),
-      children: item.children && item.children.length > 0 ? generateMenuItems(item.children) : undefined,
-      style: {
-        paddingLeft: `${(item.level - 1) * 16}px`
+    const flattenItems = (items: OutlineItem[], level = 0): OutlineItem[] => {
+      const result: OutlineItem[] = [];
+      for (const item of items) {
+        result.push({ ...item, level });
+        if (item.children && item.children.length > 0) {
+          result.push(...flattenItems(item.children, level + 1));
+        }
       }
+      return result;
+    };
+
+    return flattenItems(items).map(item => ({
+      key: `${item.id}-${item.level}`,
+      label: (
+        <div 
+          style={{ paddingLeft: `${item.level * 16}px` }}
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            handleOutlineClick(item);
+          }}
+        >
+          {item.title}
+        </div>
+      ),
     }));
   };
 
