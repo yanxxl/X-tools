@@ -8,6 +8,8 @@ import {ToolWindowsPane} from './components/windows/ToolWindowsPane';
 import {AppProvider, useAppContext} from './contexts/AppContext';
 import {truncateFolderName} from './utils/uiUtils';
 import {Config, removeFolderPath, updateFolderPath} from "./utils/config";
+import {Container} from "./components/common/Container";
+import {Center} from "./components/common/Center";
 
 // 为Tree组件定义的节点类型
 export type TreeNodeWithMeta = DataNode & {
@@ -98,7 +100,7 @@ const AppContent: React.FC = () => {
 
     // 懒加载子节点
     const onLoadData = async (node: TreeNodeWithMeta): Promise<void> => {
-        const { meta } = node;
+        const {meta} = node;
         if (!meta.isDirectory || loadedKeys.has(meta.id)) {
             return;
         }
@@ -106,7 +108,7 @@ const AppContent: React.FC = () => {
         try {
             setLoading(true);
             const children = await window.electronAPI!.getDirectoryChildren(meta.path);
-            
+
             // 更新文件树中的子节点
             const updateNodeChildren = (node: FileNode): FileNode => {
                 if (node.id === meta.id) {
@@ -173,7 +175,7 @@ const AppContent: React.FC = () => {
 
         // 检查是否有未加载的子节点
         const hasUnloadedChildren = (node as any).hasUnloadedChildren;
-        
+
         if (node.isDirectory && node.children && node.children.length > 0) {
             result.children = node.children.map(transformToTreeData);
         } else if (hasUnloadedChildren) {
@@ -330,7 +332,7 @@ const AppContent: React.FC = () => {
             )}
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
                 <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
-                    <div style={{height: '100%', backgroundColor: 'white', overflow: 'hidden', overflowY: 'scroll'}}>
+                    <Container style={{overflowY: 'auto',backgroundColor:"white"}}>
                         {fileTree ? (
                             <Tree<TreeNodeWithMeta>
                                 treeData={transformToTreeData(fileTree).children}
@@ -345,31 +347,31 @@ const AppContent: React.FC = () => {
                                 loadData={onLoadData}
                             />
                         ) : (
-                            <div style={{textAlign: 'center', color: '#999', padding: 20}}>
+                            <Center style={{color: 'gray'}}>
                                 请点击上方按钮选择文件夹
-                            </div>
+                            </Center>
                         )}
-                    </div>
+                    </Container>
                 </Splitter.Panel>
                 {/*panel 默认有个 padding 0 1，中间去掉，避免边缘一条白线。*/}
                 <Splitter.Panel style={{padding: 0}}>
-                    {currentFile ? (
-                        <div style={{height: '100%', padding: 0, background: '#f7f7f7'}}>
-                            <div style={{height: '100%'}}>
-                                <FileViewer
-                                    filePath={currentFile.path}
-                                    fileName={currentFile.name}
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999'}}>
-                            请在左侧选择一个文件以预览内容
-                        </div>
-                    )}
+                    <Container>
+                        {currentFile ? (
+                            <FileViewer
+                                filePath={currentFile.path}
+                                fileName={currentFile.name}
+                            />
+                        ) : (
+                            <Center style={{color: 'gray'}}>
+                                请在左侧选择一个文件以预览内容
+                            </Center>
+                        )}
+                    </Container>
                 </Splitter.Panel>
                 <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
-                    <ToolWindowsPane/>
+                    <Container>
+                        <ToolWindowsPane/>
+                    </Container>
                 </Splitter.Panel>
             </Splitter>
         </ConfigProvider>
