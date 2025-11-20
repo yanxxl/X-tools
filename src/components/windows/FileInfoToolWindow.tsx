@@ -40,9 +40,7 @@ const FileInfoPanel: React.FC = () => {
         const selection = getSelectedText();
         setSelectedText(selection);
         const count = countText(selection);
-        console.log(count)
-        const total = count.words + count.chineseChars
-        setSelectedTextCount(total > 0 ? `${total} 字` : '0 字');
+        setSelectedTextCount(count.chars > 0 ? `${count.chars} 字` : '0 字');
     };
 
     // 监听文本选择变化
@@ -228,26 +226,6 @@ const FileInfoPanel: React.FC = () => {
                 </Descriptions>
             </Card>
 
-            {/* 选中内容统计卡片 - 始终显示 */}
-            <Card
-                size="small"
-                title="选中内容"
-            >
-                <Descriptions size="small" column={1} labelStyle={{width: '80px', textAlign: 'right'}}>
-                    <Descriptions.Item label="选中字数">
-                        <Text strong style={{color: '#fa8c16'}}>{selectedTextCount}</Text>
-                    </Descriptions.Item>
-
-                    {selectedText && selectedTextCount !== '0 字' && (
-                        <Descriptions.Item label="选中内容">
-                            <Text style={{fontSize: 12, wordBreak: 'break-all'}} type="secondary">
-                                {truncateText(selectedText, 100)}
-                            </Text>
-                        </Descriptions.Item>
-                    )}
-                </Descriptions>
-            </Card>
-
             {/* 文件字数统计卡片 - 仅对文本文件显示 */}
             {!fileInfo.isDirectory && fileTextStats && (
                 <Card
@@ -269,6 +247,26 @@ const FileInfoPanel: React.FC = () => {
                     </Descriptions>
                 </Card>
             )}
+
+            {/* 选中内容统计卡片 - 始终显示 */}
+            <Card
+                size="small"
+                title="选中内容"
+            >
+                <Descriptions size="small" column={1} labelStyle={{width: '80px', textAlign: 'right'}}>
+                    <Descriptions.Item label="选中字数">
+                        <Text strong style={{color: '#fa8c16'}}>{selectedTextCount}</Text>
+                    </Descriptions.Item>
+
+                    {selectedText && selectedTextCount !== '0 字' && (
+                        <Descriptions.Item label="选中内容">
+                            <Text style={{fontSize: 12, wordBreak: 'break-all'}} type="secondary">
+                                {truncateText(selectedText, 100)}
+                            </Text>
+                        </Descriptions.Item>
+                    )}
+                </Descriptions>
+            </Card>
         </div>
     );
 };

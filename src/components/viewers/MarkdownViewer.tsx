@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Spin, Empty, Menu, Layout, Typography, Button, Space, Splitter } from 'antd';
-import { FileTextOutlined, CodeOutlined, EyeOutlined } from '@ant-design/icons';
+import { FileTextOutlined, CodeOutlined, EyeOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { parseMarkdown, OutlineItem } from '../../utils/markdown';
+import { storage, STORAGE_KEYS } from '../../utils/uiUtils';
 import 'highlight.js/styles/github.css';
 import './MarkdownViewer.css';
 
@@ -21,6 +22,23 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
   const [outline, setOutline] = useState<OutlineItem[]>([]);
   const [viewMode, setViewMode] = useState<'rendered' | 'source'>('rendered');
   const [error, setError] = useState<string | null>(null);
+  const [fontSize, setFontSize] = useState(() => {
+    // 从本地存储读取字体大小设置，默认为 16px
+    return storage.get(STORAGE_KEYS.MARKDOWN_FONT_SIZE, 16);
+  });
+
+  // 字体大小调整函数
+  const increaseFontSize = () => {
+    const newSize = Math.min(fontSize + 2, 48);
+    setFontSize(newSize);
+    storage.set(STORAGE_KEYS.MARKDOWN_FONT_SIZE, newSize);
+  };
+
+  const decreaseFontSize = () => {
+    const newSize = Math.max(fontSize - 2, 12);
+    setFontSize(newSize);
+    storage.set(STORAGE_KEYS.MARKDOWN_FONT_SIZE, newSize);
+  };
 
   // 加载 Markdown 文件内容
   useEffect(() => {
@@ -224,7 +242,36 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
           <Title level={5} style={{ margin: 0 }}>{fileName}</Title>
         </div>
         
-        <Space>
+        <Space size="large">
+          {/* 字体大小调整按钮 */}
+          <Button.Group>
+            <Button
+              icon={<MinusOutlined />}
+              onClick={decreaseFontSize}
+              size="small"
+              disabled={fontSize <= 12}
+              title="减小字体 (A-)"
+            />
+            <Button
+              size="small"
+              style={{ 
+                minWidth: '50px', 
+                cursor: 'default',
+                margin: '0 4px'
+              }}
+              disabled
+            >
+              {fontSize}px
+            </Button>
+            <Button
+              icon={<PlusOutlined />}
+              onClick={increaseFontSize}
+              size="small"
+              disabled={fontSize >= 48}
+              title="增大字体 (A+)"
+            />
+          </Button.Group>
+          
           {/* 视图模式切换按钮 */}
           <Button.Group>
             <Button
@@ -279,6 +326,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
               }}>
                 <div 
                   className="markdown-content"
+                  style={{ fontSize: `${fontSize}px` }}
                   dangerouslySetInnerHTML={{ __html: html }}
                   onClick={handleLinkClick}
                 />
@@ -294,11 +342,15 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
             {viewMode === 'rendered' ? (
               <div 
                 className="markdown-content"
+                style={{ fontSize: `${fontSize}px` }}
                 dangerouslySetInnerHTML={{ __html: html }}
                 onClick={handleLinkClick}
               />
             ) : (
-              <div className="markdown-source">
+              <div 
+                className="markdown-source"
+                style={{ fontSize: `${fontSize}px` }}
+              >
                 <pre><code>{content}</code></pre>
               </div>
             )}

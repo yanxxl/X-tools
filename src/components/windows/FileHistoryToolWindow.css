@@ -1,0 +1,145 @@
+.file-history-tool-window {
+  height: 100%;
+  overflow: hidden;
+}
+
+.history-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-card .ant-card-body {
+  flex: 1;
+  padding: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.history-icon {
+  color: #1890ff;
+}
+
+.history-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.history-item {
+  cursor: pointer;
+  padding: 8px 12px;
+  margin: 2px 0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.history-item:hover {
+  background-color: #f5f5f5;
+  border-color: #d9d9d9;
+}
+
+.history-item:active {
+  background-color: #e6f7ff;
+  border-color: #40a9ff;
+}
+
+.history-item-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-icon {
+  color: #1890ff;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.history-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 22px;
+}
+
+.time-icon {
+  color: #8c8c8c;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.access-time {
+  font-size: 11px;
+  color: #8c8c8c;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .history-card .ant-card-body {
+    padding: 8px;
+  }
+  
+  .history-item {
+    padding: 6px 8px;
+  }
+  
+  .file-name {
+    font-size: 12px;
+  }
+  
+  .access-time {
+    font-size: 10px;
+  }
+}
+
+/* 滚动条样式 */
+.history-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

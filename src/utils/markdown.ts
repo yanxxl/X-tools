@@ -23,7 +23,7 @@ marked.setOptions({
 
 // 生成锚点 ID
 function generateAnchorId(text: string, existingIds: Set<string> = new Set()): string {
-  let baseId = text
+  const baseId = text
     .toLowerCase()
     .replace(/[^\w\u4e00-\u9fa5\s-]/g, '')
     .replace(/\s+/g, '-')
