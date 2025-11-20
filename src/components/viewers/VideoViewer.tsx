@@ -36,6 +36,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [hasRestoredProgress, setHasRestoredProgress] = useState(false);
+  const [autoPlay, setAutoPlay] = useState(false);
 
   useEffect(() => {
     setIsReady(false);
@@ -88,6 +89,10 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
     setIsReady(true);
   };
 
+  const handlePlay = () => {
+    setAutoPlay(true);
+  };
+
   return (
     <div style={{position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%'}}>
       {!isReady && (
@@ -107,7 +112,8 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
         onLoadedMetadata={handleLoadedMetadata}
         onCanPlay={handleCanPlay}
         onTimeUpdate={handleTimeUpdate}
-        autoPlay
+        onPlay={handlePlay}
+        autoPlay={autoPlay}
       />
     </div>
   );
