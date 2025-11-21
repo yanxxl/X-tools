@@ -43,8 +43,9 @@
 .markdown-content h5,
 .markdown-content h6 {
     margin-top: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     padding-top: 8px;
+    padding-bottom: 8px;
     font-weight: 600;
     line-height: 1.25;
     color: #24292e;
@@ -267,3 +268,15 @@
     padding-left: 4px;
     padding-right: 4px;
 }
+
+/* 移除 CodeMirror 中标题的下划线 */
+.markdown-source .cm-content .ͼ1,
+.markdown-source .cm-content .ͼ2,
+.markdown-source .cm-content .ͼ3,
+.markdown-source .cm-content .ͼ4,
+.markdown-source .cm-content .ͼ5,
+.markdown-source .cm-content .ͼ6,
+.markdown-source .cm-content .ͼ7{
+    text-decoration: none;
+}
+
