@@ -254,3 +254,16 @@
         padding: 12px;
     }
 }
+
+/*改善 codemirror 样式*/
+.markdown-source .cm-theme-light{
+   height: 100%;
+}
+
+.markdown-source .cm-lineNumbers{
+    padding-left: 8px;
+}
+.markdown-source .cm-foldGutter{
+    padding-left: 4px;
+    padding-right: 4px;
+}

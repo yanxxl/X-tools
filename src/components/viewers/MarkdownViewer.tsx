@@ -1,5 +1,5 @@
-import React, {useState, useEffect} from 'react';
-import {Card, Spin, Empty, Menu, Layout, Typography, Button, Space, Splitter, Flex} from 'antd';
+import React, {useState, useEffect, useRef} from 'react';
+import {Card, Spin, Empty, Menu, Layout, Typography, Button, Space, Splitter, Flex, message} from 'antd';
 import {FileTextOutlined, CodeOutlined, EyeOutlined, PlusOutlined, MinusOutlined} from '@ant-design/icons';
 import type {MenuProps} from 'antd';
 import {parseMarkdown, OutlineItem} from '../../utils/markdown';
@@ -8,6 +8,10 @@ import 'highlight.js/styles/github.css';
 import './MarkdownViewer.css';
 import {Center} from "../common/Center";
 import {Container} from "../common/Container";
+import CodeMirror from '@uiw/react-codemirror';
+import { markdown } from '@codemirror/lang-markdown';
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 
 const {Title} = Typography;
 
@@ -27,6 +31,8 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         // 从本地存储读取字体大小设置，默认为 16px
         return storage.get(STORAGE_KEYS.MARKDOWN_FONT_SIZE, 16);
     });
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSavedContentRef = useRef<string>('');
 
     // 字体大小调整函数
     const increaseFontSize = () => {
@@ -58,6 +64,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                     if (response.ok) {
                         const fileContent = await response.text();
                         setContent(fileContent);
+                        lastSavedContentRef.current = fileContent;
                     } else {
                         throw new Error(`无法加载文件: ${response.statusText}`);
                     }
@@ -72,6 +79,42 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
 
         loadMarkdownFile();
     }, [filePath]);
+
+    // 自动保存功能
+    const saveFile = async (text: string) => {
+        if (window.electronAPI && text !== lastSavedContentRef.current) {
+            try {
+                await window.electronAPI.writeFile(filePath, text);
+                lastSavedContentRef.current = text;
+                message.success('文件已自动保存');
+            } catch (err) {
+                console.error('保存文件失败:', err);
+                message.error('文件保存失败');
+            }
+        }
+    };
+
+    // 处理编辑器内容变化
+    const handleEditorChange = (value: string) => {
+        setContent(value);
+        
+        // 防抖处理，3秒后自动保存
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        saveTimeoutRef.current = setTimeout(() => {
+            saveFile(value);
+        }, 3000);
+    };
+
+    // 组件卸载时清理定时器
+    useEffect(() => {
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // 解析 Markdown 内容
     useEffect(() => {
@@ -308,9 +351,26 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                             ) : (
                                 <div
                                     className="markdown-source"
-                                    style={{fontSize: `${fontSize}px`}}
+                                    style={{height: '100%', fontSize: `${fontSize}px`}}
                                 >
-                                    <pre><code>{content}</code></pre>
+                                    <CodeMirror
+                                        value={content}
+                                        height="100%"
+                                        theme="light"
+                                        extensions={[
+                                            markdown(),
+                                            EditorView.updateListener.of((update) => {
+                                                if (update.docChanged) {
+                                                    handleEditorChange(update.state.doc.toString());
+                                                }
+                                            }),
+                                            EditorView.lineWrapping,
+                                            EditorState.readOnly.of(false)
+                                        ]}
+                                        onChange={(value) => {
+                                            handleEditorChange(value);
+                                        }}
+                                    />
                                 </div>
                             )}
                         </div>

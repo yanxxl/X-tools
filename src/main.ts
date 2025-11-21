@@ -112,6 +112,17 @@ function registerIpcHandlers() {
         }
     });
 
+    // 写入文件内容
+    ipcMain.handle('writeFile', async (event, filePath: string, content: string) => {
+        try {
+            await fs.writeFile(filePath, content, 'utf-8');
+            return true;
+        } catch (error) {
+            console.error('写入文件失败:', error);
+            throw error;
+        }
+    });
+
     // 打开外部链接
     ipcMain.handle('openExternal', async (event, url: string) => {
         try {
