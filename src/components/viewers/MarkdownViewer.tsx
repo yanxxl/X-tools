@@ -118,16 +118,20 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
 
     // 解析 Markdown 内容
     useEffect(() => {
-        if (content) {
-            try {
-                const result = parseMarkdown(content);
-                setHtml(result.html);
-                setOutline(result.outline);
-            } catch (err) {
-                console.error('解析 Markdown 失败:', err);
-                setError('解析 Markdown 内容失败');
+        const parseContent = async () => {
+            if (content) {
+                try {
+                    const result = await parseMarkdown(content);
+                    setHtml(result.html);
+                    setOutline(result.outline);
+                } catch (err) {
+                    console.error('解析 Markdown 失败:', err);
+                    setError('解析 Markdown 内容失败');
+                }
             }
-        }
+        };
+        
+        parseContent();
     }, [content]);
 
     // 处理链接点击
