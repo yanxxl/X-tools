@@ -7,6 +7,8 @@ export const Center: React.FC<{
     return (
         <div style={{
             display: 'flex',
+            flexDirection: 'column',
+            gap: '32px',
             justifyContent: 'center',
             alignItems: 'center',
             width: '100%',
