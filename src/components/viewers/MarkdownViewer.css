@@ -270,13 +270,9 @@
 }
 
 /* 移除 CodeMirror 中标题的下划线 */
-.markdown-source .cm-content .ͼ1,
-.markdown-source .cm-content .ͼ2,
-.markdown-source .cm-content .ͼ3,
-.markdown-source .cm-content .ͼ4,
-.markdown-source .cm-content .ͼ5,
-.markdown-source .cm-content .ͼ6,
 .markdown-source .cm-content .ͼ7{
     text-decoration: none;
+    padding-top: 8px;
+    padding-bottom: 8px;
 }
 

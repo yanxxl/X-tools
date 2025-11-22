@@ -9,9 +9,9 @@ import './MarkdownViewer.css';
 import {Center} from "../common/Center";
 import {Container} from "../common/Container";
 import CodeMirror from '@uiw/react-codemirror';
-import { markdown } from '@codemirror/lang-markdown';
-import { EditorState } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
+import {markdown} from '@codemirror/lang-markdown';
+import {EditorState} from '@codemirror/state';
+import {EditorView} from '@codemirror/view';
 
 const {Title} = Typography;
 
@@ -97,7 +97,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
     // 处理编辑器内容变化
     const handleEditorChange = (value: string) => {
         setContent(value);
-        
+
         // 防抖处理，3秒后自动保存
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
@@ -130,7 +130,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                 }
             }
         };
-        
+
         parseContent();
     }, [content]);
 
@@ -192,19 +192,30 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
     const handleOutlineClick = (item: OutlineItem) => {
         // 增加延迟确保 DOM 已经完全渲染
         setTimeout(() => {
-            const element = document.getElementById(item.id);
+            let element = document.getElementById(item.id);
 
-            if (element) {
-                element.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-                // 添加视觉反馈
-                element.style.backgroundColor = '#fff3cd';
-                setTimeout(() => {
-                    element.style.backgroundColor = '';
-                }, 1000);
+            // 如果没有，尝试获取编辑模式下的元素
+            if (!element) {
+                const all = document.querySelectorAll('.cm-scroller .ͼ7');
+                const targetList = Array.from(all).filter(el => el.textContent?.trim() === item.title.trim());
+                const idLast = Number(item.id.split('-').pop()); // id 的最后一个元素转数字
+                const i = targetList.length == 1 ? 0 : isNaN(idLast) ? 0 : Number(idLast);
+                // console.log('filter:', item, targetList, i);
+                element = targetList[i] as HTMLElement;
             }
+
+            if (!element) return;
+
+            // console.log('element', element);
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+            // 添加视觉反馈
+            element.style.backgroundColor = '#fff3cd';
+            setTimeout(() => {
+                element.style.backgroundColor = '';
+            }, 1500);
         }, 300);
     };
 
@@ -339,12 +350,11 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                         <Menu
                             mode="inline"
                             items={menuItems}
-                            disabled={viewMode === 'source'}
                         />
                     </Splitter.Panel>
 
                     <Splitter.Panel style={{background: '#fff'}}>
-                        <div className={'markdown-content-container'} style={{height: '100%'}}>
+                        <div className={'markdown-container'} style={{height: '100%'}}>
                             {viewMode === 'rendered' ? (
                                 <div
                                     className="markdown-content"
