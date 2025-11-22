@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Button, ConfigProvider, Dropdown, Flex, message, Splitter, Tree} from "antd";
 import {DeleteOutlined, DownOutlined, EyeInvisibleOutlined, FolderOpenOutlined, PlusOutlined} from '@ant-design/icons';
 import type {DataNode, TreeProps} from 'antd/es/tree';
@@ -217,6 +217,7 @@ const AppContent: React.FC = () => {
                 components: {
                     Splitter: {
                         splitBarDraggableSize: 0,
+                        splitBarSize: 4,
                     },
                 },
             }}

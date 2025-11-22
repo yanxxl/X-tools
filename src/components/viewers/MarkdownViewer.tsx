@@ -6,6 +6,8 @@ import {OutlineItem, parseMarkdown} from '../../utils/markdown';
 import {storage, STORAGE_KEYS} from '../../utils/uiUtils';
 import 'highlight.js/styles/github.css';
 import './MarkdownViewer.css';
+// 导入KaTeX样式，这对于数学公式的正确渲染是必需的
+import 'katex/dist/katex.min.css';
 import {Center} from "../common/Center";
 import {Container} from "../common/Container";
 import CodeMirror from '@uiw/react-codemirror';
@@ -199,6 +201,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
             if (viewMode === 'rendered') {
                 const element = document.getElementById(item.id);
                 if (element) {
+                    console.log('element', [element]);
                     element.scrollIntoView({behavior: 'smooth', block: 'start'});
                     // 添加临时高亮效果
                     element.classList.add('outline-highlight-animation');
