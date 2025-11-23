@@ -1,10 +1,12 @@
-import {app, BrowserWindow, screen, ipcMain, dialog, shell} from 'electron';
+import {app, BrowserWindow, dialog, ipcMain, screen, shell} from 'electron';
 import {promises as fs} from 'fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import {getFileTree, getFileInfo, getDirectoryChildren} from './utils/fileUtils';
+import {getDirectoryChildren, getFileInfo, getFileTree} from './utils/fileUtils';
 import {loadConfig, saveConfig} from './utils/configManager';
 import {Config} from "./utils/config";
+import chardet from 'chardet';
+import iconv from 'iconv-lite';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -104,7 +106,27 @@ function registerIpcHandlers() {
     // 读取文件内容
     ipcMain.handle('readFile', async (event, filePath: string) => {
         try {
-            const content = await fs.readFile(filePath, 'utf-8');
+            // 先以buffer形式读取文件
+            const buffer = await fs.readFile(filePath);
+            // 检测文件编码
+            const detectedEncoding = chardet.detect(buffer);
+            console.log(`检测到文件编码: ${detectedEncoding || 'unknown'}，路径: ${filePath}`);
+
+            // 如果检测到编码，则使用iconv-lite转换为utf-8
+            // 如果无法检测到编码或编码不支持，尝试使用utf-8（可能会出现乱码）
+            let content: string;
+            if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
+                content = iconv.decode(buffer, detectedEncoding);
+            } else {
+                // 尝试直接使用utf-8（可能会抛出错误）
+                try {
+                    content = buffer.toString('utf-8');
+                } catch (e) {
+                    // 如果utf-8解码失败，尝试使用gbk作为备选
+                    content = iconv.decode(buffer, 'gbk');
+                }
+            }
+            
             return content;
         } catch (error) {
             console.error('读取文件失败:', error);
@@ -115,7 +137,36 @@ function registerIpcHandlers() {
     // 写入文件内容
     ipcMain.handle('writeFile', async (event, filePath: string, content: string) => {
         try {
-            await fs.writeFile(filePath, content, 'utf-8');
+            // 首先检测文件是否存在并获取其编码
+            let fileEncoding = 'utf-8'; // 默认使用utf-8
+
+            try {
+                // 检查文件是否存在
+                await fs.access(filePath);
+
+                // 文件存在，读取文件以检测编码
+                const buffer = await fs.readFile(filePath, {encoding: null});
+                const detectedEncoding = chardet.detect(buffer);
+
+                if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
+                    fileEncoding = detectedEncoding;
+                    console.log(`检测到文件编码: ${fileEncoding}，路径: ${filePath}`);
+                }
+            } catch (error) {
+                // 文件不存在或读取失败，使用默认编码
+                console.log(`文件不存在或无法读取，将使用默认编码: ${fileEncoding}，路径: ${filePath}`);
+            }
+
+            // 根据文件编码写入内容
+            if (fileEncoding === 'utf-8') {
+                // UTF-8编码直接写入
+                await fs.writeFile(filePath, content, 'utf-8');
+            } else {
+                // 其他编码需要使用iconv-lite进行转换后写入
+                const encodedContent = iconv.encode(content, fileEncoding);
+                await fs.writeFile(filePath, encodedContent);
+            }
+            
             return true;
         } catch (error) {
             console.error('写入文件失败:', error);
