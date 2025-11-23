@@ -286,6 +286,9 @@
 
 @keyframes outline-highlight-fade {
     0% {
+        background-color: transparent;
+    }
+    50% {
         background-color: orange;
     }
     100% {

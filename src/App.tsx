@@ -1,8 +1,22 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {Button, ConfigProvider, Dropdown, Flex, message, Splitter, Tree} from "antd";
-import {DeleteOutlined, DownOutlined, EyeInvisibleOutlined, FolderOpenOutlined, PlusOutlined, SyncOutlined} from '@ant-design/icons';
+import {
+    DeleteOutlined,
+    DownOutlined,
+    EyeInvisibleOutlined,
+    FileImageOutlined,
+    FileOutlined,
+    FilePdfOutlined,
+    FileTextOutlined,
+    FolderOpenOutlined,
+    FolderOutlined,
+    PlayCircleOutlined,
+    PlusOutlined,
+    SyncOutlined
+} from '@ant-design/icons';
 import type {DataNode, TreeProps} from 'antd/es/tree';
 import {FileNode, RecentFolder} from './types';
+import {detectFileType} from './utils/fileType';
 import {FileViewer} from './components/viewers/FileViewer';
 import {ToolWindowsPane} from './components/windows/ToolWindowsPane';
 import {AppProvider, useAppContext} from './contexts/AppContext';
@@ -160,6 +174,26 @@ const AppContent: React.FC = () => {
         }
     };
 
+    // 根据文件类型获取对应图标
+    const getFileIcon = useCallback((node: FileNode) => {
+        if (node.isDirectory) {
+            return <FolderOutlined style={{marginRight: 8}}/>;
+        }
+        const fileType = detectFileType(node.name);
+        switch (fileType) {
+            case 'text':
+                return <FileTextOutlined style={{marginRight: 8}}/>;
+            case 'image':
+                return <FileImageOutlined style={{marginRight: 8}}/>;
+            case 'video':
+                return <PlayCircleOutlined style={{marginRight: 8}}/>;
+            case 'pdf':
+                return <FilePdfOutlined style={{marginRight: 8}}/>;
+            default:
+                return <FileOutlined style={{marginRight: 8}}/>;
+        }
+    }, []);
+
     // 转换文件节点为Tree组件需要的数据格式
     const transformToTreeData = (node: FileNode): TreeNodeWithMeta => {
         const result: TreeNodeWithMeta = {
@@ -191,6 +225,7 @@ const AppContent: React.FC = () => {
                     }}
                     style={{cursor: node.isDirectory ? 'pointer' : 'default'}}
                 >
+                    {getFileIcon(node)}
                     {node.name}
                 </div>
             ),
