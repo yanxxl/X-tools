@@ -256,7 +256,7 @@ const FileInfoPanel: React.FC = () => {
                 size="small"
                 title="选中内容"
                 extra={
-                    selectedText && <TextToSpeech text={selectedText}/>
+                    <TextToSpeech text={selectedText}/>
                 }
             >
                 <Descriptions size="small" column={1} labelStyle={{width: '80px', textAlign: 'right'}}>
