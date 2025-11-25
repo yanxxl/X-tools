@@ -14,6 +14,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import {markdown} from '@codemirror/lang-markdown';
 import {EditorState} from '@codemirror/state';
 import {EditorView} from '@codemirror/view';
+import TextToSpeech from "../common/TextToSpeech";
 
 const {Title} = Typography;
 
@@ -403,6 +404,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                 </div>
 
                 <Space size="large">
+
+                    <TextToSpeech cssSelector={'.markdown-content'}/>
+
                     {/* 字体大小调整按钮 */}
                     <Button.Group>
                         <Button

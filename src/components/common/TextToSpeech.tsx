@@ -1,11 +1,9 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {Button, Space, Tooltip} from 'antd';
-import {PauseCircleOutlined, SoundOutlined, StopOutlined} from '@ant-design/icons';
+import {LeftOutlined, PauseCircleOutlined, PlayCircleOutlined, RightOutlined} from '@ant-design/icons';
 
 interface TextToSpeechProps {
-    text: string; // 要播放的文本
-    onPlayStateChange?: (isPlaying: boolean) => void; // 播放状态变化回调
-    className?: string; // 自定义类名
+    cssSelector: string; // CSS选择符参数
 }
 
 /**
@@ -15,12 +13,12 @@ interface TextToSpeechProps {
  */
 const cleanTextForSpeech = (text: string): string => {
     if (!text) return '';
-    
+
     let cleanedText = text;
-    
+
     // 1. 移除HTML标签
     cleanedText = cleanedText.replace(/<[^>]*>/g, '');
-    
+
     // 2. 移除Markdown语法
     cleanedText = cleanedText
         // 移除标题标记
@@ -39,7 +37,7 @@ const cleanTextForSpeech = (text: string): string => {
         // 移除代码块标记
         .replace(/```[\s\S]*?```/g, '')
         .replace(/`([^`]+)`/g, '$1');
-    
+
     // 3. 移除特殊符号
     cleanedText = cleanedText
         // 移除换行符和制表符，替换为空格
@@ -47,154 +45,247 @@ const cleanTextForSpeech = (text: string): string => {
         // 移除多余的空格
         .replace(/\s+/g, ' ')
         // 移除控制字符
+        // eslint-disable-next-line no-control-regex
         .replace(/[\x00-\x1F\x7F]/g, '')
         // 移除不必要的标点符号（保留基本标点）
         .replace(/[^\u4e00-\u9fa5a-zA-Z0-9，。！？：；、,.!?;: ]/g, '')
         // 移除连续的标点符号
         .replace(/([，。！？：；、,.!?;:]){2,}/g, '$1');
-    
+
     // 4. 清理首尾空格
     return cleanedText.trim();
 };
 
 /**
  * 语音播放组件
- * 接收文本作为参数，提供播放、暂停和停止功能
+ * 接收CSS选择符参数，实现语音朗读功能
  */
-const TextToSpeech: React.FC<TextToSpeechProps> = ({
-                                                       text,
-                                                       onPlayStateChange,
-                                                       className
-                                                   }) => {
-    // 状态管理
+const TextToSpeech: React.FC<TextToSpeechProps> = ({cssSelector}) => {
+    // 状态管理：使用更清晰的状态设计
     const [isPlaying, setIsPlaying] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [selectedText, setSelectedText] = useState('');
 
-    // 引用管理
     const synthRef = useRef<SpeechSynthesis | null>(null);
     const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-    
-    // 清理后的文本
-    const cleanedText = cleanTextForSpeech(text);
+    const elementsRef = useRef<HTMLElement[]>([]);
+    const originalStylesRef = useRef<Map<HTMLElement, string>>(new Map());
+    const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const selectedTextRef = useRef(selectedText);// 使用 ref 保存最新的 selectedText 值，解决闭包问题
 
-    // 初始化语音合成实例
+    // 状态映射到UI
+    const totalCount = elementsRef.current.length;
+    const canPlayPrevious = totalCount > 0 && currentIndex > 0;
+    const canPlayNext = totalCount > 0 && currentIndex < totalCount - 1;
+
+    console.log('status:', isPlaying, currentIndex, totalCount, selectedText);
+
+    // 处理文本选中
+    const handlerSelectedText = () => {
+        const selected = window.getSelection()?.toString().trim() || '';
+        const currentSelectedText = selectedTextRef.current;
+
+        console.log('handlerSelectedText', selected, ' --- ', currentSelectedText);
+        setSelectedText(selected);
+
+        // 如果选中文本有变化，停止当前播放，让用户可以点击播放选中文本
+        if (selected !== currentSelectedText) {
+            console.log('重置播放状态 selected', selected);
+            synthRef.current?.cancel();
+            setIsPlaying(false)
+        }
+    }
+
+
+    /**
+     * 恢复原始样式
+     */
+    const restoreOriginalStyles = () => {
+        originalStylesRef.current.forEach((style, element) => {
+            element.style.backgroundColor = style;
+        });
+        originalStylesRef.current.clear();
+    };
+
+    /**
+     * 高亮当前元素
+     * @param index 当前元素索引
+     */
+    const highlightCurrentElement = (index: number) => {
+        // 恢复之前的样式
+        restoreOriginalStyles();
+
+        if (index >= 0 && index < elementsRef.current.length) {
+            const element = elementsRef.current[index];
+            // 保存原始样式
+            originalStylesRef.current.set(element, element.style.backgroundColor);
+            // 设置高亮样式
+            element.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
+        }
+    };
+
+    /**
+     * 根据CSS选择符获取元素列表
+     * @returns 元素列表
+     */
+    const getElementsFromSelector = (): HTMLElement[] => {
+        if (typeof window === 'undefined') return [];
+
+        const elements = document.querySelectorAll<HTMLElement>(cssSelector);
+        if (elements.length === 0) return [];
+
+        // 如果只有一个元素，使用其直接子元素作为列表
+        if (elements.length === 1) {
+            const element = elements[0];
+            const children = Array.from(element.children) as HTMLElement[];
+            return children.length > 0 ? children : [element];
+        }
+
+        return Array.from(elements);
+    };
+
+    // 初始化语音合成实例和轮询
     useEffect(() => {
         synthRef.current = window.speechSynthesis;
 
+        // 启动选中文本轮询
+        pollIntervalRef.current = setInterval(() => {
+            handlerSelectedText()
+        }, 1000);
+
         // 清理函数
         return () => {
-            if (utteranceRef.current) {
-                synthRef.current?.cancel();
-                utteranceRef.current = null;
-            }
+            synthRef.current?.cancel();
+            clearInterval(pollIntervalRef.current || 0);
+            restoreOriginalStyles();
         };
     }, []);
 
-    // 监听语音合成结束事件
+    // 当 selectedText 状态变化时，更新 ref 的值
     useEffect(() => {
-        const handleSpeechEnd = () => {
-            setIsPlaying(false);
-            setIsPaused(false);
-            utteranceRef.current = null;
-            onPlayStateChange?.(false);
-        };
+        // console.log('selected text change')
+        selectedTextRef.current = selectedText;
+    }, [selectedText]);
 
-        if (utteranceRef.current) {
-            utteranceRef.current.onend = handleSpeechEnd;
-        }
-
-        return () => {
-            if (utteranceRef.current) {
-                utteranceRef.current.onend = null;
-            }
-        };
-    }, [utteranceRef.current, onPlayStateChange]);
-
-    // 当文本变化时，重置播放状态
     useEffect(() => {
-        if (cleanedText !== utteranceRef.current?.text) {
-            synthRef.current?.cancel();
-            setIsPlaying(false);
-            setIsPaused(false);
-            utteranceRef.current = null;
-            onPlayStateChange?.(false);
-        }
-    }, [cleanedText, onPlayStateChange]);
-
-    // 播放/暂停功能
-    const togglePlay = () => {
-        if (!cleanedText) return;
-
-        const synth = synthRef.current;
-        if (!synth) return;
-
-        if (isPlaying) {
-            // 暂停播放
-            synth.pause();
-            setIsPlaying(false);
-            setIsPaused(true);
-            onPlayStateChange?.(false);
-        } else {
-            if (isPaused && utteranceRef.current) {
-                // 继续播放
-                synth.resume();
-                setIsPlaying(true);
-                setIsPaused(false);
-                onPlayStateChange?.(true);
-            } else {
-                // 开始新的播放
-                synth.cancel();
-
-                const utterance = new SpeechSynthesisUtterance(cleanedText);
-                utterance.lang = 'zh-CN'; // 设置中文语言
-                utterance.rate = 1; // 语速
-                utterance.pitch = 1; // 音调
-                utterance.volume = 1; // 音量
-
-                utteranceRef.current = utterance;
-                synth.speak(utterance);
-
-                setIsPlaying(true);
-                setIsPaused(false);
-                onPlayStateChange?.(true);
-            }
-        }
-    };
-
-    // 停止播放
-    const stopPlay = () => {
+        console.log('index changed', currentIndex);
         synthRef.current?.cancel();
-        setIsPlaying(false);
-        setIsPaused(false);
-        utteranceRef.current = null;
-        onPlayStateChange?.(false);
-    };
+        // 当页面初始化好时，只有一条，这就不需要高亮了。放在前面，是未来不播放的时候，也可以通过这里来切换
+        if (elementsRef.current.length > 1) {
+            const element = elementsRef.current[currentIndex];
+            element.scrollIntoView({behavior: 'smooth', block: 'center'});
+            highlightCurrentElement(currentIndex);
+        }
+    }, [currentIndex]);
+
+    useEffect(() => {
+        // 初始化列表，有时候页面会重绘，每次更新一下列表的好
+        elementsRef.current = getElementsFromSelector()
+        // 超了的时候，回到第一条
+        if (currentIndex >= elementsRef.current.length) {
+            synthRef.current?.cancel();
+            setIsPlaying(false)
+            setCurrentIndex(0);
+            return;
+        }
+
+        console.log('change', isPlaying, currentIndex, totalCount, selectedText);
+
+        if (!isPlaying) {
+            if (synthRef.current.speaking) synthRef.current?.pause();
+            return;
+        }
+
+        // 当播放时被暂停，恢复播放。这两个状态挺耐人寻味。
+        if (synthRef.current.paused && synthRef.current.speaking) {
+            synthRef.current.resume();
+            return;
+        }
+
+        let text = selectedText;
+        if (!text) {
+            text = elementsRef.current[currentIndex].textContent || '';
+        }
+
+        if (!text) {
+            setCurrentIndex(currentIndex + 1)
+            return;
+        }
+
+        // 创建新的语音实例
+        const utterance = new SpeechSynthesisUtterance(cleanTextForSpeech(text));
+        utterance.lang = 'zh-CN';
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        utterance.onend = () => {
+            console.log('utterance end', currentIndex, utterance);
+            // 朗读完毕，如果是选中文本，就停止播放；否则继续下一个
+            if (selectedText) {
+                setIsPlaying(false);
+            } else {
+                // 使用函数式更新获取最新的currentIndex，避免闭包问题
+                setCurrentIndex(prevIndex => prevIndex + 1);
+            }
+        };
+
+        utterance.onerror = (e) => {
+            console.log('utterance error', currentIndex, utterance, e);
+        };
+
+        utteranceRef.current = utterance;
+
+        synthRef.current?.cancel();
+        // 延后开始播放，否则，cancel 引发的异常会打断当前播放。
+        setTimeout(() => {
+            synthRef.current?.speak(utterance);
+        }, 150)
+    }, [isPlaying, currentIndex]);
+
 
     return (
-        <Space size="small" className={className}>
-            <Tooltip title={isPlaying ? '暂停' : isPaused ? '继续' : '播放'}>
+        <Space size="small">
+            <Tooltip title={isPlaying ? '暂停' : '播放'}>
                 <Button
                     type="primary"
                     size="small"
-                    icon={isPlaying ? <PauseCircleOutlined/> : <SoundOutlined/>}
-                    onClick={togglePlay}
-                    disabled={!cleanedText}
+                    icon={isPlaying ? <PauseCircleOutlined/> : <PlayCircleOutlined/>}
+                    onClick={() => setIsPlaying(!isPlaying)}
                 >
-                    {isPlaying ? '暂停' : isPaused ? '继续' : '播放'}
+                    {isPlaying ? '暂停' : '播放'}
                 </Button>
             </Tooltip>
 
-            {(isPlaying || isPaused) && (
-                <Tooltip title="停止">
+            {selectedText
+                ? <span style={{backgroundColor: 'lightgray', padding: '4px'}}>{selectedText.substring(0, 2)}...</span>
+                : totalCount > 1 && (<>
+                {/* 上一个按钮 */}
+                <Tooltip title="上一个">
                     <Button
                         size="small"
-                        icon={<StopOutlined/>}
-                        onClick={stopPlay}
-                    >
-                        停止
-                    </Button>
+                        icon={<LeftOutlined/>}
+                        onClick={() => setCurrentIndex(currentIndex - 1)}
+                        disabled={!canPlayPrevious}
+                    />
                 </Tooltip>
-            )}
+
+                {/* 当前播放信息 */}
+                <span style={{fontSize: '12px', color: '#666', minWidth: '80px', textAlign: 'center'}}>
+                        {currentIndex + 1} / {totalCount}
+                </span>
+
+                {/* 下一个按钮 */}
+                <Tooltip title="下一个">
+                    <Button
+                        size="small"
+                        icon={<RightOutlined/>}
+                        onClick={() => setCurrentIndex(currentIndex + 1)}
+                        disabled={!canPlayNext}
+                    />
+                </Tooltip>
+            </>)
+            }
         </Space>
     );
 };
