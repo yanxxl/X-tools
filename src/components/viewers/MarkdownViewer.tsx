@@ -15,6 +15,8 @@ import {markdown} from '@codemirror/lang-markdown';
 import {EditorState} from '@codemirror/state';
 import {EditorView} from '@codemirror/view';
 import TextToSpeech from "../common/TextToSpeech";
+import PageSearch from "../common/PageSearch";
+import "../common/PageSearch.css";
 
 const {Title} = Typography;
 
@@ -438,7 +440,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                 </div>
 
                 <Space size="large">
-
+                    <PageSearch cssSelector={viewMode === 'rendered' ? '.markdown-content' : '.markdown-source .cm-line'}/>
                     <TextToSpeech cssSelector={'.markdown-content,.markdown-source .cm-line'}/>
 
                     {/* 字体大小调整按钮 */}
