@@ -2,7 +2,7 @@ import {app, BrowserWindow, dialog, ipcMain, screen, shell} from 'electron';
 import {promises as fs} from 'fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import {getDirectoryChildren, getFileInfo, getFileTree} from './utils/fileUtils';
+import {getDirectoryChildren, getFileInfo, getFileTree, searchFilesContent} from './utils/fileUtils';
 import {loadConfig, saveConfig} from './utils/configManager';
 import {Config} from "./utils/config";
 import chardet from 'chardet';
@@ -182,6 +182,59 @@ function registerIpcHandlers() {
             console.error('打开外部链接失败:', error);
             throw error;
         }
+    });
+
+    // 搜索文件内容 - 使用Worker线程
+    ipcMain.handle('searchFilesContent', async (event, dirPath: string, query: string) => {
+        const {Worker} = require('worker_threads');
+        const path = require('path');
+        const {app} = require('electron');
+
+        return new Promise((resolve, reject) => {
+            // 创建Worker线程 - 根据是否打包使用不同的路径
+            let workerPath;
+            if (__dirname.includes('.vite/build')) {
+                // 开发模式下，Worker文件直接在.vite/build目录下
+                workerPath = path.join(__dirname, 'searchWorker.js');
+            } else if (app.isPackaged) {
+                // 打包后，Worker文件会在resources目录下
+                workerPath = path.join(process.resourcesPath, 'searchWorker.js');
+            } else {
+                // 其他情况，使用源码路径
+                workerPath = path.join(app.getAppPath(), 'src', 'utils', 'searchWorker.ts');
+            }
+
+            const worker = new Worker(workerPath, {
+                workerData: {dirPath, query}
+            });
+
+            // 监听Worker线程消息
+            worker.on('message', (message) => {
+                if (message.type === 'progress') {
+                    // 转发进度更新到渲染进程
+                    event.sender.send('searchProgress', message.data);
+                } else if (message.type === 'result') {
+                    // 搜索完成，返回结果
+                    resolve(message.data);
+                } else if (message.type === 'error') {
+                    // 搜索出错
+                    reject(new Error(message.data));
+                }
+            });
+
+            // 监听Worker线程错误
+            worker.on('error', (error) => {
+                console.error('Worker线程错误:', error);
+                reject(error);
+            });
+
+            // 监听Worker线程退出
+            worker.on('exit', (code) => {
+                if (code !== 0) {
+                    console.error(`Worker线程退出，退出码: ${code}`);
+                }
+            });
+        });
     });
 }
 

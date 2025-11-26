@@ -1,15 +1,14 @@
 import React from 'react';
-import { Card, List, Typography, Empty, Tooltip } from 'antd';
-import { HistoryOutlined, FileTextOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { useAppContext } from '../../contexts/AppContext';
-import { FileHistoryRecord } from '../../utils/uiUtils';
+import {Card, Empty, List, Tooltip, Typography} from 'antd';
+import {ClockCircleOutlined, FileTextOutlined, HistoryOutlined} from '@ant-design/icons';
+import {useAppContext} from '../../contexts/AppContext';
+import {FileHistoryRecord} from '../../utils/uiUtils';
 import './FileHistoryToolWindow.css';
+// 创建工具窗口实例
+import {ToolWindow} from './toolWindow';
 
 const { Text } = Typography;
 
-interface FileHistoryToolWindowProps {
-  // 组件属性可以在这里定义
-}
 
 // 时间格式化工具函数
 const formatTime = (timestamp: number): string => {
@@ -106,9 +105,6 @@ export const FileHistoryToolWindow: React.FC<FileHistoryToolWindowProps> = () =>
     </div>
   );
 };
-
-// 创建工具窗口实例
-import { ToolWindow } from './toolWindow';
 
 export const fileHistoryToolWindow = new ToolWindow({
   id: 'file-history',

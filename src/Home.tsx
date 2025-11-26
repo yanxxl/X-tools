@@ -40,6 +40,7 @@ const AppContent: React.FC = () => {
     const [fileTree, setFileTree] = useState<FileNode | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [titleBarVisible, setTitleBarVisible] = useState(true);
+    const [initialLine, setInitialLine] = useState<number | undefined>(undefined);
     const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
     const [loadedKeys, setLoadedKeys] = useState<Set<string>>(new Set()); // 记录已加载的节点
 
@@ -304,6 +305,29 @@ const AppContent: React.FC = () => {
     };
 
     // 选择文件后读取内容
+    // 处理从搜索结果中打开文件并跳转到指定行
+    const openFileWithLine = async (filePath: string, fileName: string, line: number) => {
+        // 创建一个临时文件对象
+        const fileNode: FileNode = {
+            id: filePath,
+            name: fileName,
+            path: filePath,
+            type: 'file',
+            size: 0,
+            lastModified: new Date().getTime(),
+            isLeaf: true
+        };
+
+        // 设置当前文件和初始行
+        setCurrentFile(fileNode);
+        setInitialLine(line);
+
+        // 重置初始行状态，避免下次打开同一文件时重复跳转
+        setTimeout(() => {
+            setInitialLine(undefined);
+        }, 1000);
+    };
+
     const handleTreeSelect: TreeProps<TreeNodeWithMeta>['onSelect'] = async (keys, info) => {
         const stringKeys = keys.map(String);
         setSelectedKeys(stringKeys);
@@ -321,7 +345,17 @@ const AppContent: React.FC = () => {
 
         // 设置当前选择（文件或目录）
         setCurrentFile(nodeMeta);
+        // 重置初始行，因为是从文件树选择文件
+        setInitialLine(undefined);
     };
+
+    // 将函数暴露给全局，供搜索工具使用
+    React.useEffect(() => {
+        (window as any).openFileWithLine = openFileWithLine;
+        return () => {
+            delete (window as any).openFileWithLine;
+        };
+    }, []);
 
     return (
         <>
@@ -474,6 +508,7 @@ const AppContent: React.FC = () => {
                             <FileViewer
                                 filePath={currentFile.path}
                                 fileName={currentFile.name}
+                                initialLine={initialLine}
                             />
                         ) : (
                             <Center style={{color: 'gray'}}>

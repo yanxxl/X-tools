@@ -10,9 +10,10 @@ import {MarkdownViewer} from './MarkdownViewer';
 interface FilePreviewProps {
     filePath: string;
     fileName: string;
+    initialLine?: number;
 }
 
-export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName}) => {
+export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName, initialLine}) => {
     const type = detectFileType(fileName);
     const ext = getExtension(fileName);
 
@@ -32,7 +33,7 @@ export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName}) => 
 
     // Markdown  txt 文件使用专门的 MarkdownViewer
     if (ext === 'md' || ext === 'markdown' || ext === 'txt') {
-        return <MarkdownViewer filePath={filePath} fileName={fileName}/>;
+        return <MarkdownViewer filePath={filePath} fileName={fileName} initialLine={initialLine}/>;
     }
 
     // 文本文件：用 iframe 直接打开本地文件

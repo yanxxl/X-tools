@@ -21,9 +21,10 @@ const {Title} = Typography;
 interface MarkdownViewerProps {
     filePath: string;
     fileName: string;
+    initialLine?: number;
 }
 
-export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileName}) => {
+export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileName, initialLine}) => {
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState('');
     const [html, setHtml] = useState('');
@@ -135,21 +136,54 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         };
     }, [viewMode, filePath]);
 
-    // 在文件加载完成且预览模式下恢复滚动位置
+    // 在文件加载完成后处理滚动位置或初始行跳转
     useEffect(() => {
-        if (!loading && viewMode === 'rendered' && !error) {
-            // 使用文件路径作为键的一部分
-            const key = `${STORAGE_KEYS.MARKDOWN_SCROLL_POSITION}_${filePath}`;
-            const savedScrollTop = storage.get<number>(key, 0);
-            
+        if (!loading && !error) {
             // 延迟设置滚动位置，确保DOM已经完全渲染
             setTimeout(() => {
-                if (previewContainerRef.current && savedScrollTop > 0) {
-                    previewContainerRef.current.scrollTop = savedScrollTop;
+                // 如果有初始行要求，优先跳转到指定行
+                if (initialLine && initialLine > 0) {
+                    if (viewMode === 'rendered') {
+                        // 预览模式下跳转到指定行
+                        // 由于渲染后的HTML没有行号信息，我们通过行数近似估算
+                        if (previewContainerRef.current) {
+                            const lineHeight = 24; // 估算行高
+                            previewContainerRef.current.scrollTop = (initialLine - 1) * lineHeight;
+                        }
+                    } else {
+                        // 原文模式下使用CodeMirror跳转到指定行
+                        if (editorRef.current) {
+                            const editor = editorRef.current;
+                            const view = editor.view;
+                            const doc = view.state.doc;
+
+                            if (initialLine <= doc.lines) {
+                                const lineObj = doc.line(initialLine);
+                                const targetPos = lineObj.from;
+
+                                view.dispatch({
+                                    selection: {anchor: targetPos},
+                                    effects: [
+                                        EditorView.scrollIntoView(targetPos, {y: 'start'})
+                                    ]
+                                });
+                            }
+                        }
+                    }
+                } else {
+                    // 否则恢复之前的滚动位置
+                    if (viewMode === 'rendered') {
+                        const key = `${STORAGE_KEYS.MARKDOWN_SCROLL_POSITION}_${filePath}`;
+                        const savedScrollTop = storage.get<number>(key, 0);
+
+                        if (previewContainerRef.current && savedScrollTop > 0) {
+                            previewContainerRef.current.scrollTop = savedScrollTop;
+                        }
+                    }
                 }
-            }, 100);
+            }, 200);
         }
-    }, [loading, viewMode, error, filePath]);
+    }, [loading, viewMode, error, filePath, initialLine]);
 
     // 组件卸载时清理定时器
     useEffect(() => {

@@ -24,6 +24,12 @@ interface ElectronAPI {
     getDirectoryChildren: (dirPath: string) => Promise<FileNode[]>;
     /** 获取文件/目录基本信息 */
     getFileInfo: (filePath: string) => Promise<any>;
+    /** 搜索文件内容 */
+    searchFilesContent: (dirPath: string, query: string) => Promise<any>;
+    /** 监听搜索进度事件 */
+    onSearchProgress: (callback: (progress: { totalFiles: number; currentFile: number; totalLines: number }) => void) => void;
+    /** 取消监听搜索进度事件 */
+    offSearchProgress: (callback: (progress: { totalFiles: number; currentFile: number; totalLines: number }) => void) => void;
     
     // === 窗口控制 ===
     /** 控制红绿灯（窗口控制按钮）的显示/隐藏 */
@@ -62,6 +68,9 @@ const electronAPI: ElectronAPI = {
     getFileTree: (path: string) => ipcRenderer.invoke('getFileTree', path) as Promise<FileNode>,
     getDirectoryChildren: (dirPath: string) => ipcRenderer.invoke('getDirectoryChildren', dirPath) as Promise<FileNode[]>,
     getFileInfo: (filePath: string) => ipcRenderer.invoke('getFileInfo', filePath),
+    searchFilesContent: (dirPath: string, query: string) => ipcRenderer.invoke('searchFilesContent', dirPath, query) as Promise<any>,
+    onSearchProgress: (callback) => ipcRenderer.on('searchProgress', (event, progress) => callback(progress)),
+    offSearchProgress: (callback) => ipcRenderer.off('searchProgress', (event, progress) => callback(progress)),
     
     // 窗口控制
     setWindowButtonVisibility: (visible: boolean) => ipcRenderer.invoke('setWindowButtonVisibility', visible) as Promise<void>,

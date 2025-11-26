@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { FileNode } from '../types';
+import {FileNode} from '../types';
+import chardet from 'chardet';
+import iconv from 'iconv-lite';
 
 /**
  * 获取文件树结构（懒加载模式 - 只加载第一层）
@@ -162,4 +164,120 @@ export function getFileInfo(targetPath: string) {
     ext,
     childrenCount
   };
+}
+
+/**
+ * 搜索文件内容
+ * @param dirPath 搜索目录
+ * @param query 搜索关键词
+ * @returns 搜索结果列表
+ */
+export interface SearchResult {
+    filePath: string;
+    fileName: string;
+    matches: {
+        line: number;
+        content: string;
+    }[];
+}
+
+export async function searchFilesContent(dirPath: string, query: string, progressCallback?: (totalFiles: number, currentFile: number, totalLines: number) => void): Promise<SearchResult[]> {
+    const results: SearchResult[] = [];
+    const allFiles: string[] = [];
+
+    // 首先递归统计所有文件
+    async function collectFiles(currentPath: string) {
+        const entries = await fs.promises.readdir(currentPath, {withFileTypes: true});
+
+        for (const entry of entries) {
+            if (entry.name.startsWith('.')) {
+                continue; // 跳过隐藏文件和目录
+            }
+
+            const fullPath = path.join(currentPath, entry.name);
+
+            if (entry.isDirectory()) {
+                await collectFiles(fullPath);
+            } else {
+                allFiles.push(fullPath);
+            }
+        }
+    }
+
+    await collectFiles(dirPath);
+    const totalFiles = allFiles.length;
+    let currentFileIndex = 0;
+    let totalLinesSearched = 0;
+
+    // 递归搜索目录
+    async function searchDirectory(currentPath: string) {
+        const entries = await fs.promises.readdir(currentPath, {withFileTypes: true});
+
+        for (const entry of entries) {
+            if (entry.name.startsWith('.')) {
+                continue; // 跳过隐藏文件和目录
+            }
+
+            const fullPath = path.join(currentPath, entry.name);
+
+            if (entry.isDirectory()) {
+                await searchDirectory(fullPath);
+            } else {
+                currentFileIndex++;
+                try {
+                    // 检测文件编码
+                    const buffer = await fs.promises.readFile(fullPath);
+                    const detectedEncoding = chardet.detect(buffer);
+
+                    // 读取文件内容
+                    let content: string;
+                    if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
+                        content = iconv.decode(buffer, detectedEncoding);
+                    } else {
+                        // 尝试直接使用utf-8
+                        try {
+                            content = buffer.toString('utf-8');
+                        } catch {
+                            // 如果utf-8解码失败，跳过此文件
+                            continue;
+                        }
+                    }
+
+                    // 搜索关键词
+                    const lines = content.split('\n');
+                    const matches = [];
+
+                    totalLinesSearched += lines.length;
+
+                    // 报告进度
+                    if (progressCallback) {
+                        progressCallback(totalFiles, currentFileIndex, totalLinesSearched);
+                    }
+
+                    for (let i = 0; i < lines.length; i++) {
+                        if (lines[i].toLowerCase().includes(query.toLowerCase())) {
+                            matches.push({
+                                line: i + 1, // 行号从1开始
+                                content: lines[i].trim()
+                            });
+                        }
+                    }
+
+                    if (matches.length > 0) {
+                        results.push({
+                            filePath: fullPath,
+                            fileName: entry.name,
+                            matches
+                        });
+                    }
+                } catch (error) {
+                    // 忽略无法访问的文件
+                    console.error(`无法读取文件: ${fullPath}`, error);
+                }
+            }
+        }
+    }
+
+    await searchDirectory(dirPath);
+    return results;
 }
