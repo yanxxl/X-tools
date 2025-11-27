@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {App, Button, ConfigProvider, Dropdown, Flex, message, Splitter, Tree} from "antd";
+import {App, Button, ConfigProvider, Drawer, Dropdown, Flex, message, Splitter, Tree} from "antd";
 import {
     DeleteOutlined,
     DownOutlined,
@@ -12,6 +12,7 @@ import {
     FolderOutlined,
     PlayCircleOutlined,
     PlusOutlined,
+    SearchOutlined,
     SyncOutlined
 } from '@ant-design/icons';
 import type {DataNode, TreeProps} from 'antd/es/tree';
@@ -24,7 +25,7 @@ import {truncateFolderName} from './utils/uiUtils';
 import {Config, removeFolderPath, updateFolderPath} from "./utils/config";
 import {Container} from "./components/common/Container";
 import {Center} from "./components/common/Center";
-import {SearchPreviewViewer} from './components/viewers/SearchPreviewViewer';
+import {SearchSplitPanel} from './components/common/SearchSplitPanel';
 
 // 为Tree组件定义的节点类型
 export type TreeNodeWithMeta = DataNode & {
@@ -43,8 +44,7 @@ const AppContent: React.FC = () => {
     const [titleBarVisible, setTitleBarVisible] = useState(true);
     const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
     const [loadedKeys, setLoadedKeys] = useState<Set<string>>(new Set()); // 记录已加载的节点
-    const [previewVisible, setPreviewVisible] = useState(false); // 控制搜索预览视图显示状态
-    const [previewFile, setPreviewFile] = useState<{ path: string; name: string; line?: number; searchQuery?: string } | null>(null); // 预览文件信息
+    const [searchPanelOpen, setSearchPanelOpen] = useState(false); // 控制搜索面板显示状态
 
     // 窗口大小相关的状态和功能
     const WINDOW_SIZE_KEY = 'x-tools-window-size';
@@ -108,6 +108,8 @@ const AppContent: React.FC = () => {
             // 切换文件夹时清空展开和加载状态
             setExpandedKeys([]);
             setLoadedKeys(new Set());
+            // 关闭搜索面板
+            setSearchPanelOpen(false);
         } else {
             setFileTree(null)
             setSelectedKeys([]);
@@ -323,26 +325,11 @@ const AppContent: React.FC = () => {
 
         // 设置当前选择（文件或目录）
         setCurrentFile(nodeMeta);
+        // 关闭搜索面板
+        setSearchPanelOpen(false);
     };
 
-    // 暴露全局函数用于打开搜索预览视图
-    React.useEffect(() => {
-        (window as any).openSearchPreview = (filePath: string, fileName: string, line?: number, searchQuery?: string) => {
-            setPreviewFile({path: filePath, name: fileName, line, searchQuery});
-            setPreviewVisible(true);
-        };
-        return () => {
-            delete (window as any).openSearchPreview;
-        };
-    }, []);
 
-    // 当当前文件变化时，关闭预览视图
-    React.useEffect(() => {
-        if (currentFile && previewVisible) {
-            setPreviewVisible(false);
-            setPreviewFile(null);
-        }
-    }, [currentFile]);
 
     return (
         <>
@@ -444,6 +431,13 @@ const AppContent: React.FC = () => {
                     <div style={{flex: '0 0 auto', paddingLeft: 16, paddingRight: 16, display: 'flex', alignItems: 'center', gap: 8}}>
                         <Button
                             type="text"
+                            icon={<SearchOutlined/>}
+                            title="打开搜索"
+                            onClick={() => setSearchPanelOpen(true)}
+                            style={{padding: 0, width: 24, height: 24, borderRadius: 4}}
+                        />
+                        <Button
+                            type="text"
                             icon={<SyncOutlined/>}
                             title="重新加载界面"
                             onClick={() => {
@@ -503,31 +497,22 @@ const AppContent: React.FC = () => {
                             </Center>
                         )}
 
-                        {/* 搜索预览视图覆盖层 */}
-                        {previewVisible && previewFile && (
-                            <SearchPreviewViewer
-                                filePath={previewFile.path}
-                                fileName={previewFile.name}
-                                targetLine={previewFile.line}
-                                searchQuery={previewFile.searchQuery}
-                                onClose={() => {
-                                    setPreviewVisible(false);
-                                    setPreviewFile(null);
-                                }}
-                                onOpenFile={() => {
-                                    // 在主视图中打开文件
-                                    const fileNode: FileNode = {
-                                        id: previewFile.path,
-                                        name: previewFile.name,
-                                        path: previewFile.path,
-                                        isDirectory: false
-                                    };
-                                    setCurrentFile(fileNode);
-                                    setPreviewVisible(false);
-                                    setPreviewFile(null);
-                                }}
-                            />
-                        )}
+                        {/* 搜索抽屉 */}
+                        <Drawer
+                            title="搜索"
+                            placement="left"
+                            width="75%"
+                            open={searchPanelOpen}
+                            onClose={() => setSearchPanelOpen(false)}
+                            maskClosable={true}
+                            closable={true}
+                        >
+                            <div style={{height: '100%'}}>
+                                <SearchSplitPanel
+                                    onClose={() => setSearchPanelOpen(false)}
+                                />
+                            </div>
+                        </Drawer>
                     </Container>
                 </Splitter.Panel>
                 <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>

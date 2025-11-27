@@ -1,13 +1,12 @@
 /**
  * 工具窗口初始化脚本
- * 注册文件信息、文件访问历史、设置和搜索工具窗口
+ * 注册文件信息、文件访问历史和设置工具窗口
  */
 
 import {toolWindowManager} from './toolWindowManager';
 import {fileInfoToolWindow} from './FileInfoToolWindow';
 import {fileHistoryToolWindow} from './FileHistoryToolWindow';
 import {settingsToolWindow} from './SettingsToolWindow';
-import {searchToolWindow} from './SearchToolWindow';
 
 /**
  * 初始化并注册所有工具窗口
@@ -22,15 +21,11 @@ export const initializeToolWindows = () => {
     
     // 注册设置工具窗口
     toolWindowManager.register(settingsToolWindow);
-
-    // 注册搜索工具窗口
-    toolWindowManager.register(searchToolWindow);
     
     return {
         fileInfoWindow: fileInfoToolWindow,
         fileHistoryWindow: fileHistoryToolWindow,
-        settingsWindow: settingsToolWindow,
-        searchWindow: searchToolWindow
+        settingsWindow: settingsToolWindow
     };
 };
 
