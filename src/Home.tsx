@@ -24,6 +24,7 @@ import {truncateFolderName} from './utils/uiUtils';
 import {Config, removeFolderPath, updateFolderPath} from "./utils/config";
 import {Container} from "./components/common/Container";
 import {Center} from "./components/common/Center";
+import {SearchPreviewViewer} from './components/viewers/SearchPreviewViewer';
 
 // 为Tree组件定义的节点类型
 export type TreeNodeWithMeta = DataNode & {
@@ -40,9 +41,10 @@ const AppContent: React.FC = () => {
     const [fileTree, setFileTree] = useState<FileNode | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [titleBarVisible, setTitleBarVisible] = useState(true);
-    const [initialLine, setInitialLine] = useState<number | undefined>(undefined);
     const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
     const [loadedKeys, setLoadedKeys] = useState<Set<string>>(new Set()); // 记录已加载的节点
+    const [previewVisible, setPreviewVisible] = useState(false); // 控制搜索预览视图显示状态
+    const [previewFile, setPreviewFile] = useState<{ path: string; name: string; line?: number; searchQuery?: string } | null>(null); // 预览文件信息
 
     // 窗口大小相关的状态和功能
     const WINDOW_SIZE_KEY = 'x-tools-window-size';
@@ -304,30 +306,6 @@ const AppContent: React.FC = () => {
         setExpandedKeys(expandedKeysValue as string[]);
     };
 
-    // 选择文件后读取内容
-    // 处理从搜索结果中打开文件并跳转到指定行
-    const openFileWithLine = async (filePath: string, fileName: string, line: number) => {
-        // 创建一个临时文件对象
-        const fileNode: FileNode = {
-            id: filePath,
-            name: fileName,
-            path: filePath,
-            type: 'file',
-            size: 0,
-            lastModified: new Date().getTime(),
-            isLeaf: true
-        };
-
-        // 设置当前文件和初始行
-        setCurrentFile(fileNode);
-        setInitialLine(line);
-
-        // 重置初始行状态，避免下次打开同一文件时重复跳转
-        setTimeout(() => {
-            setInitialLine(undefined);
-        }, 1000);
-    };
-
     const handleTreeSelect: TreeProps<TreeNodeWithMeta>['onSelect'] = async (keys, info) => {
         const stringKeys = keys.map(String);
         setSelectedKeys(stringKeys);
@@ -345,17 +323,26 @@ const AppContent: React.FC = () => {
 
         // 设置当前选择（文件或目录）
         setCurrentFile(nodeMeta);
-        // 重置初始行，因为是从文件树选择文件
-        setInitialLine(undefined);
     };
 
-    // 将函数暴露给全局，供搜索工具使用
+    // 暴露全局函数用于打开搜索预览视图
     React.useEffect(() => {
-        (window as any).openFileWithLine = openFileWithLine;
+        (window as any).openSearchPreview = (filePath: string, fileName: string, line?: number, searchQuery?: string) => {
+            setPreviewFile({path: filePath, name: fileName, line, searchQuery});
+            setPreviewVisible(true);
+        };
         return () => {
-            delete (window as any).openFileWithLine;
+            delete (window as any).openSearchPreview;
         };
     }, []);
+
+    // 当当前文件变化时，关闭预览视图
+    React.useEffect(() => {
+        if (currentFile && previewVisible) {
+            setPreviewVisible(false);
+            setPreviewFile(null);
+        }
+    }, [currentFile]);
 
     return (
         <>
@@ -503,17 +490,43 @@ const AppContent: React.FC = () => {
                 </Splitter.Panel>
                 {/*panel 默认有个 padding 0 1，中间去掉，避免边缘一条白线。*/}
                 <Splitter.Panel style={{padding: 0}}>
-                    <Container>
+                    <Container style={{position: 'relative'}}>
+                        {/* 正常显示文件内容 */}
                         {currentFile ? (
                             <FileViewer
                                 filePath={currentFile.path}
                                 fileName={currentFile.name}
-                                initialLine={initialLine}
                             />
                         ) : (
                             <Center style={{color: 'gray'}}>
                                 请在左侧选择一个文件以预览内容
                             </Center>
+                        )}
+
+                        {/* 搜索预览视图覆盖层 */}
+                        {previewVisible && previewFile && (
+                            <SearchPreviewViewer
+                                filePath={previewFile.path}
+                                fileName={previewFile.name}
+                                targetLine={previewFile.line}
+                                searchQuery={previewFile.searchQuery}
+                                onClose={() => {
+                                    setPreviewVisible(false);
+                                    setPreviewFile(null);
+                                }}
+                                onOpenFile={() => {
+                                    // 在主视图中打开文件
+                                    const fileNode: FileNode = {
+                                        id: previewFile.path,
+                                        name: previewFile.name,
+                                        path: previewFile.path,
+                                        isDirectory: false
+                                    };
+                                    setCurrentFile(fileNode);
+                                    setPreviewVisible(false);
+                                    setPreviewFile(null);
+                                }}
+                            />
                         )}
                     </Container>
                 </Splitter.Panel>
