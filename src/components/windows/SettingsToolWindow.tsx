@@ -17,7 +17,6 @@ const SettingsPanel: React.FC = () => {
     const refreshStorageInfo = () => {
         const newStorageInfo = getLocalStorageInfo();
         setStorageInfo(newStorageInfo);
-        message.success('存储信息已刷新', 3);
     };
 
     // 显示删除确认对话框
@@ -80,7 +79,10 @@ const SettingsPanel: React.FC = () => {
                             <Button
                                 size="small"
                                 icon={<ReloadOutlined/>}
-                                onClick={refreshStorageInfo}
+                                onClick={() => {
+                                    refreshStorageInfo()
+                                    message.success('存储信息已刷新', 3);
+                                }}
                                 loading={loading}
                                 type="text"
                             />
