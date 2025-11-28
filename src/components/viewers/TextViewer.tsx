@@ -1,7 +1,10 @@
-import React, {useState, useEffect} from 'react';
-import {Typography, Spin, Empty, Space, Button} from 'antd';
+import React, {useEffect, useState} from 'react';
+import {Button, Empty, Space, Spin, Typography} from 'antd';
 import {FileTextOutlined, ReloadOutlined} from '@ant-design/icons';
 import {Center} from "../common/Center";
+import PageSearch from "../common/PageSearch";
+import TextToSpeech from "../common/TextToSpeech";
+import {FontSizeAdjuster} from "../common/FontSizeAdjuster";
 
 interface TextViewerProps {
     filePath: string;
@@ -17,7 +20,7 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
         try {
             setLoading(true);
             setError(null);
-            
+
             if (window.electronAPI) {
                 const fileContent = await window.electronAPI.readFile(filePath);
                 setContent(fileContent);
@@ -59,9 +62,9 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
                     description={error}
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                 >
-                    <Button 
-                        type="primary" 
-                        icon={<ReloadOutlined />}
+                    <Button
+                        type="primary"
+                        icon={<ReloadOutlined/>}
                         onClick={loadTextFile}
                     >
                         重新加载
@@ -82,20 +85,19 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
                 background: '#fafafa'
             }}>
                 <Space>
-                    <FileTextOutlined />
+                    <FileTextOutlined/>
                     <Typography.Title level={5} style={{margin: 0}}>{fileName}</Typography.Title>
                 </Space>
+
+                <Space size="large">
+                    <PageSearch cssSelector={'.markdown-source'}/>
+                    <TextToSpeech cssSelector={'.markdown-source'}/>
+                    <FontSizeAdjuster/>
+                </Space>
             </div>
-            
-            <div style={{flex: 1, overflow: 'auto', padding: '16px'}}>
-                <pre style={{
-                    fontFamily: 'monospace',
-                    whiteSpace: 'pre-wrap',
-                    wordWrap: 'break-word',
-                    margin: 0,
-                    fontSize: '14px',
-                    lineHeight: '1.5'
-                }}>
+
+            <div style={{flex: 1, overflow: 'auto', padding: '32px', backgroundColor: 'white'}} className={'markdown-source'}>
+                <pre>
                     {content}
                 </pre>
             </div>
