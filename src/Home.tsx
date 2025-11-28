@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {App, Button, ConfigProvider, Drawer, Dropdown, Flex, message, Splitter, Tree} from "antd";
 import {
     DeleteOutlined,
@@ -35,6 +35,12 @@ export type TreeNodeWithMeta = DataNode & {
 
 const AppContent: React.FC = () => {
     const {currentFolder, setCurrentFolder, currentFile, setCurrentFile} = useAppContext();
+
+    // 文件树高度状态
+    const [treeHeight, setTreeHeight] = useState(0);
+
+    // 防抖ID引用
+    const scrollDebounceRef = useRef<number | null>(null);
 
     const [loading, setLoading] = useState(false);
     const [config, setConfig] = useState<Config | null>(null);
@@ -174,6 +180,8 @@ const AppContent: React.FC = () => {
         const handleResize = () => {
             if (window.innerWidth && window.innerHeight) {
                 saveWindowSize(window.innerWidth, window.innerHeight);
+                // 更新文件树高度
+                updateTreeHeight();
             }
         };
 
@@ -184,6 +192,24 @@ const AppContent: React.FC = () => {
             window.removeEventListener('resize', handleResize);
         };
     }, []); // 只在组件挂载和卸载时执行
+
+    // 更新文件树高度的函数
+    const updateTreeHeight = useCallback(() => {
+        // 计算文件树容器的高度
+        const topBarHeight = titleBarVisible ? 40 : 0;
+        const newHeight = window.innerHeight - topBarHeight;
+        setTreeHeight(newHeight);
+    }, [titleBarVisible]);
+
+    // 监听标题栏可见性变化来更新文件树高度
+    useEffect(() => {
+        updateTreeHeight();
+    }, [titleBarVisible, updateTreeHeight]);
+
+    // 组件挂载时初始化文件树高度
+    useEffect(() => {
+        updateTreeHeight();
+    }, [updateTreeHeight]);
 
     async function loadFolderTree() {
         if (currentFolder && window.electronAPI) {
@@ -491,11 +517,11 @@ const AppContent: React.FC = () => {
             )}
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
                 <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
-                    <Container style={{overflowY: 'auto', backgroundColor: "white"}}>
+                    <Container style={{backgroundColor: "white"}}>
                         {fileTree ? (
                             <Tree<TreeNodeWithMeta>
                                 treeData={transformToTreeData(fileTree).children}
-                                style={{maxHeight: '100%'}}
+                                height={treeHeight}
                                 blockNode
                                 showLine
                                 switcherIcon={<DownOutlined/>}
