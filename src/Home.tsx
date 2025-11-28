@@ -46,6 +46,38 @@ const AppContent: React.FC = () => {
     const [loadedKeys, setLoadedKeys] = useState<Set<string>>(new Set()); // 记录已加载的节点
     const [searchPanelOpen, setSearchPanelOpen] = useState(false); // 控制搜索面板显示状态
 
+    // 添加一个新的useEffect来监听currentFile的变化并更新树节点选中状态
+    useEffect(() => {
+        if (currentFile && fileTree) {
+            // 设置文件树中对应节点为选中状态
+            // 使用文件路径作为节点的ID
+            setSelectedKeys([currentFile.path]);
+
+            // 展开所有父级目录，确保选中的文件可见
+            const getAllParentPaths = (filePath: string): string[] => {
+                const parts = filePath.split('/').filter(part => part !== '');
+                const parents: string[] = [];
+                let currentPath = '';
+
+                // 从根目录开始构建每一级父目录路径
+                for (let i = 0; i < parts.length - 1; i++) {
+                    currentPath += '/' + parts[i];
+                    parents.push(currentPath);
+                }
+
+                return parents;
+            };
+
+            // 获取所有父级目录路径并展开它们
+            const parentPaths = getAllParentPaths(currentFile.path);
+            const newExpandedKeys = Array.from(new Set([...expandedKeys, ...parentPaths]));
+            setExpandedKeys(newExpandedKeys);
+        } else {
+            // 如果没有选中文件，清空选中状态
+            setSelectedKeys([]);
+        }
+    }, [currentFile]);
+
     // 窗口大小相关的状态和功能
     const WINDOW_SIZE_KEY = 'x-tools-window-size';
 
