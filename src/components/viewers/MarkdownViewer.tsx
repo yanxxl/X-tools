@@ -279,9 +279,23 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                     // 如果找到了最接近的标题，更新选中的大纲项
                     if (closestHeading && closestHeading.id) {
                         setSelectedOutlineKey(closestHeading.id);
+                        // 滚动选中的大纲项到视区中部
+                        setTimeout(() => {
+                            const selectedElement = document.querySelector('.ant-menu-item-selected');
+                            if (selectedElement) {
+                                selectedElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            }
+                        }, 100);
                     } else if (headings.length > 0 && headings[0].id) {
                         // 默认选中第一个标题
                         setSelectedOutlineKey(headings[0].id);
+                        // 滚动选中的大纲项到视区中部
+                        setTimeout(() => {
+                            const selectedElement = document.querySelector('.ant-menu-item-selected');
+                            if (selectedElement) {
+                                selectedElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            }
+                        }, 100);
                     }
 
                     ticking = false;
@@ -325,6 +339,13 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                     if (headings.length > 0 && headings[0].id) {
                         // 默认选中第一个标题
                         setSelectedOutlineKey(headings[0].id);
+                        // 滚动选中的大纲项到视区中部
+                        setTimeout(() => {
+                            const selectedElement = document.querySelector('.ant-menu-item-selected');
+                            if (selectedElement) {
+                                selectedElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            }
+                        }, 100);
                     }
                 }
             }, 100);
@@ -532,6 +553,13 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                         handleOutlineClick(item);
                         // 设置选中的大纲项
                         setSelectedOutlineKey(item.id);
+                        // 滚动选中的菜单项到视区中部
+                        setTimeout(() => {
+                            const selectedElement = document.querySelector('.ant-menu-item-selected');
+                            if (selectedElement) {
+                                selectedElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                            }
+                        }, 100);
                         // 重置滚动位置跟踪
                         if (previewContainerRef.current) {
                             setLastScrollTop(previewContainerRef.current.scrollTop);
@@ -590,6 +618,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
 
                 <Space size="large">
                     <PageSearch cssSelector={viewMode === 'rendered' ? '.markdown-content' : '.markdown-source .cm-line'}/>
+
                     <TextToSpeech cssSelector={'.markdown-content,.markdown-source .cm-line'}/>
 
                     {/* 字体大小调整按钮 */}
