@@ -27,6 +27,7 @@ interface MarkdownViewerProps {
 }
 
 export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileName, initialLine}) => {
+    // ============================== State Management ==============================
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState('');
     const [html, setHtml] = useState('');
@@ -37,12 +38,15 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         // 从本地存储读取字体大小设置，默认为 16px
         return storage.get(STORAGE_KEYS.MARKDOWN_FONT_SIZE, 16);
     });
+
+    // ============================== Refs ==============================
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastSavedContentRef = useRef<string>('');
     const editorRef = useRef<any>(null);
     const previewContainerRef = useRef<HTMLDivElement>(null);
     const scrollPollingRef = useRef<NodeJS.Timeout | null>(null);
 
+    // ============================== Font Size Functions ==============================
     // 字体大小调整函数
     const increaseFontSize = () => {
         const newSize = Math.min(fontSize + 2, 48);
@@ -56,6 +60,13 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         storage.set(STORAGE_KEYS.MARKDOWN_FONT_SIZE, newSize);
     };
 
+    // 当字体大小状态改变时，更新 CSS 变量
+    useEffect(() => {
+        const root = document.documentElement;
+        root.style.setProperty('--markdown-font-size', `${fontSize}px`);
+    }, [fontSize]);
+
+    // ============================== File Loading ==============================
     // 加载 Markdown 文件内容
     useEffect(() => {
         const loadMarkdownFile = async () => {
@@ -89,6 +100,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         loadMarkdownFile();
     }, [filePath]);
 
+    // ============================== Auto Save ==============================
     // 自动保存功能
     const saveFile = async (text: string) => {
         if (window.electronAPI && text !== lastSavedContentRef.current) {
@@ -116,6 +128,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         }, 3000);
     };
 
+    // ============================== Scroll Position ==============================
     // 设置轮询保存滚动位置
     useEffect(() => {
         // 只有在预览模式下才启动轮询
@@ -199,6 +212,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         };
     }, []);
 
+    // ============================== Markdown Parsing ==============================
     // 解析 Markdown 内容
     useEffect(() => {
         const parseContent = async () => {
@@ -217,6 +231,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         parseContent();
     }, [content]);
 
+    // ============================== Link Handling ==============================
     // 处理链接点击
     const handleLinkClick = (event: React.MouseEvent<HTMLDivElement>) => {
         const target = event.target as HTMLElement;
@@ -271,6 +286,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         }
     };
 
+    // ============================== Outline Handling ==============================
     // 处理大纲点击
     const handleOutlineClick = (item: OutlineItem) => {
         console.log(`跳转到大纲项: ${item.title}, 视图模式: ${viewMode}`);
@@ -403,6 +419,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
 
     const menuItems = generateMenuItems(outline);
 
+    // ============================== Loading & Error States ==============================
     if (loading) {
         return (
             <Center>
@@ -423,6 +440,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         );
     }
 
+    // ============================== Main Render ==============================
     return (
         <Flex vertical={true} style={{height: '100%', background: '#fff'}}>
             {/* 工具栏 */}
@@ -493,6 +511,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                     </Button.Group>
                 </Space>
             </div>
+
             <Container style={{flex: '1'}}>
                 <Splitter style={{height: '100%'}}>
                     <Splitter.Panel
@@ -514,14 +533,14 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                                 <div
                                     ref={previewContainerRef}
                                     className="markdown-content"
-                                    style={{fontSize: `${fontSize}px`, overflowY: 'auto', height: '100%'}}
+                                    style={{overflowY: 'auto', height: '100%'}}
                                     dangerouslySetInnerHTML={{__html: html}}
                                     onClick={handleLinkClick}
                                 />
                             ) : (
                                 <div
                                     className="markdown-source"
-                                    style={{height: '100%', fontSize: `${fontSize}px`}}
+                                    style={{height: '100%'}}
                                 >
                                     <CodeMirror
                                         ref={editorRef}
