@@ -19,8 +19,8 @@ interface SearchResult {
 // 样式常量
 const HIGHLIGHT_COLOR = '#fff3cd';
 const SEARCH_HIGHLIGHT_COLOR = '#ffeb3b';
-const HIGHLIGHT_DURATION = 3000;
-const SCROLL_DELAY = 100;
+const HIGHLIGHT_DURATION = 1500;
+const SCROLL_DELAY = 300;
 
 // 数字格式化函数 - 添加千分位分隔符
 const formatNumber = (num: number): string => {
@@ -65,12 +65,12 @@ const CodeLine: React.FC<{
         }}
     >
         <div style={{
-            minWidth: '50px', textAlign: 'right', paddingRight: '12px', color: '#999', fontSize: '12px', userSelect: 'none', fontFamily: 'monospace'
+            minWidth: '50px', textAlign: 'right', paddingRight: '12px', color: '#999', fontSize: '14px', userSelect: 'none', fontFamily: 'monospace'
         }}>
             {lineNumber}
         </div>
         <div style={{
-            flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace', fontSize: '14px', lineHeight: '1.6'
+            flex: 1, whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace', fontSize: '16px', lineHeight: '1.6'
         }}>
             {highlightContent(content, searchQuery)}
         </div>
@@ -592,7 +592,7 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
                                                     padding: '4px 8px',
                                                     background: '#f5f5f5',
                                                     borderRadius: '4px',
-                                                    fontSize: 12,
+                                                    fontSize: 14,
                                                     wordBreak: 'break-word',
                                                     transition: 'background 0.2s'
                                                 }}
