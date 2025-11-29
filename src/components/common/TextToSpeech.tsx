@@ -298,7 +298,7 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({cssSelector}) => {
 
             {selectedText
                 ? <span style={{backgroundColor: 'lightgray', padding: '4px'}}>{selectedText.substring(0, 2)}...</span>
-                : totalCount > 1 && (<>
+                : currentIndex !== -1 && (<>
                 {/* 上一个按钮 */}
                 <Tooltip title="上一个">
                     <Button
@@ -311,7 +311,7 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({cssSelector}) => {
 
                 {/* 当前播放信息 */}
                 <span style={{fontSize: '12px', color: '#666', minWidth: '80px', textAlign: 'center'}}>
-                        {currentIndex >= 0 ? currentIndex + 1 : 1} / {totalCount}
+                        {currentIndex >= 0 ? currentIndex + 1 : 1} / {elementsRef.current.length}
                 </span>
 
                 {/* 下一个按钮 */}
