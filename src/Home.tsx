@@ -539,18 +539,19 @@ const AppContent: React.FC = () => {
                     </Container>
                 </Splitter.Panel>
                 {/*panel 默认有个 padding 0 1，中间去掉，避免边缘一条白线。*/}
-                <Splitter.Panel style={{padding: 0, display: 'flex', flexDirection: 'column'}}>
-                    <Container style={{position: 'relative', flex: 1, display: 'flex', flexDirection: 'column'}}>
+                <Splitter.Panel style={{padding: 0}}>
+                    <Container style={{position: 'relative'}}>
                         {/* 正常显示文件内容 */}
-                        <div style={{flex: 1, overflow: 'auto'}}>
-                            {currentFile ? (
-                                <FileViewer />
-                            ) : (
-                                <Center style={{color: 'gray', height: '100%'}}>
-                                    请在左侧选择一个文件以预览内容
-                                </Center>
-                            )}
-                        </div>
+                        {currentFile ? (
+                            <FileViewer
+                                filePath={currentFile}
+                                fileName={currentFile.split('/').pop() || ''}
+                            />
+                        ) : (
+                            <Center style={{color: 'gray'}}>
+                                请在左侧选择一个文件以预览内容
+                            </Center>
+                        )}
                     </Container>
                 </Splitter.Panel>
                 <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
