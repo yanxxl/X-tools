@@ -5,16 +5,16 @@ import {detectFileType} from "../utils/fileType";
 export interface AppContextType {
     /** 当前选中的文件夹路径 */
     currentFolder: string | null;
-    /** 当前选中的文件 */
-    currentFile: any | null;
+    /** 当前选中的文件路径 */
+    currentFile: string | null;
     /** 设置当前文件夹 */
     setCurrentFolder: (folder: string | null) => void;
     /** 设置当前文件 */
-    setCurrentFile: (file: any | null) => void;
+    setCurrentFile: (file: string | null) => void;
     /** 文件访问历史记录 */
     fileHistory: FileHistoryRecord[];
     /** 添加文件访问记录 */
-    addFileAccess: (filePath: string, fileName: string) => void;
+    addFileAccess: (filePath: string) => void;
     /** 获取当前文件夹的最后访问文件 */
     getLastAccessedFile: () => FileHistoryRecord | null;
     /** 清除当前文件夹的历史记录 */
@@ -31,7 +31,7 @@ export interface AppProviderProps {
 
 export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
-    const [currentFile, setCurrentFile] = useState<any | null>(null);
+    const [currentFile, setCurrentFile] = useState<string | null>(null);
     const [fileHistory, setFileHistory] = useState<FileHistoryRecord[]>([]);
 
     const autoPlay = useRef(true); // 是否自动播放，当打开上次打开的视频时，不自动播放
@@ -48,13 +48,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
             // 检查是否有最后访问的文件，如果有则自动打开
             const lastFile = fileHistoryManager.getLastAccessedFile(folder);
             if (lastFile) {
-                setCurrentFile({
-                    path: lastFile.filePath,
-                    name: lastFile.fileName
-                });
+                setCurrentFile(lastFile.filePath);
 
+                // 从路径中提取文件名来检测文件类型
+                const fileName = lastFile.filePath.split('/').pop() || '';
                 // 如果上次打开的是视频，不自动播放，避免突兀。
-                if (detectFileType(lastFile.fileName) == "video") autoPlay.current = false;
+                if (detectFileType(fileName) == "video") autoPlay.current = false;
             }
         } else {
             setFileHistory([]);
@@ -62,11 +61,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
     };
 
     // 设置当前文件并添加到历史记录
-    const handleSetCurrentFile = (file: any | null) => {
+    const handleSetCurrentFile = (file: string | null) => {
         setCurrentFile(file);
-        if (file && file.path && file.name && currentFolder) {
+        if (file && currentFolder) {
             // 添加文件访问记录
-            fileHistoryManager.addFileAccess(file.path, file.name);
+            fileHistoryManager.addFileAccess(file);
             // 更新本地状态
             const updatedHistory = fileHistoryManager.getFolderHistory(currentFolder);
             setFileHistory(updatedHistory);
@@ -81,9 +80,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
     };
 
     // 添加文件访问记录
-    const addFileAccess = (filePath: string, fileName: string) => {
+    const addFileAccess = (filePath: string) => {
         if (currentFolder) {
-            fileHistoryManager.addFileAccess(filePath, fileName);
+            fileHistoryManager.addFileAccess(filePath);
             const updatedHistory = fileHistoryManager.getFolderHistory(currentFolder);
             setFileHistory(updatedHistory);
         }

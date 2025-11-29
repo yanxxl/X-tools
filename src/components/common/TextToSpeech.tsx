@@ -217,7 +217,7 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({cssSelector}) => {
 
         // 清空元素引用，确保重新计算
         elementsRef.current = [];
-    }, [currentFile?.path]);
+    }, [currentFile]);
 
     useEffect(() => {
 

@@ -93,7 +93,6 @@ export const STORAGE_KEYS = {
 // 文件访问历史记录接口
 export interface FileHistoryRecord {
   filePath: string;
-  fileName: string;
   lastAccessed: number; // 时间戳
 }
 
@@ -110,7 +109,7 @@ export const fileHistoryManager = {
   /**
    * 添加文件访问记录
    */
-  addFileAccess: (filePath: string, fileName: string): void => {
+  addFileAccess: (filePath: string): void => {
     try {
       const allHistory = storage.get<FileHistoryRecord[]>(STORAGE_KEYS.FILE_ACCESS_HISTORY, []);
       const now = Date.now();
@@ -122,7 +121,6 @@ export const fileHistoryManager = {
       const newHistory = [
         {
           filePath,
-          fileName,
           lastAccessed: now
         },
         ...filteredHistory

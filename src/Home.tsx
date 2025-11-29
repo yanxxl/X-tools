@@ -57,7 +57,7 @@ const AppContent: React.FC = () => {
         if (currentFile && fileTree) {
             // 设置文件树中对应节点为选中状态
             // 使用文件路径作为节点的ID
-            setSelectedKeys([currentFile.path]);
+            setSelectedKeys([currentFile]);
 
             // 展开所有父级目录，确保选中的文件可见
             const getAllParentPaths = (filePath: string): string[] => {
@@ -75,8 +75,8 @@ const AppContent: React.FC = () => {
             };
 
             // 获取所有父级目录路径并展开它们
-            const parentPaths = getAllParentPaths(currentFile.path);
-            const newExpandedKeys = Array.from(new Set([currentFile.path, ...parentPaths]));
+            const parentPaths = getAllParentPaths(currentFile);
+            const newExpandedKeys = Array.from(new Set([currentFile, ...parentPaths]));
             setExpandedKeys(newExpandedKeys);
         } else {
             // 如果没有选中文件，清空选中状态
@@ -382,7 +382,7 @@ const AppContent: React.FC = () => {
         }
 
         // 设置当前选择（文件或目录）
-        setCurrentFile(nodeMeta);
+        setCurrentFile(nodeMeta.path);
         // 关闭搜索面板
         setSearchPanelOpen(false);
     };
@@ -481,7 +481,7 @@ const AppContent: React.FC = () => {
                     </div>
                     <div style={{flex: '1 3 auto', minWidth: 0}}>
                         <div className="one-line text-center">
-                            {currentFile ? currentFile.name : ''}
+                            {currentFile ? currentFile.split('/').pop() : ''}
                         </div>
                     </div>
                     <div style={{flex: '0 0 auto', paddingLeft: 16, paddingRight: 16, display: 'flex', alignItems: 'center', gap: 8}}>
@@ -544,8 +544,8 @@ const AppContent: React.FC = () => {
                         {/* 正常显示文件内容 */}
                         {currentFile ? (
                             <FileViewer
-                                filePath={currentFile.path}
-                                fileName={currentFile.name}
+                                filePath={currentFile}
+                                fileName={currentFile.split('/').pop() || ''}
                             />
                         ) : (
                             <Center style={{color: 'gray'}}>

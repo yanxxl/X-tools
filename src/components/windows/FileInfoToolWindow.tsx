@@ -68,7 +68,7 @@ const FileInfoPanel: React.FC = () => {
     }, [selectedText]);
 
     // 获取当前选中的路径
-    const targetPath = currentFile?.path || currentFolder;
+    const targetPath = currentFile || currentFolder;
 
     // 处理打开文件
     const handleOpenFile = async () => {
@@ -102,7 +102,7 @@ const FileInfoPanel: React.FC = () => {
                 return;
             }
 
-            const targetPath = currentFile?.path || currentFolder;
+            const targetPath = currentFile || currentFolder;
             if (!targetPath) {
                 setFileInfo(null);
                 setFileTextStats(null);

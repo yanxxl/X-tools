@@ -42,10 +42,7 @@ export const FileHistoryToolWindow: React.FC<FileHistoryToolWindowProps> = () =>
 
   // 处理点击历史记录项
   const handleHistoryItemClick = (record: FileHistoryRecord) => {
-    setCurrentFile({
-      path: record.filePath,
-      name: record.fileName
-    });
+    setCurrentFile(record.filePath);
   };
 
   return (

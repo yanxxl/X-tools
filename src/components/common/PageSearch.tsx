@@ -160,7 +160,7 @@ const PageSearch: React.FC<PageSearchProps> = ({cssSelector}) => {
         setSearchText('');
         setCurrentResultIndex(0);
         setIsSearchVisible(false);
-    }, [currentFile?.path]);
+    }, [currentFile]);
 
     // 监听键盘事件
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
