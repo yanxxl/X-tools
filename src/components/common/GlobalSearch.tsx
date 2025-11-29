@@ -533,13 +533,13 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
                                 <Statistic
                                     title=""
                                     value={formatNumber(searchResults.length)}
-                                    valueStyle={{fontSize: 16}}
+                                    valueStyle={{fontSize: 14}}
                                     suffix="个文件"
                                 />
                                 <Statistic
                                     title=""
                                     value={formatNumber(totalMatches)}
-                                    valueStyle={{fontSize: 16}}
+                                    valueStyle={{fontSize: 14}}
                                     suffix="条匹配"
                                 />
                             </Space>

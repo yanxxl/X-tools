@@ -3,6 +3,45 @@ import path from 'node:path';
 import {FileNode} from '../types';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
+import {isTextFile} from './fileType';
+
+// =======================================
+// 类型定义
+// =======================================
+
+/**
+ * 搜索匹配结果的类型定义
+ */
+export interface SearchMatch {
+    line: number;       // 匹配行号（从1开始）
+    content: string;    // 匹配行的内容（可能被截断）
+}
+
+/**
+ * 搜索结果类型定义
+ * @param filePath 文件路径
+ * @param fileName 文件名
+ * @param matches 匹配结果数组
+ */
+export interface SearchResult {
+    filePath: string;
+    fileName: string;
+    matches: SearchMatch[];
+}
+
+/**
+ * 搜索进度回调类型定义
+ * @param onFileProcessed 单个文件处理完成回调
+ * @param onProgress 进度更新回调
+ */
+export interface SearchProgressCallback {
+    onFileProcessed: (result: SearchResult | null) => void;
+    onProgress: (totalFiles: number, currentFile: number, totalLines: number) => void;
+}
+
+// =======================================
+// 文件树相关功能
+// =======================================
 
 /**
  * 获取文件树结构（懒加载模式 - 只加载第一层）
@@ -137,8 +176,14 @@ export function getDirectoryChildren(dirPath: string): FileNode[] {
   }
 }
 
+// =======================================
+// 文件信息相关功能
+// =======================================
+
 /**
  * 获取文件/目录的基本信息
+ * @param targetPath 文件或目录路径
+ * @returns 文件或目录的基本信息
  */
 export function getFileInfo(targetPath: string) {
   const stats = fs.statSync(targetPath);
@@ -166,22 +211,164 @@ export function getFileInfo(targetPath: string) {
   };
 }
 
+// =======================================
+// 文件搜索相关功能
+// =======================================
+
 /**
- * 搜索文件内容
+ * 逐步搜索文件内容
  * @param dirPath 搜索目录
  * @param query 搜索关键词
- * @returns 搜索结果列表
+ * @param callbacks 进度回调
  */
-export interface SearchResult {
-    filePath: string;
-    fileName: string;
-    matches: {
-        line: number;
-        content: string;
-    }[];
+export async function searchFilesContentProgressively(
+    dirPath: string,
+    query: string,
+    callbacks: SearchProgressCallback
+): Promise<void> {
+    // 1. 收集所有文本文件
+    const allFiles = await collectTextFiles(dirPath);
+    const totalFiles = allFiles.length;
+    let currentFileIndex = 0;
+    let totalLinesSearched = 0;
+
+    // 2. 逐个文件搜索
+    for (const filePath of allFiles) {
+        currentFileIndex++;
+        try {
+            // 3. 搜索单个文件
+            const searchResult = await searchSingleFile(filePath, query);
+
+            if (searchResult) {
+                totalLinesSearched += searchResult.totalLines;
+
+                // 4. 报告进度
+                callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
+
+                // 5. 返回匹配结果
+                if (searchResult.matches.length > 0) {
+                    callbacks.onFileProcessed({
+                        filePath,
+                        fileName: path.basename(filePath),
+                        matches: searchResult.matches
+                    });
+                }
+            } else {
+                // 即使文件搜索失败，也要报告进度
+                callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
+            }
+        } catch (error) {
+            // 忽略无法访问的文件
+            console.error(`无法读取文件: ${filePath}`, error);
+            // 报告进度
+            callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
+        }
+    }
+
+    // 6. 搜索完成，发送null表示结束
+    callbacks.onFileProcessed(null);
 }
 
-// 新增：截短文本函数
+/**
+ * 递归收集指定目录下的所有文本文件
+ * @param dirPath 目录路径
+ * @returns 文本文件路径数组
+ */
+async function collectTextFiles(dirPath: string): Promise<string[]> {
+    const files: string[] = [];
+    const entries = await fs.promises.readdir(dirPath, {withFileTypes: true});
+
+    for (const entry of entries) {
+        // 跳过隐藏文件和目录
+        if (entry.name.startsWith('.')) {
+            continue;
+        }
+
+        const fullPath = path.join(dirPath, entry.name);
+
+        if (entry.isDirectory()) {
+            // 递归收集子目录中的文件
+            const subFiles = await collectTextFiles(fullPath);
+            files.push(...subFiles);
+        } else if (isTextFile(entry.name)) {
+            // 只收集文本文件
+            files.push(fullPath);
+        }
+    }
+
+    return files;
+}
+
+/**
+ * 搜索单个文件的内容
+ * @param filePath 文件路径
+ * @param query 搜索关键词
+ * @returns 搜索结果，包含匹配行和总行数，搜索失败返回null
+ */
+async function searchSingleFile(filePath: string, query: string): Promise<{ matches: SearchMatch[], totalLines: number } | null> {
+    try {
+        // 1. 读取文件内容
+        const content = await readFileWithEncoding(filePath);
+        if (!content) {
+            return null;
+        }
+
+        // 2. 搜索关键词
+        const lines = content.split('\n');
+        const matches: SearchMatch[] = [];
+        const lowercaseQuery = query.toLowerCase();
+
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+            const line = lines[lineIndex];
+            if (line.toLowerCase().includes(lowercaseQuery)) {
+                // 截短匹配行的内容，突出显示关键词
+                const truncatedContent = truncateText(line.trim(), 100, query);
+                matches.push({
+                    line: lineIndex + 1, // 行号从1开始
+                    content: truncatedContent
+                });
+            }
+        }
+
+        return {
+            matches,
+            totalLines: lines.length
+        };
+    } catch (error) {
+        console.error(`搜索文件失败: ${filePath}`, error);
+        return null;
+    }
+}
+
+/**
+ * 读取文件内容，自动检测编码
+ * @param filePath 文件路径
+ * @returns 文件内容，解码失败返回null
+ */
+async function readFileWithEncoding(filePath: string): Promise<string | null> {
+    try {
+        const buffer = await fs.promises.readFile(filePath);
+        const detectedEncoding = chardet.detect(buffer);
+
+        if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
+            return iconv.decode(buffer, detectedEncoding);
+        } else {
+            // 尝试直接使用utf-8
+            return buffer.toString('utf-8');
+        }
+    } catch (error) {
+        // 忽略解码失败的文件
+        return null;
+    }
+}
+
+/**
+ * 截短文本，确保查询词可见
+ * @param text 原始文本
+ * @param maxLength 最大长度
+ * @param query 查询词
+ * @returns 截短后的文本
+ */
 function truncateText(text: string, maxLength: number, query: string): string {
     if (text.length <= maxLength) {
         return text;
@@ -227,212 +414,4 @@ function truncateText(text: string, maxLength: number, query: string): string {
     }
 
     return result;
-}
-
-// 新增：逐步搜索的回调接口
-export interface SearchProgressCallback {
-    onFileProcessed: (result: SearchResult | null) => void;
-    onProgress: (totalFiles: number, currentFile: number, totalLines: number) => void;
-}
-
-export async function searchFilesContent(dirPath: string, query: string, progressCallback?: (totalFiles: number, currentFile: number, totalLines: number) => void): Promise<SearchResult[]> {
-    const results: SearchResult[] = [];
-    const allFiles: string[] = [];
-
-    // 首先递归统计所有文件
-    async function collectFiles(currentPath: string) {
-        const entries = await fs.promises.readdir(currentPath, {withFileTypes: true});
-
-        for (const entry of entries) {
-            if (entry.name.startsWith('.')) {
-                continue; // 跳过隐藏文件和目录
-            }
-
-            const fullPath = path.join(currentPath, entry.name);
-
-            if (entry.isDirectory()) {
-                await collectFiles(fullPath);
-            } else {
-                allFiles.push(fullPath);
-            }
-        }
-    }
-
-    await collectFiles(dirPath);
-    const totalFiles = allFiles.length;
-    let currentFileIndex = 0;
-    let totalLinesSearched = 0;
-
-    // 递归搜索目录
-    async function searchDirectory(currentPath: string) {
-        const entries = await fs.promises.readdir(currentPath, {withFileTypes: true});
-
-        for (const entry of entries) {
-            if (entry.name.startsWith('.')) {
-                continue; // 跳过隐藏文件和目录
-            }
-
-            const fullPath = path.join(currentPath, entry.name);
-
-            if (entry.isDirectory()) {
-                await searchDirectory(fullPath);
-            } else {
-                currentFileIndex++;
-                try {
-                    // 检测文件编码
-                    const buffer = await fs.promises.readFile(fullPath);
-                    const detectedEncoding = chardet.detect(buffer);
-
-                    // 读取文件内容
-                    let content: string;
-                    if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
-                        content = iconv.decode(buffer, detectedEncoding);
-                    } else {
-                        // 尝试直接使用utf-8
-                        try {
-                            content = buffer.toString('utf-8');
-                        } catch {
-                            // 如果utf-8解码失败，跳过此文件
-                            continue;
-                        }
-                    }
-
-                    // 搜索关键词
-                    const lines = content.split('\n');
-                    const matches = [];
-
-                    totalLinesSearched += lines.length;
-
-                    // 报告进度
-                    if (progressCallback) {
-                        progressCallback(totalFiles, currentFileIndex, totalLinesSearched);
-                    }
-
-                    for (let i = 0; i < lines.length; i++) {
-                        if (lines[i].toLowerCase().includes(query.toLowerCase())) {
-                            // 截短匹配行的内容
-                            const truncatedContent = truncateText(lines[i].trim(), 100, query);
-                            matches.push({
-                                line: i + 1, // 行号从1开始
-                                content: truncatedContent
-                            });
-                        }
-                    }
-
-                    if (matches.length > 0) {
-                        const result = {
-                            filePath: fullPath,
-                            fileName: entry.name,
-                            matches
-                        };
-                        results.push(result);
-                    }
-                } catch (error) {
-                    // 忽略无法访问的文件
-                    console.error(`无法读取文件: ${fullPath}`, error);
-                }
-            }
-        }
-    }
-
-    await searchDirectory(dirPath);
-    return results;
-}
-
-// 新增：逐步搜索文件内容的函数
-export async function searchFilesContentProgressively(
-    dirPath: string,
-    query: string,
-    callbacks: SearchProgressCallback
-): Promise<void> {
-    const allFiles: string[] = [];
-
-    // 首先递归统计所有文件
-    async function collectFiles(currentPath: string) {
-        const entries = await fs.promises.readdir(currentPath, {withFileTypes: true});
-
-        for (const entry of entries) {
-            if (entry.name.startsWith('.')) {
-                continue; // 跳过隐藏文件和目录
-            }
-
-            const fullPath = path.join(currentPath, entry.name);
-
-            if (entry.isDirectory()) {
-                await collectFiles(fullPath);
-            } else {
-                allFiles.push(fullPath);
-            }
-        }
-    }
-
-    await collectFiles(dirPath);
-    const totalFiles = allFiles.length;
-    let currentFileIndex = 0;
-    let totalLinesSearched = 0;
-
-    // 逐个文件搜索
-    for (const filePath of allFiles) {
-        currentFileIndex++;
-        try {
-            // 获取文件名
-            const fileName = path.basename(filePath);
-
-            // 检测文件编码
-            const buffer = await fs.promises.readFile(filePath);
-            const detectedEncoding = chardet.detect(buffer);
-
-            // 读取文件内容
-            let content: string;
-            if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
-                content = iconv.decode(buffer, detectedEncoding);
-            } else {
-                // 尝试直接使用utf-8
-                try {
-                    content = buffer.toString('utf-8');
-                } catch {
-                    // 如果utf-8解码失败，跳过此文件
-                    callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
-                    continue;
-                }
-            }
-
-            // 搜索关键词
-            const lines = content.split('\n');
-            const matches = [];
-
-            totalLinesSearched += lines.length;
-
-            // 报告进度
-            callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
-
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].toLowerCase().includes(query.toLowerCase())) {
-                    // 截短匹配行的内容
-                    const truncatedContent = truncateText(lines[i].trim(), 100, query);
-                    matches.push({
-                        line: i + 1, // 行号从1开始
-                        content: truncatedContent
-                    });
-                }
-            }
-
-            // 如果有匹配结果，则发送结果
-            if (matches.length > 0) {
-                const result: SearchResult = {
-                    filePath,
-                    fileName,
-                    matches
-                };
-                callbacks.onFileProcessed(result);
-            }
-        } catch (error) {
-            // 忽略无法访问的文件
-            console.error(`无法读取文件: ${filePath}`, error);
-            callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
-        }
-    }
-
-    // 搜索完成，发送null表示结束
-    callbacks.onFileProcessed(null);
 }
