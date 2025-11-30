@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useState, ReactNode, useRef} from 'react';
+import React, {createContext, ReactNode, useContext, useRef, useState} from 'react';
 import {fileHistoryManager, FileHistoryRecord} from '../utils/uiUtils';
 import {detectFileType} from "../utils/fileType";
 
@@ -21,6 +21,16 @@ export interface AppContextType {
     clearFolderHistory: () => void;
 
     autoPlay: boolean;
+
+    /** 标题栏是否可见 */
+    titleBarVisible: boolean;
+    /** 设置标题栏可见性 */
+    setTitleBarVisible: (visible: boolean) => void;
+
+    /** 搜索面板是否打开 */
+    searchPanelOpen: boolean;
+    /** 设置搜索面板开关 */
+    setSearchPanelOpen: (open: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -33,6 +43,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
     const [currentFile, setCurrentFile] = useState<string | null>(null);
     const [fileHistory, setFileHistory] = useState<FileHistoryRecord[]>([]);
+    const [titleBarVisible, setTitleBarVisible] = useState<boolean>(true);
+    const [searchPanelOpen, setSearchPanelOpen] = useState<boolean>(false);
 
     const autoPlay = useRef(true); // 是否自动播放，当打开上次打开的视频时，不自动播放
     const isFirstOpen = useRef(true); // 第一次打开文件
@@ -40,6 +52,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
     // 设置当前文件夹并加载历史记录
     const handleSetCurrentFolder = (folder: string | null) => {
         setCurrentFolder(folder);
+        // 切换文件夹时清空当前文件
+        setCurrentFile(null);
         if (folder) {
             // 加载当前文件夹的历史记录
             const history = fileHistoryManager.getFolderHistory(folder);
@@ -111,6 +125,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
         getLastAccessedFile,
         clearFolderHistory,
         autoPlay: autoPlay.current,
+        titleBarVisible,
+        setTitleBarVisible,
+        searchPanelOpen,
+        setSearchPanelOpen,
     };
 
     return (
