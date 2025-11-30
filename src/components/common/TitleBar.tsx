@@ -9,6 +9,7 @@ import {RecentFolder} from '../../types';
 export const TitleBar: React.FC = () => {
     const {
         currentFolder,
+        currentFile,
         setCurrentFolder,
         titleBarVisible,
         setTitleBarVisible,
@@ -183,7 +184,7 @@ export const TitleBar: React.FC = () => {
                     </div>
                     <div style={{flex: '1 3 auto', minWidth: 0}}>
                         <div className="one-line text-center">
-                            {currentFolder ? currentFolder.split('/').pop() : ''}
+                            {currentFile ? currentFile.split('/').pop() : ''}
                         </div>
                     </div>
                     <div style={{
