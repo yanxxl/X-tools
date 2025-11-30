@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Button, Empty, Space, Spin, Typography} from 'antd';
+import {Button, Empty, Skeleton, Space, Typography} from 'antd';
 import {FileTextOutlined, ReloadOutlined} from '@ant-design/icons';
 import {Center} from "../common/Center";
 import PageSearch from "../common/PageSearch";
@@ -48,10 +48,9 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
 
     if (loading) {
         return (
-            <Center>
-                <Spin size="large"/>
-                <div style={{marginTop: 16}}>正在加载文本文件...</div>
-            </Center>
+            <div style={{padding: 24}}>
+                <Skeleton active paragraph={{rows: 3}}/>
+            </div>
         );
     }
 

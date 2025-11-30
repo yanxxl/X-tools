@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Button, Card, Collapse, Empty, Input, message, Progress, Select, Space, Spin, Splitter, Statistic, Typography} from 'antd';
+import {Button, Card, Collapse, Empty, Input, message, Progress, Select, Skeleton, Space, Splitter, Statistic, Typography} from 'antd';
 import {DownOutlined, FileTextOutlined, HistoryOutlined, SearchOutlined, UpOutlined} from '@ant-design/icons';
 import {useAppContext} from '../../contexts/AppContext';
 import {Center} from './Center';
@@ -643,10 +643,11 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
 
                         {/* 预览内容 */}
                         <div style={{flex: 1, overflow: 'auto', backgroundColor: '#fafafa', padding: '16px', borderRadius: '4px'}}>
-                            {previewLoading ? (<Center>
-                                <Spin size="large"/>
-                                <div>正在加载文件...</div>
-                            </Center>) : previewError ? (<Center>
+                            {previewLoading ? (
+                                <div style={{padding: 24}}>
+                                    <Skeleton active paragraph={{rows: 3}}/>
+                                </div>
+                            ) : previewError ? (<Center>
                                 <Empty
                                     description={previewError}
                                     image={Empty.PRESENTED_IMAGE_SIMPLE}

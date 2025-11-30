@@ -1,6 +1,6 @@
-import React, {useMemo, useRef, useState, useEffect} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {toFileUrl} from '../../utils/fileType';
-import {Spin} from 'antd';
+import {Skeleton} from 'antd';
 import {useAppContext} from "../../contexts/AppContext";
 
 interface VideoViewerProps {
@@ -93,8 +93,8 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({path}) => {
     return (
         <div style={{position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%'}}>
             {!isReady && (
-                <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                    <Spin tip="正在准备视频..."/>
+                <div style={{position: 'absolute', inset: 0, padding: 24}}>
+                    <Skeleton active paragraph={{rows: 2}}/>
                 </div>
             )}
             <video

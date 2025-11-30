@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Button, Card, Descriptions, Space, Spin, Typography} from 'antd';
+import {Alert, Button, Card, Descriptions, Skeleton, Space, Typography} from 'antd';
 import {FileOutlined, FolderOpenOutlined} from '@ant-design/icons';
 import {countText, formatDate, formatFileSize, getFileTextStats, getSelectedText, truncateText} from '../../utils/format';
 import {isTextFile} from '../../utils/fileType';
@@ -146,8 +146,8 @@ const FileInfoPanel: React.FC = () => {
     // 渲染加载状态
     if (loading) {
         return (
-            <div style={{padding: 16, textAlign: 'center'}}>
-                <Spin tip="正在获取文件信息..."/>
+            <div style={{padding: 24}}>
+                <Skeleton active paragraph={{rows: 3}}/>
             </div>
         );
     }

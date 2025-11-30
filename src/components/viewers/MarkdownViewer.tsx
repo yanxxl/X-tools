@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import type {MenuProps} from 'antd';
-import {Button, Empty, Flex, Menu, message, Space, Spin, Splitter, Typography} from 'antd';
+import {Button, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typography} from 'antd';
 import {CodeOutlined, EyeOutlined, FileTextOutlined} from '@ant-design/icons';
 import {OutlineItem, parseMarkdown} from '../../utils/markdown';
 import {storage, STORAGE_KEYS} from '../../utils/uiUtils';
@@ -399,10 +399,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
     // ============================== Loading & Error States ==============================
     if (loading) {
         return (
-            <Center>
-                <Spin size="large"/>
-                <div>正在加载 Markdown 文件...</div>
-            </Center>
+            <div style={{padding: 24}}>
+                <Skeleton active paragraph={{rows: 3}}/>
+            </div>
         );
     }
 
