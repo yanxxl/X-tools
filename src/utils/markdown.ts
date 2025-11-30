@@ -6,6 +6,7 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import remarkGemoji from 'remark-gemoji';
 import remarkMath from 'remark-math';
+import remarkBreaks from 'remark-breaks';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
 import rehypeMermaid from 'rehype-mermaid';
@@ -77,6 +78,7 @@ export async function parseMarkdown(markdown: string, filePath = ''): Promise<Ma
     // 创建 remark 处理器，使用统一的管道处理 Markdown
     const processor = unified()
         .use(remarkParse) // 解析 Markdown
+        .use(remarkBreaks) // 支持单换行作为硬换行
         .use(remarkFrontmatter) // 支持 frontmatter
         .use(remarkGfm) // 支持 GitHub 风格 Markdown（表格、删除线、任务列表、自动链接等）
         .use(remarkGemoji) // 支持 GitHub 表情符号
