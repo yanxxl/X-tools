@@ -1,23 +1,7 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {App, Button, ConfigProvider, Drawer, Dropdown, Flex, message, Splitter, Tree} from "antd";
-import {
-    DeleteOutlined,
-    DownOutlined,
-    EyeInvisibleOutlined,
-    FileImageOutlined,
-    FileOutlined,
-    FilePdfOutlined,
-    FileTextOutlined,
-    FolderOpenOutlined,
-    FolderOutlined,
-    PlayCircleOutlined,
-    PlusOutlined,
-    SearchOutlined,
-    SyncOutlined
-} from '@ant-design/icons';
-import type {DataNode, TreeProps} from 'antd/es/tree';
-import {FileNode, RecentFolder} from './types';
-import {detectFileType} from './utils/fileType';
+import React, {useEffect, useState} from 'react';
+import {App, Button, ConfigProvider, Drawer, Dropdown, Flex, message, Splitter} from "antd";
+import {DeleteOutlined, DownOutlined, EyeInvisibleOutlined, FolderOpenOutlined, PlusOutlined, SearchOutlined, SyncOutlined} from '@ant-design/icons';
+import {RecentFolder} from './types';
 import {FileViewer} from './components/viewers/FileViewer';
 import {ToolWindowsPane} from './components/windows/ToolWindowsPane';
 import {AppProvider, useAppContext} from './contexts/AppContext';
@@ -26,63 +10,16 @@ import {Config, removeFolderPath, updateFolderPath} from "./utils/config";
 import {Container} from "./components/common/Container";
 import {Center} from "./components/common/Center";
 import {GlobalSearch} from './components/common/GlobalSearch';
-
-// 为Tree组件定义的节点类型
-export type TreeNodeWithMeta = DataNode & {
-    meta: FileNode;
-    children?: TreeNodeWithMeta[];
-};
+import {FileTree} from './components/common/FileTree';
 
 const AppContent: React.FC = () => {
     const {currentFolder, setCurrentFolder, currentFile, setCurrentFile} = useAppContext();
 
-    // 文件树高度状态
-    const [treeHeight, setTreeHeight] = useState(0);
-
-    // 防抖ID引用
-    const scrollDebounceRef = useRef<number | null>(null);
-
     const [loading, setLoading] = useState(false);
     const [config, setConfig] = useState<Config | null>(null);
     const [recentFolders, setRecentFolders] = useState<RecentFolder[]>([]);
-    const [fileTree, setFileTree] = useState<FileNode | null>(null);
-    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [titleBarVisible, setTitleBarVisible] = useState(true);
-    const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
-    const [loadedKeys, setLoadedKeys] = useState<Set<string>>(new Set()); // 记录已加载的节点
     const [searchPanelOpen, setSearchPanelOpen] = useState(false); // 控制搜索面板显示状态
-
-    // 添加一个新的useEffect来监听currentFile的变化并更新树节点选中状态
-    useEffect(() => {
-        if (currentFile && fileTree) {
-            // 设置文件树中对应节点为选中状态
-            // 使用文件路径作为节点的ID
-            setSelectedKeys([currentFile]);
-
-            // 展开所有父级目录，确保选中的文件可见
-            const getAllParentPaths = (filePath: string): string[] => {
-                const parts = filePath.split('/').filter(part => part !== '');
-                const parents: string[] = [];
-                let currentPath = '';
-
-                // 从根目录开始构建每一级父目录路径
-                for (let i = 0; i < parts.length - 1; i++) {
-                    currentPath += '/' + parts[i];
-                    parents.push(currentPath);
-                }
-
-                return parents;
-            };
-
-            // 获取所有父级目录路径并展开它们
-            const parentPaths = getAllParentPaths(currentFile);
-            const newExpandedKeys = Array.from(new Set([currentFile, ...parentPaths]));
-            setExpandedKeys(newExpandedKeys);
-        } else {
-            // 如果没有选中文件，清空选中状态
-            setSelectedKeys([]);
-        }
-    }, [currentFile]);
 
     // 窗口大小相关的状态和功能
     const WINDOW_SIZE_KEY = 'x-tools-window-size';
@@ -138,22 +75,8 @@ const AppContent: React.FC = () => {
     useEffect(() => {
         if (currentFolder) {
             setLoading(true);
-            loadFolderTree().then(() => {
-                setLoading(false);
-            })
-            setCurrentFile(null)
-            setConfig(updateFolderPath(config, currentFolder))
-            // 切换文件夹时清空展开和加载状态
-            setExpandedKeys([]);
-            setLoadedKeys(new Set());
             // 关闭搜索面板
             setSearchPanelOpen(false);
-        } else {
-            setFileTree(null)
-            setSelectedKeys([]);
-            setCurrentFile(null);
-            setExpandedKeys([]);
-            setLoadedKeys(new Set());
         }
     }, [currentFolder]);
 
@@ -180,8 +103,6 @@ const AppContent: React.FC = () => {
         const handleResize = () => {
             if (window.innerWidth && window.innerHeight) {
                 saveWindowSize(window.innerWidth, window.innerHeight);
-                // 更新文件树高度
-                updateTreeHeight();
             }
         };
 
@@ -192,77 +113,6 @@ const AppContent: React.FC = () => {
             window.removeEventListener('resize', handleResize);
         };
     }, []); // 只在组件挂载和卸载时执行
-
-    // 更新文件树高度的函数
-    const updateTreeHeight = useCallback(() => {
-        // 计算文件树容器的高度
-        const topBarHeight = titleBarVisible ? 40 : 0;
-        const newHeight = window.innerHeight - topBarHeight;
-        setTreeHeight(newHeight);
-    }, [titleBarVisible]);
-
-    // 监听标题栏可见性变化来更新文件树高度
-    useEffect(() => {
-        updateTreeHeight();
-    }, [titleBarVisible, updateTreeHeight]);
-
-    // 组件挂载时初始化文件树高度
-    useEffect(() => {
-        updateTreeHeight();
-    }, [updateTreeHeight]);
-
-    async function loadFolderTree() {
-        if (currentFolder && window.electronAPI) {
-            try {
-                setLoading(true);
-                const tree = await window.electronAPI.getFileTree(currentFolder);
-                setFileTree(tree);
-            } catch (error) {
-                console.error('选择文件夹失败:', error);
-                message.error('选择文件夹失败，请重试');
-            } finally {
-                setLoading(false);
-            }
-        }
-    }
-
-    // 懒加载子节点
-    const onLoadData = async (node: TreeNodeWithMeta): Promise<void> => {
-        const {meta} = node;
-        if (!meta.isDirectory || loadedKeys.has(meta.id)) {
-            return;
-        }
-
-        try {
-            setLoading(true);
-            const children = await window.electronAPI!.getDirectoryChildren(meta.path);
-
-            // 更新文件树中的子节点
-            const updateNodeChildren = (node: FileNode): FileNode => {
-                if (node.id === meta.id) {
-                    return {
-                        ...node,
-                        children: children
-                    };
-                }
-                if (node.children) {
-                    return {
-                        ...node,
-                        children: node.children.map(updateNodeChildren)
-                    };
-                }
-                return node;
-            };
-
-            setFileTree(prevTree => prevTree ? updateNodeChildren(prevTree) : null);
-            setLoadedKeys(prev => new Set([...prev, meta.id]));
-        } catch (error) {
-            console.error('加载子节点失败:', error);
-            message.error('加载子节点失败，请重试');
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // 处理选择文件夹
     const handleSelectDirectory = async () => {
@@ -286,105 +136,6 @@ const AppContent: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    // 根据文件类型获取对应图标
-    const getFileIcon = useCallback((node: FileNode) => {
-        if (node.isDirectory) {
-            return <FolderOutlined style={{marginRight: 8}}/>;
-        }
-        const fileType = detectFileType(node.name);
-        switch (fileType) {
-            case 'text':
-                return <FileTextOutlined style={{marginRight: 8}}/>;
-            case 'image':
-                return <FileImageOutlined style={{marginRight: 8}}/>;
-            case 'video':
-                return <PlayCircleOutlined style={{marginRight: 8}}/>;
-            case 'pdf':
-                return <FilePdfOutlined style={{marginRight: 8}}/>;
-            default:
-                return <FileOutlined style={{marginRight: 8}}/>;
-        }
-    }, []);
-
-    // 转换文件节点为Tree组件需要的数据格式
-    const transformToTreeData = (node: FileNode): TreeNodeWithMeta => {
-        const result: TreeNodeWithMeta = {
-            title: (
-                <div
-                    className={'one-line'}
-                    title={node.name}
-                    onClick={(e) => {
-                        // 只有文件夹才需要处理点击展开/折叠
-                        if (node.isDirectory) {
-                            // 检查节点是否已展开
-                            const isExpanded = expandedKeys.includes(node.id);
-                            if (isExpanded) {
-                                // 如果已展开，则折叠
-                                setExpandedKeys(expandedKeys.filter(key => key !== node.id));
-                            } else {
-                                // 如果未展开，则展开
-                                setExpandedKeys([...expandedKeys, node.id]);
-                                // 如果是未加载的子节点，需要先加载数据
-                                if (!(node as any).hasUnloadedChildren && !node.children && window.electronAPI) {
-                                    onLoadData(result).catch(err => {
-                                        console.error('加载子节点失败:', err);
-                                    });
-                                }
-                            }
-                            // 阻止事件冒泡，避免触发onSelect
-                            e.stopPropagation();
-                        }
-                    }}
-                    style={{cursor: node.isDirectory ? 'pointer' : 'default'}}
-                >
-                    {getFileIcon(node)}
-                    {node.name}
-                </div>
-            ),
-            key: node.id,
-            meta: node,
-            isLeaf: !node.isDirectory
-        };
-
-        // 检查是否有未加载的子节点
-        const hasUnloadedChildren = (node as any).hasUnloadedChildren;
-
-        if (node.isDirectory && node.children && node.children.length > 0) {
-            result.children = node.children.map(transformToTreeData);
-        } else if (hasUnloadedChildren) {
-            // 对于有未加载子节点的目录，不显示children，让antd显示可展开状态
-            // 这样用户点击时会触发onLoadData
-        }
-
-        return result;
-    };
-
-    // 处理树节点展开
-    const handleExpand: TreeProps<TreeNodeWithMeta>['onExpand'] = (expandedKeysValue) => {
-        setExpandedKeys(expandedKeysValue as string[]);
-    };
-
-    const handleTreeSelect: TreeProps<TreeNodeWithMeta>['onSelect'] = async (keys, info) => {
-        const stringKeys = keys.map(String);
-        setSelectedKeys(stringKeys);
-
-        if (!info || !info.node) {
-            setCurrentFile(null);
-            return;
-        }
-
-        const nodeMeta: FileNode | undefined = info.node.meta;
-
-        if (!nodeMeta) {
-            return;
-        }
-
-        // 设置当前选择（文件或目录）
-        setCurrentFile(nodeMeta.path);
-        // 关闭搜索面板
-        setSearchPanelOpen(false);
     };
 
     return (
@@ -475,7 +226,7 @@ const AppContent: React.FC = () => {
                                 type="link"
                                 loading={loading}
                             >
-                                {fileTree ? truncateFolderName(fileTree.name) : '选择文件夹'} <DownOutlined/>
+                                {currentFolder ? truncateFolderName(currentFolder.split('/').pop() || '') : '选择文件夹'} <DownOutlined/>
                             </Button>
                         </Dropdown>
                     </div>
@@ -518,24 +269,7 @@ const AppContent: React.FC = () => {
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
                 <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
                     <Container style={{backgroundColor: "white"}}>
-                        {fileTree ? (
-                            <Tree<TreeNodeWithMeta>
-                                treeData={transformToTreeData(fileTree).children}
-                                height={treeHeight}
-                                blockNode
-                                showLine
-                                switcherIcon={<DownOutlined/>}
-                                selectedKeys={selectedKeys}
-                                expandedKeys={expandedKeys}
-                                onExpand={handleExpand}
-                                onSelect={handleTreeSelect}
-                                loadData={onLoadData}
-                            />
-                        ) : (
-                            <Center style={{color: 'gray'}}>
-                                请点击上方按钮选择文件夹
-                            </Center>
-                        )}
+                        <FileTree/>
                     </Container>
                 </Splitter.Panel>
                 {/*panel 默认有个 padding 0 1，中间去掉，避免边缘一条白线。*/}
