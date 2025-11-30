@@ -137,7 +137,10 @@ const FileInfoPanel: React.FC = () => {
             }
         };
 
-        fetchFileInfo();
+        // 延后更新，让试图先
+        setTimeout(() => {
+            fetchFileInfo();
+        }, 10)
     }, [currentFile, currentFolder]);
 
     // 渲染加载状态

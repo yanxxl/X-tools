@@ -46,9 +46,15 @@ const AppContent: React.FC = () => {
     // 同步红绿灯显示状态与标题栏显示状态
     useEffect(() => {
         if (window.electronAPI?.setWindowButtonVisibility) {
-            window.electronAPI.setWindowButtonVisibility(titleBarVisible);
+            if (searchPanelOpen) {
+                setTimeout(() => {
+                    window.electronAPI.setWindowButtonVisibility(false);
+                }, 500)
+            } else {
+                window.electronAPI.setWindowButtonVisibility(titleBarVisible);
+            }
         }
-    }, [titleBarVisible]);
+    }, [titleBarVisible, searchPanelOpen]);
 
     // 监听窗口大小变化并保存
     useEffect(() => {

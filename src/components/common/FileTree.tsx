@@ -21,33 +21,36 @@ export const FileTree: React.FC = () => {
 
     // 监听currentFile的变化并更新树节点选中状态
     useEffect(() => {
-        if (currentFile && fileList.length > 0) {
-            // 设置文件树中对应节点为选中状态
-            setSelectedKeys([currentFile]);
+        // 延后更新，让试图先
+        setTimeout(() => {
+            if (currentFile && fileList.length > 0) {
+                // 设置文件树中对应节点为选中状态
+                setSelectedKeys([currentFile]);
 
-            // 展开所有父级目录，确保选中的文件可见
-            const getAllParentPaths = (filePath: string): string[] => {
-                const parts = filePath.split('/').filter(part => part !== '');
-                const parents: string[] = [];
-                let currentPath = '';
+                // 展开所有父级目录，确保选中的文件可见
+                const getAllParentPaths = (filePath: string): string[] => {
+                    const parts = filePath.split('/').filter(part => part !== '');
+                    const parents: string[] = [];
+                    let currentPath = '';
 
-                // 从根目录开始构建每一级父目录路径
-                for (let i = 0; i < parts.length - 1; i++) {
-                    currentPath += '/' + parts[i];
-                    parents.push(currentPath);
-                }
+                    // 从根目录开始构建每一级父目录路径
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        currentPath += '/' + parts[i];
+                        parents.push(currentPath);
+                    }
 
-                return parents;
-            };
+                    return parents;
+                };
 
-            // 获取所有父级目录路径并展开它们
-            const parentPaths = getAllParentPaths(currentFile);
-            const newExpandedKeys = Array.from(new Set([currentFile, ...parentPaths]));
-            setExpandedKeys(newExpandedKeys);
-        } else {
-            // 如果没有选中文件，清空选中状态
-            setSelectedKeys([]);
-        }
+                // 获取所有父级目录路径并展开它们
+                const parentPaths = getAllParentPaths(currentFile);
+                const newExpandedKeys = Array.from(new Set([currentFile, ...parentPaths]));
+                setExpandedKeys(newExpandedKeys);
+            } else {
+                // 如果没有选中文件，清空选中状态
+                setSelectedKeys([]);
+            }
+        }, 500)
     }, [currentFile]);
 
     // 当文件夹改变时加载文件列表
