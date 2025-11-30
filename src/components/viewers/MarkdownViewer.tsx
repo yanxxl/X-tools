@@ -211,13 +211,23 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
     // ============================== Link Handling ==============================
     // 处理链接点击
     const handleLinkClick = (event: React.MouseEvent<HTMLDivElement>) => {
-        const target = event.target as HTMLElement;
-        if (target.tagName === 'A') {
-            const anchorElement = target as HTMLAnchorElement;
-            const href = anchorElement.href;
+        // 阻止默认行为
+        event.preventDefault();
 
-            // 阻止默认行为
-            event.preventDefault();
+        // 查找点击目标或其祖先元素中的 a 标签
+        const target = event.target as HTMLElement;
+        let anchorElement: HTMLAnchorElement | null = null;
+        
+        if (target.tagName === 'A') {
+            anchorElement = target as HTMLAnchorElement;
+        } else {
+            // 向上查找最近的 a 标签祖先元素
+            anchorElement = target.closest('a');
+        }
+
+        // 如果找到了 a 标签，则处理链接点击
+        if (anchorElement) {
+            const href = anchorElement.href;
 
             try {
                 // 检查链接类型
