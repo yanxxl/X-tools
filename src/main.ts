@@ -188,7 +188,7 @@ function registerIpcHandlers() {
     });
 
     // 搜索文件内容 - 使用Worker线程
-    ipcMain.handle('searchFilesContent', async (event, dirPath: string, query: string, searchId: string) => {
+    ipcMain.handle('searchFilesContent', async (event, dirPath: string, query: string, searchId: string, searchMode: 'content' | 'filename' = 'content') => {
         const {Worker} = require('worker_threads');
         const path = require('path');
         const {app} = require('electron');
@@ -208,7 +208,7 @@ function registerIpcHandlers() {
             }
 
             const worker = new Worker(workerPath, {
-                workerData: {dirPath, query}
+                workerData: {dirPath, query, searchId, searchMode}
             });
 
             // 存储Worker引用以便后续取消

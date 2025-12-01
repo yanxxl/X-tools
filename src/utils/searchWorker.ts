@@ -3,7 +3,7 @@ import {parentPort, workerData} from 'worker_threads';
 import {searchFilesContentProgressively} from './fileUtils';
 
 // 直接使用workerData执行搜索，不需要等待message事件
-const {dirPath, query, searchId} = workerData;
+const {dirPath, query, searchId, searchMode} = workerData;
 
 // 立即执行搜索
 (async () => {
@@ -26,7 +26,7 @@ const {dirPath, query, searchId} = workerData;
                     data: {totalFiles, currentFile, totalLines}
                 });
             }
-        });
+        }, searchMode);
     } catch (error) {
         // 发送错误信息到主进程
         parentPort?.postMessage({

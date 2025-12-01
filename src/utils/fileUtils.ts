@@ -220,11 +220,13 @@ export function getFileInfo(targetPath: string) {
  * @param dirPath 搜索目录
  * @param query 搜索关键词
  * @param callbacks 进度回调
+ * @param searchMode 搜索模式: 'content' 为全文搜索, 'filename' 为文件名搜索
  */
 export async function searchFilesContentProgressively(
     dirPath: string,
     query: string,
-    callbacks: SearchProgressCallback
+    callbacks: SearchProgressCallback,
+    searchMode: 'content' | 'filename' = 'content'
 ): Promise<void> {
     // 1. 收集所有文本文件
     const allFiles = await collectTextFiles(dirPath);
@@ -232,36 +234,58 @@ export async function searchFilesContentProgressively(
     let currentFileIndex = 0;
     let totalLinesSearched = 0;
 
-    // 2. 逐个文件搜索
-    for (const filePath of allFiles) {
-        currentFileIndex++;
-        try {
-            // 3. 搜索单个文件
-            const searchResult = await searchSingleFile(filePath, query);
+    // 2. 根据搜索模式进行搜索
+    if (searchMode === 'filename') {
+        // 文件名搜索模式
+        for (const filePath of allFiles) {
+            currentFileIndex++;
+            const fileName = path.basename(filePath);
 
-            if (searchResult) {
-                totalLinesSearched += searchResult.totalLines;
+            // 检查文件名是否匹配查询
+            if (fileName.toLowerCase().includes(query.toLowerCase())) {
+                // 文件名搜索模式下，matches 为空
+                callbacks.onFileProcessed({
+                    filePath,
+                    fileName,
+                    matches: []
+                });
+            }
 
-                // 4. 报告进度
-                callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
+            // 报告进度（文件名搜索不统计行数）
+            callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
+        }
+    } else {
+        // 全文搜索模式
+        for (const filePath of allFiles) {
+            currentFileIndex++;
+            try {
+                // 3. 搜索单个文件
+                const searchResult = await searchSingleFile(filePath, query);
 
-                // 5. 返回匹配结果
-                if (searchResult.matches.length > 0) {
-                    callbacks.onFileProcessed({
-                        filePath,
-                        fileName: path.basename(filePath),
-                        matches: searchResult.matches
-                    });
+                if (searchResult) {
+                    totalLinesSearched += searchResult.totalLines;
+
+                    // 4. 报告进度
+                    callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
+
+                    // 5. 返回匹配结果
+                    if (searchResult.matches.length > 0) {
+                        callbacks.onFileProcessed({
+                            filePath,
+                            fileName: path.basename(filePath),
+                            matches: searchResult.matches
+                        });
+                    }
+                } else {
+                    // 即使文件搜索失败，也要报告进度
+                    callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
                 }
-            } else {
-                // 即使文件搜索失败，也要报告进度
+            } catch (error) {
+                // 忽略无法访问的文件
+                console.error(`无法读取文件: ${filePath}`, error);
+                // 报告进度
                 callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
             }
-        } catch (error) {
-            // 忽略无法访问的文件
-            console.error(`无法读取文件: ${filePath}`, error);
-            // 报告进度
-            callbacks.onProgress(totalFiles, currentFileIndex, totalLinesSearched);
         }
     }
 

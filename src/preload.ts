@@ -25,7 +25,7 @@ interface ElectronAPI {
     /** 获取文件/目录基本信息 */
     getFileInfo: (filePath: string) => Promise<any>;
     /** 搜索文件内容 */
-    searchFilesContent: (dirPath: string, query: string, searchId: string) => Promise<any>;
+    searchFilesContent: (dirPath: string, query: string, searchId: string, searchMode?: 'content' | 'filename') => Promise<any>;
     /** 取消搜索 */
     cancelSearch: (searchId: string) => Promise<boolean>;
     /** 监听搜索进度事件 */
@@ -74,7 +74,7 @@ const electronAPI: ElectronAPI = {
     getFileTree: (path: string) => ipcRenderer.invoke('getFileTree', path) as Promise<FileNode>,
     getDirectoryChildren: (dirPath: string) => ipcRenderer.invoke('getDirectoryChildren', dirPath) as Promise<FileNode[]>,
     getFileInfo: (filePath: string) => ipcRenderer.invoke('getFileInfo', filePath),
-    searchFilesContent: (dirPath: string, query: string, searchId: string) => ipcRenderer.invoke('searchFilesContent', dirPath, query, searchId) as Promise<any>,
+    searchFilesContent: (dirPath: string, query: string, searchId: string, searchMode?: 'content' | 'filename') => ipcRenderer.invoke('searchFilesContent', dirPath, query, searchId, searchMode) as Promise<any>,
     cancelSearch: (searchId: string) => ipcRenderer.invoke('cancelSearch', searchId) as Promise<boolean>,
     onSearchProgress: (callback) => ipcRenderer.on('searchProgress', (event, progress) => callback(progress)),
     offSearchProgress: (callback) => ipcRenderer.off('searchProgress', (event, progress) => callback(progress)),

@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Button, Card, Collapse, Empty, Input, message, Progress, Select, Skeleton, Space, Splitter, Statistic, Typography} from 'antd';
-import {DownOutlined, FileTextOutlined, HistoryOutlined, SearchOutlined, UpOutlined} from '@ant-design/icons';
+import {Button, Card, Collapse, Empty, Input, message, Progress, Radio, Select, Skeleton, Space, Splitter, Statistic, Typography} from 'antd';
+import {DownOutlined, FileTextOutlined, FolderOutlined, HistoryOutlined, SearchOutlined, UpOutlined} from '@ant-design/icons';
 import {useAppContext} from '../../contexts/AppContext';
 import {Center} from './Center';
 
@@ -8,12 +8,15 @@ const {Search} = Input;
 const {Title, Text} = Typography;
 const {Panel} = Collapse;
 
+interface SearchMatch {
+    line: number;
+    content: string;
+}
+
 interface SearchResult {
     filePath: string;
     fileName: string;
-    matches: {
-        line: number; content: string;
-    }[];
+    matches: SearchMatch[];
 }
 
 // 样式常量
@@ -25,6 +28,15 @@ const SCROLL_DELAY = 300;
 // 数字格式化函数 - 添加千分位分隔符
 const formatNumber = (num: number): string => {
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+// 简单的路径处理函数
+const dirname = (path: string): string => {
+    return path.substring(0, path.lastIndexOf('/'));
+};
+
+const basename = (path: string): string => {
+    return path.substring(path.lastIndexOf('/') + 1);
 };
 
 // 代码行组件
@@ -75,7 +87,7 @@ const CodeLine: React.FC<{
             {highlightContent(content, searchQuery)}
         </div>
     </div>);
-};
+}
 
 // 高亮文本中的搜索关键词
 const highlightText = (text: string, query: string) => {
@@ -108,6 +120,7 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
     const [subDirectories, setSubDirectories] = useState<Array<{ label: string, value: string }>>([]); // 子目录列表
     const [collapsedKeys, setCollapsedKeys] = useState<string[]>([]); // 折叠的文件key
     const [currentSearchId, setCurrentSearchId] = useState<string>(''); // 当前搜索ID
+    const [searchMode, setSearchMode] = useState<'content' | 'filename'>('content'); // 搜索模式
 
     // 安全地从localStorage获取数据
     const getLocalStorageItem = useCallback((key: string) => {
@@ -128,7 +141,7 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
         }
     }, []);
 
-    // 初始化搜索历史和搜索路径
+    // 初始化搜索历史、搜索路径和搜索模式
     useEffect(() => {
         // 从localStorage加载搜索历史
         const history = getLocalStorageItem('search-history');
@@ -146,6 +159,20 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
         // 设置默认搜索路径为当前文件夹
         if (currentFolder) {
             setSearchPath(currentFolder);
+
+            // 从localStorage加载当前文件夹的搜索模式
+            const savedSearchMode = getLocalStorageItem(`search-mode-${currentFolder}`);
+            if (savedSearchMode === 'content' || savedSearchMode === 'filename') {
+                setSearchMode(savedSearchMode);
+            } else {
+                setSearchMode('content'); // 默认为全文搜索
+            }
+
+            // 从localStorage加载当前文件夹的搜索路径
+            const savedSearchPath = getLocalStorageItem(`search-path-${currentFolder}`);
+            if (savedSearchPath && savedSearchPath.startsWith(currentFolder)) {
+                setSearchPath(savedSearchPath);
+            }
         }
     }, [currentFolder, getLocalStorageItem]);
 
@@ -202,6 +229,26 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
             setLocalStorageItem('search-history', JSON.stringify(searchHistory));
         }
     }, [searchHistory, setLocalStorageItem]);
+
+    // 保存搜索模式到localStorage并在切换时清空结果
+    useEffect(() => {
+        if (currentFolder) {
+            setLocalStorageItem(`search-mode-${currentFolder}`, searchMode);
+        }
+        // 切换模式时清空结果
+        setSearchResults([]);
+        setCollapsedKeys([]);
+    }, [searchMode, currentFolder, setLocalStorageItem]);
+
+    // 保存搜索路径到localStorage并在切换时清空结果
+    useEffect(() => {
+        if (currentFolder && searchPath && searchPath.startsWith(currentFolder)) {
+            setLocalStorageItem(`search-path-${currentFolder}`, searchPath);
+        }
+        // 切换路径时清空结果
+        setSearchResults([]);
+        setCollapsedKeys([]);
+    }, [searchPath, currentFolder, setLocalStorageItem]);
 
     // 当当前文件夹变化时，清空搜索结果
     useEffect(() => {
@@ -316,7 +363,7 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
         setCollapsedKeys([]); // 展开所有文件
 
         try {
-            await window.electronAPI.searchFilesContent(searchPath, query, searchId);
+            await window.electronAPI.searchFilesContent(searchPath, query, searchId, searchMode);
         } catch (error) {
             console.error('搜索失败:', error);
             message.error('搜索失败，请重试');
@@ -344,23 +391,26 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
         }
     };
 
-    // 排序搜索结果
-    const sortedResults = useMemo(() => {
-        const sorted = [...searchResults];
-        sorted.sort((a, b) => {
-            if (sortBy === 'name') {
-                return a.fileName.localeCompare(b.fileName);
-            } else if (sortBy === 'ctime') {
-                // TODO: 实现按创建时间排序
-                return 0;
-            } else if (sortBy === 'mtime') {
-                // TODO: 实现按修改时间排序
-                return 0;
+    // 按文件夹分组搜索结果
+    const groupedResults = useMemo(() => {
+        // 统一按文件夹分组
+        const folderGroups: { [folder: string]: SearchResult[] } = {};
+
+        searchResults.forEach(result => {
+            const folderPath = dirname(result.filePath);
+            if (!folderGroups[folderPath]) {
+                folderGroups[folderPath] = [];
             }
-            return 0;
+            folderGroups[folderPath].push(result);
         });
-        return sorted;
-    }, [searchResults, sortBy]);
+
+        // 对每个文件夹内的结果按文件名排序
+        Object.keys(folderGroups).forEach(folder => {
+            folderGroups[folder].sort((a, b) => a.fileName.localeCompare(b.fileName));
+        });
+
+        return folderGroups;
+    }, [searchResults]);
 
     // 计算统计数据
     const totalMatches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
@@ -373,6 +423,13 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
 
     // 处理结果点击
     const handleResultClick = (filePath: string, fileName: string, line?: number) => {
+        // 对于文件名搜索，我们不需要行号
+        if (searchMode === 'filename') {
+            setPreviewFile({filePath, fileName, line: undefined});
+            loadFileContent(filePath);
+            return;
+        }
+        
         // 只有当文件路径不同时才重新加载文件内容
         if (!previewFile || previewFile.filePath !== filePath) {
             setPreviewFile({filePath, fileName, line});
@@ -437,18 +494,23 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
 
     // 全部折叠/展开
     const toggleAllCollapse = () => {
-        if (collapsedKeys.length === sortedResults.length) {
+        const folderGroups = groupedResults;
+        const totalItems = Object.keys(folderGroups).length;
+        if (collapsedKeys.length === totalItems) {
             // 当前全部折叠，执行展开（清空折叠key）
             setCollapsedKeys([]);
         } else {
-            // 当前部分或全部展开，执行折叠（设置所有文件key为折叠状态）
-            const allKeys = sortedResults.map((_, idx) => idx.toString());
+            // 当前部分或全部展开，执行折叠（设置所有文件夹key为折叠状态）
+            const allKeys = Object.keys(folderGroups).map((_, idx) => idx.toString());
             setCollapsedKeys(allKeys);
         }
     };
 
     // 检查是否全部折叠
-    const isAllCollapsed = collapsedKeys.length === sortedResults.length && sortedResults.length > 0;
+    const isAllCollapsed = useMemo(() => {
+        const folderGroups = groupedResults;
+        return collapsedKeys.length === Object.keys(folderGroups).length && Object.keys(folderGroups).length > 0;
+    }, [collapsedKeys, groupedResults]);
 
     return (<div style={{height: '100%'}}>
         <Splitter style={{height: '100%'}}>
@@ -459,7 +521,19 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
                         <div style={{
                             display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16
                         }}>
-                            <Title level={4} style={{margin: 0}}>搜索文件内容</Title>
+                            <div style={{display: 'flex', alignItems: 'center', gap: 16}}>
+                                <Title level={4} style={{margin: 0}}>
+                                    搜索
+                                </Title>
+                                <Radio.Group
+                                    value={searchMode}
+                                    onChange={(e) => setSearchMode(e.target.value)}
+                                    size="small"
+                                >
+                                    <Radio.Button value="content">全文搜索</Radio.Button>
+                                    <Radio.Button value="filename">文件名搜索</Radio.Button>
+                                </Radio.Group>
+                            </div>
                             {isSearching && (<Button
                                 type="primary"
                                 danger
@@ -482,7 +556,7 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
                                     optionFilterProp="label"
                                 />
                                 <Search
-                                    placeholder="输入搜索关键词"
+                                    placeholder={searchMode === 'content' ? '输入搜索关键词' : '输入文件名关键词'}
                                     allowClear
                                     enterButton={<SearchOutlined/>}
                                     size="middle"
@@ -536,12 +610,14 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
                                     valueStyle={{fontSize: 14}}
                                     suffix="个文件"
                                 />
-                                <Statistic
-                                    title=""
-                                    value={formatNumber(totalMatches)}
-                                    valueStyle={{fontSize: 14}}
-                                    suffix="条匹配"
-                                />
+                                {searchMode === 'content' && (
+                                    <Statistic
+                                        title=""
+                                        value={formatNumber(totalMatches)}
+                                        valueStyle={{fontSize: 14}}
+                                        suffix="条匹配"
+                                    />
+                                )}
                             </Space>
                             <div style={{display: 'flex', alignItems: 'center', gap: 16}}>
                                 <Space size="small">
@@ -567,46 +643,88 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
 
                         {/* 搜索结果列表 */}
                         <div style={{flex: 1, overflow: 'auto'}}>
-                            {sortedResults.length > 0 ? (<Collapse
-                                activeKey={collapsedKeys.map(key => key.toString())}
-                                onChange={(keys) => setCollapsedKeys(Array.isArray(keys) ? keys : [keys])}
-                                size="small"
-                            >
-                                {sortedResults.map((result, idx) => (<Panel
-                                    key={idx.toString()}
-                                    header={<Space>
-                                        <FileTextOutlined/>
-                                        <Text strong>{result.fileName}</Text>
-                                        <Text type="secondary">({result.matches.length} 条匹配)</Text>
-                                    </Space>}
+                            {(() => {
+                                const folderGroups = groupedResults;
+                                const folderKeys = Object.keys(folderGroups);
+                                return folderKeys.length > 0 ? (<Collapse
+                                    activeKey={collapsedKeys.map(key => key.toString())}
+                                    onChange={(keys) => setCollapsedKeys(Array.isArray(keys) ? keys : [keys])}
+                                    size="small"
                                 >
-                                    <div style={{paddingLeft: 24}}>
-                                        {result.matches.map((match, matchIdx) => (<div key={matchIdx} style={{marginBottom: 12}}>
-                                            <div style={{marginBottom: 4}}>
-                                                <Text type="secondary" style={{fontSize: 12}}>第 {match.line} 行:</Text>
+                                    {folderKeys.map((folder, folderIdx) => (
+                                        <Panel
+                                            key={folderIdx.toString()}
+                                            header={<Space>
+                                                <FolderOutlined/>
+                                                <Text
+                                                    strong>{folder === searchPath ? '/' : folder.startsWith(searchPath) ? folder.substring(searchPath.length + 1) || '/' : basename(folder)}</Text>
+                                                <Text type="secondary">
+                                                    ({folderGroups[folder].length} 个文件
+                                                    {searchMode === 'content' && (
+                                                        <span>, {folderGroups[folder].reduce((sum, result) => sum + result.matches.length, 0)} 条匹配</span>
+                                                    )}
+                                                    )
+                                                </Text>
+                                            </Space>}
+                                        >
+                                            <div style={{paddingLeft: 24}}>
+                                                {folderGroups[folder].map((result, resultIdx) => (
+                                                    <div key={resultIdx}>
+                                                        <div
+                                                            onClick={() => handleResultClick(result.filePath, result.fileName)}
+                                                            style={{
+                                                                cursor: 'pointer',
+                                                                padding: '8px 0',
+                                                                fontSize: 14,
+                                                                color: '#1890ff',
+                                                                fontWeight: 'bold'
+                                                            }}
+                                                        >
+                                                            {highlightText(result.fileName, searchQuery)}
+                                                            {searchMode === 'content' && result.matches.length > 0 && (
+                                                                <Text type="secondary" style={{fontSize: 12, marginLeft: 8}}>
+                                                                    ({result.matches.length} 条匹配)
+                                                                </Text>
+                                                            )}
+                                                        </div>
+                                                        {searchMode === 'content' && result.matches.length > 0 && (
+                                                            <div style={{paddingLeft: 16}}>
+                                                                {result.matches.map((match, matchIdx) => (
+                                                                    <div key={matchIdx} style={{marginBottom: 8}}>
+                                                                        <div
+                                                                            onClick={() => handleResultClick(result.filePath, result.fileName, match.line)}
+                                                                            style={{
+                                                                                cursor: 'pointer',
+                                                                                padding: '4px 8px',
+                                                                                background: '#f5f5f5',
+                                                                                borderRadius: '4px',
+                                                                                fontSize: 14,
+                                                                                wordBreak: 'break-word',
+                                                                                transition: 'background 0.2s'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.background = '#e6f7ff'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                                                                        >
+                                                                            {match.line > 0 ? (
+                                                                                <Text type="secondary" style={{fontSize: 12, marginRight: 8}}>
+                                                                                    第 {match.line} 行:
+                                                                                </Text>
+                                                                            ) : null}
+                                                                            {highlightText(match.content, searchQuery)}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
-                                            <div
-                                                onClick={() => handleResultClick(result.filePath, result.fileName, match.line)}
-                                                style={{
-                                                    cursor: 'pointer',
-                                                    padding: '4px 8px',
-                                                    background: '#f5f5f5',
-                                                    borderRadius: '4px',
-                                                    fontSize: 14,
-                                                    wordBreak: 'break-word',
-                                                    transition: 'background 0.2s'
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.background = '#e6f7ff'}
-                                                onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
-                                            >
-                                                {highlightText(match.content, searchQuery)}
-                                            </div>
-                                        </div>))}
-                                    </div>
-                                </Panel>))}
-                            </Collapse>) : isSearching ? null : (<div style={{textAlign: 'center', padding: 40, color: '#999'}}>
-                                <Text type="secondary">输入关键词开始搜索</Text>
-                            </div>)}
+                                        </Panel>
+                                    ))}
+                                </Collapse>) : isSearching ? null : (<div style={{textAlign: 'center', padding: 40, color: '#999'}}>
+                                    <Text type="secondary">输入关键词开始搜索</Text>
+                                </div>);
+                            })()}
                         </div>
                     </div>
                 </div>
