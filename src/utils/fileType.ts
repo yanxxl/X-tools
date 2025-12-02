@@ -40,5 +40,16 @@ export function toFileUrl(absolutePath: string): string {
   // Properly encode the file path for URL use
   // Normalize path separators to / for URL
   const normalizedPath = absolutePath.replace(/\\/g, '/');
+  
+  // Handle Windows drive letters (e.g., C:) by adding three slashes
+  // and not encoding the drive letter colon
+  if (normalizedPath.match(/^[A-Za-z]:\//)) {
+    const driveLetter = normalizedPath.substring(0, 2); // e.g., "C:"
+    const restOfPath = normalizedPath.substring(2); // e.g., "/Users/..."
+    const encodedRest = restOfPath.split('/').map(encodeURIComponent).join('/');
+    return `file:///${driveLetter}${encodedRest}`;
+  }
+  
+  // For non-Windows paths or paths without drive letters
   return `file://${normalizedPath.split('/').map(encodeURIComponent).join('/')}`;
 }
