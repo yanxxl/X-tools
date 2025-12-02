@@ -208,8 +208,7 @@ export const TitleBar: React.FC = () => {
                             {currentFile ? basename(currentFile) : ''}
                         </div>
                     </div>
-                    <div style={{
-                        flex: '0 0 auto',
+                    <div style={{flex: '0 0 auto',
                         paddingLeft: 16,
                         paddingRight: 16,
                         display: 'flex',
@@ -243,6 +242,47 @@ export const TitleBar: React.FC = () => {
                             }}
                             style={{padding: 0, width: 24, height: 24, borderRadius: 4}}
                         />
+                        {/* Windows 窗口控制按钮 */}
+                        {!isMac && (
+                            <div style={{display: 'flex', gap: 0, marginLeft: 8}}>
+                                <Button
+                                    type="text"
+                                    title="最小化"
+                                    onClick={() => {
+                                        if (window.electronAPI?.minimizeWindow) {
+                                            window.electronAPI.minimizeWindow();
+                                        }
+                                    }}
+                                    style={{padding: 0, width: 36, height: 36, borderRadius: 0}}
+                                >
+                                    <span style={{fontSize: '16px', lineHeight: '1'}}>−</span>
+                                </Button>
+                                <Button
+                                    type="text"
+                                    title="最大化/还原"
+                                    onClick={() => {
+                                        if (window.electronAPI?.toggleMaximizeWindow) {
+                                            window.electronAPI.toggleMaximizeWindow();
+                                        }
+                                    }}
+                                    style={{padding: 0, width: 36, height: 36, borderRadius: 0}}
+                                >
+                                    <span style={{fontSize: '16px', lineHeight: '1'}}>□</span>
+                                </Button>
+                                <Button
+                                    type="text"
+                                    title="关闭"
+                                    onClick={() => {
+                                        if (window.electronAPI?.closeWindow) {
+                                            window.electronAPI.closeWindow();
+                                        }
+                                    }}
+                                    style={{padding: 0, width: 36, height: 36, borderRadius: 0, color: '#ff4d4f'}}
+                                >
+                                    <span style={{fontSize: '16px', lineHeight: '1'}}>×</span>
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </Flex>
             )}

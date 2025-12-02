@@ -17,6 +17,8 @@ body {
 
 /* 为按钮等可交互元素添加 no-drag 属性，确保它们可以正常响应点击事件 */
 .top-bar button,
+.top-bar .ant-btn,
+.top-bar .ant-dropdown-trigger,
 .top-bar .no-drag {
     app-region: no-drag;
 }

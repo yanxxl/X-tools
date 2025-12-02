@@ -8,6 +8,57 @@ import {Config} from "./utils/config";
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
 
+// 修复Windows控制台中文乱码问题
+if (process.platform === 'win32') {
+    // 导入child_process模块
+    const {spawnSync} = require('child_process');
+
+    // 设置Windows控制台为UTF-8编码
+    try {
+        spawnSync('chcp', ['65001'], {stdio: 'inherit'});
+    } catch (error) {
+        console.error('设置控制台编码失败:', error);
+    }
+
+    // 重写console.log和console.error方法，确保输出正确编码
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = function (...args: any[]) {
+        if (process.platform === 'win32') {
+            // 转换为字符串
+            const message = args.map(arg => {
+                if (typeof arg === 'object') {
+                    return JSON.stringify(arg, null, 2);
+                }
+                return String(arg);
+            }).join(' ');
+
+            // 使用iconv-lite转换为GBK编码输出到stdout
+            process.stdout.write(iconv.encode(message + '\n', 'gbk'));
+        } else {
+            originalLog.apply(console, args);
+        }
+    };
+
+    console.error = function (...args: any[]) {
+        if (process.platform === 'win32') {
+            // 转换为字符串
+            const message = args.map(arg => {
+                if (typeof arg === 'object') {
+                    return JSON.stringify(arg, null, 2);
+                }
+                return String(arg);
+            }).join(' ');
+
+            // 使用iconv-lite转换为GBK编码输出到stderr
+            process.stderr.write(iconv.encode(message + '\n', 'gbk'));
+        } else {
+            originalError.apply(console, args);
+        }
+    };
+}
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
     app.quit();
@@ -78,7 +129,10 @@ function registerIpcHandlers() {
         const mainWindow = (global as any).mainWindow as BrowserWindow;
         if (mainWindow) {
             try {
-                mainWindow.setWindowButtonVisibility(visible);
+                // setWindowButtonVisibility is macOS-specific
+                if (process.platform === 'darwin' && typeof mainWindow.setWindowButtonVisibility === 'function') {
+                    mainWindow.setWindowButtonVisibility(visible);
+                }
             } catch (error) {
                 console.error('设置红绿灯位置失败:', error);
                 throw error;
@@ -86,6 +140,34 @@ function registerIpcHandlers() {
         } else {
             console.error('主窗口引用不存在');
             throw new Error('主窗口引用不存在');
+        }
+    });
+
+    // 窗口最小化
+    ipcMain.handle('minimizeWindow', () => {
+        const mainWindow = (global as any).mainWindow as BrowserWindow;
+        if (mainWindow) {
+            mainWindow.minimize();
+        }
+    });
+
+    // 窗口最大化/还原切换
+    ipcMain.handle('toggleMaximizeWindow', () => {
+        const mainWindow = (global as any).mainWindow as BrowserWindow;
+        if (mainWindow) {
+            if (mainWindow.isMaximized()) {
+                mainWindow.unmaximize();
+            } else {
+                mainWindow.maximize();
+            }
+        }
+    });
+
+    // 关闭窗口
+    ipcMain.handle('closeWindow', () => {
+        const mainWindow = (global as any).mainWindow as BrowserWindow;
+        if (mainWindow) {
+            mainWindow.close();
         }
     });
 
@@ -328,11 +410,9 @@ const createWindow = () => {
             trafficLightPosition: {x: 12, y: 12}
         } : {
             // Windows/Linux specific settings
-            titleBarOverlay: {
-                color: '#ffffff',
-                symbolColor: '#333333',
-                height: 40
-            }
+            frame: false, // 隐藏系统标题栏和边框
+            titleBarStyle: 'hidden', // 隐藏标题栏
+            titleBarOverlay: false, // 禁用标题栏覆盖
         })
     });
 
@@ -421,14 +501,6 @@ function createMenu() {
                         }
                     },
                     {type: 'separator'},
-                    {label: '设置', role: 'preferences'},
-                    {type: 'separator'},
-                    {label: '服务', role: 'services'},
-                    {type: 'separator'},
-                    {label: '隐藏 ' + appName, role: 'hide'},
-                    {label: '隐藏其他', role: 'hideOthers'},
-                    {label: '显示全部', role: 'unhide'},
-                    {type: 'separator'},
                     {
                         label: '退出',
                         accelerator: 'Cmd+Q',
@@ -471,7 +543,7 @@ app.whenReady().then(() => {
     console.log(`${app.getName()} ${app.getVersion()} - Electron ${process.versions.electron}`);
 
     createWindow();
-    createMenu();
+    if (isMac) createMenu();
 });
 
 // Quit when all windows are closed, except on macOS. There,

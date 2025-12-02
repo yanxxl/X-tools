@@ -40,6 +40,12 @@ interface ElectronAPI {
     // === 窗口控制 ===
     /** 控制红绿灯（窗口控制按钮）的显示/隐藏 */
     setWindowButtonVisibility: (visible: boolean) => Promise<void>;
+    /** 最小化窗口 */
+    minimizeWindow: () => Promise<void>;
+    /** 切换窗口最大化/还原状态 */
+    toggleMaximizeWindow: () => Promise<void>;
+    /** 关闭窗口 */
+    closeWindow: () => Promise<void>;
     
     // === 文件操作 ===
     /** 使用系统默认应用打开文件 */
@@ -91,6 +97,9 @@ const electronAPI: ElectronAPI = {
     
     // 窗口控制
     setWindowButtonVisibility: (visible: boolean) => ipcRenderer.invoke('setWindowButtonVisibility', visible) as Promise<void>,
+    minimizeWindow: () => ipcRenderer.invoke('minimizeWindow') as Promise<void>,
+    toggleMaximizeWindow: () => ipcRenderer.invoke('toggleMaximizeWindow') as Promise<void>,
+    closeWindow: () => ipcRenderer.invoke('closeWindow') as Promise<void>,
     
     // 文件操作
     openFile: (filePath: string) => ipcRenderer.invoke('openFile', filePath) as Promise<void>,
