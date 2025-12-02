@@ -38,5 +38,7 @@ export function isTextFile(name: string): boolean {
 
 export function toFileUrl(absolutePath: string): string {
   // Properly encode the file path for URL use
-  return `file://${absolutePath.split('/').map(encodeURIComponent).join('/')}`;
+  // Normalize path separators to / for URL
+  const normalizedPath = absolutePath.replace(/\\/g, '/');
+  return `file://${normalizedPath.split('/').map(encodeURIComponent).join('/')}`;
 }

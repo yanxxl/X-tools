@@ -65,7 +65,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
                 setCurrentFile(lastFile.filePath);
 
                 // 从路径中提取文件名来检测文件类型
-                const fileName = lastFile.filePath.split('/').pop() || '';
+            const fileName = lastFile.filePath.split(/[\\/]/).pop() || '';
                 // 如果上次打开的是视频，不自动播放，避免突兀。
                 if (detectFileType(fileName) == "video") autoPlay.current = false;
             }

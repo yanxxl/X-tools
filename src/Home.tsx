@@ -96,9 +96,9 @@ const AppContent: React.FC = () => {
                     <Container style={{position: 'relative'}}>
                         {currentFile ? (
                             <FileViewer
-                                filePath={currentFile}
-                                fileName={currentFile.split('/').pop() || ''}
-                            />
+                            filePath={currentFile}
+                            fileName={currentFile.split(/[\\/]/).pop() || ''}
+                        />
                         ) : (
                             <Center style={{color: 'gray'}}>
                                 请在左侧选择一个文件以预览内容
