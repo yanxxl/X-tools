@@ -14,7 +14,21 @@ const textExtensions = new Set([
   'txt','md','json','log','csv','tsv','ini','conf','cfg','env','yaml','yml','xml',
   'html','htm','css','scss','less',
   'js','jsx','ts','tsx',
-  'py','rb','go','rs','java','kt','swift','c','h','cpp','hpp','cs','php','sh','bat','ps1'
+  'py','rb','go','rs','java','kt','swift','c','h','cpp','hpp','cs','php','sh','bat','ps1',
+  // 字幕文件
+  'srt','ass','ssa','sub','vtt',
+  // 其他程序文件
+  'lua','pl','pm','tcl','sql','r','dart','scala','groovy','gradle',
+  // 文档标记语言
+  'tex','bib',
+  // 配置和数据文件
+  'toml','tf','tfvars','proto','graphql','gql',
+  // 脚本文件
+  'awk','sed',
+  // 函数式编程语言
+  'hs','lhs','elm','erl','hrl','ex','exs','fs','fsx',
+  // 输出文件
+  'out'
 ]);
 
 export function getExtension(name: string): string {
