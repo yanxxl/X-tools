@@ -59,7 +59,7 @@ export const FileTree: React.FC = () => {
                 setSelectedKeys([]);
             }
         }, 500)
-    }, [currentFile, expandedKeys]);
+    }, [currentFile]);
 
     // 当文件夹改变时加载文件列表
     useEffect(() => {
