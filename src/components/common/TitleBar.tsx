@@ -40,6 +40,7 @@ export const TitleBar: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [config, setConfig] = useState<Config | null>(null);
     const [recentFolders, setRecentFolders] = useState<RecentFolder[]>([]);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
 
     // 处理选择文件夹
     const handleSelectDirectory = async () => {
@@ -130,7 +131,14 @@ export const TitleBar: React.FC = () => {
                                         key: 'new',
                                         icon: <PlusOutlined/>,
                                         label: '选择新文件夹',
-                                        onClick: handleSelectDirectory
+                                        onClick: () => {
+                                            // 关闭下拉菜单
+                                            setDropdownOpen(false);
+                                            // 延迟执行文件夹选择，让用户看到菜单关闭的效果
+                                            setTimeout(() => {
+                                                handleSelectDirectory();
+                                            }, 100);
+                                        }
                                     },
                                     ...recentFolders.length > 0 ? [
                                         {
@@ -186,14 +194,21 @@ export const TitleBar: React.FC = () => {
                                                 </div>
                                             ),
                                             onClick: () => {
-                                                setConfig && setConfig(updateFolderPath(config, folder.path));
-                                                setCurrentFolder(folder.path);
+                                                // 关闭下拉菜单
+                                                setDropdownOpen(false);
+                                                // 延迟执行文件夹切换，让用户看到菜单关闭的效果
+                                                setTimeout(() => {
+                                                    setConfig && setConfig(updateFolderPath(config, folder.path));
+                                                    setCurrentFolder(folder.path);
+                                                }, 100);
                                             }
                                         }))
                                     ] : []
                                 ]
                             }}
                             placement="bottomLeft"
+                            open={dropdownOpen}
+                            onOpenChange={setDropdownOpen}
                         >
                             <Button
                                 type="link"
