@@ -208,7 +208,8 @@ export const TitleBar: React.FC = () => {
                             {currentFile ? basename(currentFile) : ''}
                         </div>
                     </div>
-                    <div style={{flex: '0 0 auto',
+                    <div style={{
+                        flex: '0 0 auto',
                         paddingLeft: 16,
                         paddingRight: 16,
                         display: 'flex',
@@ -244,7 +245,7 @@ export const TitleBar: React.FC = () => {
                         />
                         {/* Windows 窗口控制按钮 */}
                         {!isMac && (
-                            <div style={{display: 'flex', gap: 0, marginLeft: 8}}>
+                            <div style={{display: 'flex', gap: 0, marginLeft: 8, marginRight: -16}}>
                                 <Button
                                     type="text"
                                     title="最小化"
@@ -277,7 +278,7 @@ export const TitleBar: React.FC = () => {
                                             window.electronAPI.closeWindow();
                                         }
                                     }}
-                                    style={{ padding: 0, width: 36, height: 36, borderRadius: 0, color: '#000000' }}
+                                    style={{padding: 0, width: 36, height: 36, borderRadius: 0, color: '#000000'}}
                                     onMouseEnter={(e) => {
                                         const target = e.currentTarget;
                                         target.style.backgroundColor = '#ff4d4f';
@@ -289,7 +290,7 @@ export const TitleBar: React.FC = () => {
                                         target.style.color = '#000000';
                                     }}
                                 >
-                                    <span style={{ fontSize: '16px', lineHeight: '1' }}>×</span>
+                                    <span style={{fontSize: '16px', lineHeight: '1'}}>×</span>
                                 </Button>
                             </div>
                         )}
