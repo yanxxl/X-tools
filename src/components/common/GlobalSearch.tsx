@@ -486,10 +486,7 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
 
     // 处理打开文件
     const handleOpenFile = (filePath: string, fileName: string) => {
-        const fileNode = {
-            id: filePath, name: fileName, path: filePath, isDirectory: false
-        };
-        setCurrentFile(fileNode as any);
+        setCurrentFile(filePath);
         onClose();
     };
 
