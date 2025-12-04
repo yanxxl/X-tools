@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useState} from 'react';
-import {message, Tree} from "antd";
+import {ConfigProvider, message, Tree} from "antd";
 import type {DataNode, TreeProps} from 'antd/es/tree';
 import {FileNode} from '../../types';
 import {detectFileType} from '../../utils/fileType';
@@ -183,20 +183,24 @@ export const FileTree: React.FC = () => {
 
     return (
         <div style={{height: '100%', overflowY: 'auto', overflowX: 'hidden'}}>
-            {initialLoading ? (<div style={{textAlign: 'center', padding: '20px'}}>
-                加载中...
-            </div>) : (<Tree<TreeNodeWithMeta>
-                treeData={fileList.map(transformToTreeData)}
-                blockNode
-                showLine
-                switcherIcon={<DownOutlined/>}
-                selectedKeys={selectedKeys}
-                expandedKeys={expandedKeys}
-                onSelect={handleTreeSelect}
-                onExpand={handleTreeExpand}
-                loadData={onLoadData}
-                expandAction="click"
-            />)}
+            <ConfigProvider theme={{token: {colorBgContainer: 'transparent',}}}>
+                {initialLoading
+                    ? (<div style={{textAlign: 'center', padding: '20px'}}>
+                        加载中...
+                    </div>)
+                    : (<Tree<TreeNodeWithMeta>
+                        treeData={fileList.map(transformToTreeData)}
+                        blockNode
+                        showLine
+                        switcherIcon={<DownOutlined/>}
+                        selectedKeys={selectedKeys}
+                        expandedKeys={expandedKeys}
+                        onSelect={handleTreeSelect}
+                        onExpand={handleTreeExpand}
+                        loadData={onLoadData}
+                        expandAction="click"
+                    />)}
+            </ConfigProvider>
         </div>
     );
 };

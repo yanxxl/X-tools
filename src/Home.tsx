@@ -88,9 +88,7 @@ const AppContent: React.FC = () => {
             <TitleBar/>
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}}>
                 <Splitter.Panel defaultSize={320} min={'10%'} max={'45%'} collapsible>
-                    <Container style={{backgroundColor: "white"}}>
-                        <FileTree/>
-                    </Container>
+                    <FileTree/>
                 </Splitter.Panel>
                 <Splitter.Panel style={{padding: 0}}>
                     <Container style={{position: 'relative'}}>
@@ -145,6 +143,14 @@ export const Home: React.FC = () => {
     return (
         <ConfigProvider
             theme={{
+                token: {
+                    // Seed Token，影响范围大
+                    // colorPrimary: '#00b96b',
+                    // borderRadius: 2,
+
+                    // 派生变量，影响范围小
+                    // colorBgContainer: 'transparent',
+                },
                 components: {
                     Splitter: {
                         splitBarDraggableSize: 0,
