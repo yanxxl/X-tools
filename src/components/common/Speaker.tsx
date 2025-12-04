@@ -61,7 +61,7 @@ const cleanTextForSpeech = (text: string): string => {
  * 语音播放组件
  * 接收CSS选择符参数，实现语音朗读功能
  */
-const TextToSpeech: React.FC<TextToSpeechProps> = ({cssSelector}) => {
+const Speaker: React.FC<TextToSpeechProps> = ({cssSelector}) => {
     // 状态管理
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(-1); // 初始值为-1，避免默认选中第一行
@@ -437,4 +437,4 @@ const TextToSpeech: React.FC<TextToSpeechProps> = ({cssSelector}) => {
     );
 };
 
-export default TextToSpeech;
+export default Speaker;

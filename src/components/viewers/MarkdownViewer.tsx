@@ -13,7 +13,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import {markdown} from '@codemirror/lang-markdown';
 import {EditorState} from '@codemirror/state';
 import {EditorView} from '@codemirror/view';
-import TextToSpeech from "../common/TextToSpeech";
+import Speaker from "../common/Speaker";
 import PageSearch from "../common/PageSearch";
 import {FontSizeAdjuster} from "../common/FontSizeAdjuster";
 import "../common/PageSearch.css";
@@ -445,7 +445,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
 
                 <Space size="large">
                     <PageSearch cssSelector={viewMode === 'rendered' ? '.markdown-content' : '.markdown-source .cm-line'}/>
-                    <TextToSpeech cssSelector={'.markdown-content,.markdown-source .cm-line'}/>
+                    <Speaker cssSelector={'.markdown-content,.markdown-source .cm-line'}/>
 
                     <FontSizeAdjuster/>
 

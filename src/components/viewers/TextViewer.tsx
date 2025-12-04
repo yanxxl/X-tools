@@ -3,7 +3,7 @@ import {Button, Empty, Skeleton, Space, Typography} from 'antd';
 import {FileTextOutlined, ReloadOutlined} from '@ant-design/icons';
 import {Center} from "../common/Center";
 import PageSearch from "../common/PageSearch";
-import TextToSpeech from "../common/TextToSpeech";
+import Speaker from "../common/Speaker";
 import {FontSizeAdjuster} from "../common/FontSizeAdjuster";
 
 interface TextViewerProps {
@@ -90,7 +90,7 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
 
                 <Space size="large">
                     <PageSearch cssSelector={'.text-content'}/>
-                    <TextToSpeech cssSelector={'.text-content'}/>
+                    <Speaker cssSelector={'.text-content'}/>
                     <FontSizeAdjuster/>
                 </Space>
             </div>
