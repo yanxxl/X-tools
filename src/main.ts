@@ -8,6 +8,10 @@ import {Config} from "./utils/config";
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
 
+// 添加环境变量声明
+declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
+declare const MAIN_WINDOW_VITE_NAME: string;
+
 // 修复Windows控制台中文乱码问题
 if (process.platform === 'win32') {
     // 导入child_process模块
@@ -438,6 +442,19 @@ function createMenu() {
 
     // 基础菜单项
     const baseMenu: any[] = [
+        // 编辑菜单（所有平台）
+        {
+            label: '编辑',
+            submenu: [
+                {label: '撤销', role: 'undo'},
+                {label: '重做', role: 'redo'},
+                {type: 'separator'},
+                {label: '剪切', role: 'cut'},
+                {label: '复制', role: 'copy'},
+                {label: '粘贴', role: 'paste'},
+                {label: '全选', role: 'selectAll'}
+            ]
+        },
         // 窗口菜单（所有平台）
         {
             label: '窗口',
