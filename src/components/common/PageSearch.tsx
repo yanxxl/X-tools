@@ -1,14 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button, Input } from 'antd';
-import type { InputRef } from 'antd/es/input';
-import { CloseOutlined, LeftOutlined, RightOutlined, SearchOutlined } from '@ant-design/icons';
-import { useAppContext } from '../../contexts/AppContext';
+import React, {useEffect, useRef, useState} from 'react';
+import {Button, Input} from 'antd';
+import type {InputRef} from 'antd/es/input';
+import {CloseOutlined, LeftOutlined, RightOutlined, SearchOutlined} from '@ant-design/icons';
+import {useAppContext} from '../../contexts/AppContext';
+import {getSelectedText} from '../../utils/format';
 
 interface PageSearchProps {
     cssSelector: string; // CSS选择器，用于指定搜索范围
 }
 
-const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
+const PageSearch: React.FC<PageSearchProps> = ({cssSelector}) => {
     // 常量定义
     const HIGHLIGHT_CLASS = 'page-search-highlight';
     const CURRENT_RESULT_CLASS = 'current-result';
@@ -64,7 +65,7 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
 
 
     // 上下文
-    const { currentFile } = useAppContext();
+    const {currentFile} = useAppContext();
 
     // 转义正则表达式特殊字符
     const escapeRegExp = (string: string): string => {
@@ -125,7 +126,7 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
         const highlightedElements = document.querySelectorAll(`.${HIGHLIGHT_CLASS}`);
         if (highlightedElements.length > 0 && index >= 0 && index < highlightedElements.length) {
             const element = highlightedElements[index] as HTMLElement;
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.scrollIntoView({behavior: 'smooth', block: 'center'});
 
             // 更新当前结果的样式
             highlightedElements.forEach((el, i) => {
@@ -209,6 +210,16 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
             clearHighlights();
             setSearchResults([]);
             setSearchText('');
+        } else {
+            // 打开时检查是否有选中文本
+            const selected = getSelectedText();
+            if (selected) {
+                setSearchText(selected);
+                // 延迟执行搜索，确保状态已更新
+                setTimeout(() => {
+                    performSearch();
+                }, 0);
+            }
         }
     };
 
@@ -225,15 +236,6 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
         }
     };
 
-    // 监听输入变化自动搜索（带防抖）
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            performSearch();
-        }, SEARCH_DEBOUNCE);
-
-        return () => clearTimeout(timeoutId);
-    }, [searchText]);
-
     // 监听文件路径变化，清空搜索状态
     useEffect(() => {
         if (currentFile) {
@@ -245,6 +247,18 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
             setIsSearchVisible(false);
         }
     }, [currentFile]);
+
+    // 监听输入变化自动搜索（带防抖）
+    useEffect(() => {        
+        clearHighlights();
+        setSearchResults([]);
+        const timeoutId = setTimeout(() => {
+            if (!getSelectedText()) performSearch();
+        }, SEARCH_DEBOUNCE);
+
+        return () => clearTimeout(timeoutId);
+    }, [searchText]);
+
 
     // 监听ESC键关闭搜索
     useEffect(() => {
@@ -272,9 +286,28 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
         };
     }, [isSearchVisible]);
 
+    // 监听文本选择变化
+    useEffect(() => {
+        const handleSelectionChange = () => {
+            // 只有在搜索框可见时才处理选中文本
+            if (isSearchVisible) {
+                const selected = getSelectedText();
+                if (selected && selected !== searchText) {
+                    clearHighlights();
+                    setSearchResults([]);
+                    setSearchText(selected);
+                }
+            }
+        };
 
+        // 监听选择变化事件
+        document.addEventListener('selectionchange', handleSelectionChange);
 
-
+        // 清理函数
+        return () => {
+            document.removeEventListener('selectionchange', handleSelectionChange);
+        };
+    }, [isSearchVisible, searchText]);
 
     return (
         <>
@@ -282,12 +315,11 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
                 <Button
                     onClick={toggleSearch}
                     type="text"
-                    icon={<SearchOutlined />}
+                    icon={<SearchOutlined/>}
                     style={SEARCH_BUTTON_STYLE}
                 />
             ) : (
                 <div style={SEARCH_CONTAINER_STYLE}>
-                    <SearchOutlined style={{ color: '#666', marginRight: '4px' }} />
                     <Input
                         ref={searchInputRef}
                         placeholder="搜索页面内容"
@@ -300,7 +332,7 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
                     {searchResults.length > 0 && (
                         <>
                             <Button
-                                icon={<LeftOutlined />}
+                                icon={<LeftOutlined/>}
                                 onClick={goToPrevious}
                                 size="small"
                                 type="text"
@@ -310,7 +342,7 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
                                 {currentResultIndex + 1}/{totalMatches}
                             </span>
                             <Button
-                                icon={<RightOutlined />}
+                                icon={<RightOutlined/>}
                                 onClick={goToNext}
                                 size="small"
                                 type="text"
@@ -318,6 +350,13 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
                             />
                         </>
                     )}
+                    <Button
+                        onClick={performSearch}
+                        size="small"
+                        type="text"
+                        icon={<SearchOutlined/>}
+                        style={SEARCH_BUTTON_STYLE}
+                    />
                     <Button
                         onClick={() => {
                             setIsSearchVisible(false);
@@ -327,7 +366,7 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
                         }}
                         size="small"
                         type="text"
-                        icon={<CloseOutlined />}
+                        icon={<CloseOutlined/>}
                         style={SEARCH_BUTTON_STYLE}
                     />
                 </div>
