@@ -58,6 +58,7 @@ const PageSearch: React.FC<PageSearchProps> = ({cssSelector}) => {
     const [searchResults, setSearchResults] = useState<HTMLElement[]>([]);
     const [totalMatches, setTotalMatches] = useState(0); // 实际匹配项数量
     const [currentResultIndex, setCurrentResultIndex] = useState(0);
+    const [searchExecuted, setSearchExecuted] = useState(false); // 搜索是否已执行的状态
 
 
     // 引用管理
@@ -141,13 +142,13 @@ const PageSearch: React.FC<PageSearchProps> = ({cssSelector}) => {
 
     // 执行搜索
     const performSearch = (): void => {
-        if (!searchText.trim()) {
-            clearHighlights();
-            setSearchResults([]);
-            setTotalMatches(0);
-            setCurrentResultIndex(0);
-            return;
-        }
+        setSearchExecuted(true); // 标记搜索已执行
+
+        // 每次搜素都得先清空状态
+        clearHighlights();
+        setSearchResults([]);
+        setTotalMatches(0);
+        setCurrentResultIndex(0);
 
         // 查找匹配的元素
         const container = document.querySelector(cssSelector);
@@ -245,15 +246,18 @@ const PageSearch: React.FC<PageSearchProps> = ({cssSelector}) => {
             setSearchText('');
             setCurrentResultIndex(0);
             setIsSearchVisible(false);
+            setSearchExecuted(false); // 重置搜索执行状态
         }
     }, [currentFile]);
 
     // 监听输入变化自动搜索（带防抖）
-    useEffect(() => {        
+    useEffect(() => {
+        // console.log('searchText', searchText);
+        setSearchExecuted(false);
         clearHighlights();
         setSearchResults([]);
         const timeoutId = setTimeout(() => {
-            if (!getSelectedText()) performSearch();
+            if (!getSelectedText() && searchText.trim()) performSearch();
         }, SEARCH_DEBOUNCE);
 
         return () => clearTimeout(timeoutId);
@@ -268,6 +272,7 @@ const PageSearch: React.FC<PageSearchProps> = ({cssSelector}) => {
                 clearHighlights();
                 setSearchResults([]);
                 setSearchText('');
+                setSearchExecuted(false); // 重置搜索执行状态
             }
         };
 
@@ -329,27 +334,33 @@ const PageSearch: React.FC<PageSearchProps> = ({cssSelector}) => {
                         style={SEARCH_INPUT_STYLE}
                         bordered={false}
                     />
-                    {searchResults.length > 0 && (
-                        <>
-                            <Button
-                                icon={<LeftOutlined/>}
-                                onClick={goToPrevious}
-                                size="small"
-                                type="text"
-                                style={NAV_BUTTON_STYLE}
-                            />
-                            <span style={RESULT_COUNT_STYLE}>
+                    <div style={{minWidth: '100px',textAlign: 'center'}}>
+                        {searchResults.length > 0 ? (
+                            <>
+                                <Button
+                                    icon={<LeftOutlined/>}
+                                    onClick={goToPrevious}
+                                    size="small"
+                                    type="text"
+                                    style={NAV_BUTTON_STYLE}
+                                />
+                                <span style={RESULT_COUNT_STYLE}>
                                 {currentResultIndex + 1}/{totalMatches}
                             </span>
-                            <Button
-                                icon={<RightOutlined/>}
-                                onClick={goToNext}
-                                size="small"
-                                type="text"
-                                style={NAV_BUTTON_STYLE}
-                            />
-                        </>
-                    )}
+                                <Button
+                                    icon={<RightOutlined/>}
+                                    onClick={goToNext}
+                                    size="small"
+                                    type="text"
+                                    style={NAV_BUTTON_STYLE}
+                                />
+                            </>
+                        ) : searchExecuted && searchText.trim() ? (
+                            <span style={{...RESULT_COUNT_STYLE, color: '#ff4d4f'}}>
+                            无匹配结果
+                        </span>
+                        ) : null}
+                    </div>
                     <Button
                         onClick={performSearch}
                         size="small"
