@@ -71,6 +71,9 @@ if (started) {
 // 用于存储当前活动的搜索Worker线程
 const activeSearchWorkers = new Map<string, any>();
 
+// 用于存储所有窗口的Map
+const windows = new Map<string, BrowserWindow>();
+
 // 平台检测
 const isMac = process.platform === 'darwin';
 
@@ -129,49 +132,49 @@ function registerIpcHandlers() {
     });
 
     // 控制红绿灯的显示/隐藏
-    ipcMain.handle('setWindowButtonVisibility', (_, visible: boolean) => {
-        const mainWindow = (global as any).mainWindow as BrowserWindow;
-        if (mainWindow) {
+    ipcMain.handle('setWindowButtonVisibility', (event, visible: boolean) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (window) {
             try {
                 // setWindowButtonVisibility is macOS-specific
-                if (process.platform === 'darwin' && typeof mainWindow.setWindowButtonVisibility === 'function') {
-                    mainWindow.setWindowButtonVisibility(visible);
+                if (process.platform === 'darwin' && typeof window.setWindowButtonVisibility === 'function') {
+                    window.setWindowButtonVisibility(visible);
                 }
             } catch (error) {
                 console.error('设置红绿灯位置失败:', error);
                 throw error;
             }
         } else {
-            console.error('主窗口引用不存在');
-            throw new Error('主窗口引用不存在');
+            console.error('窗口引用不存在');
+            throw new Error('窗口引用不存在');
         }
     });
 
     // 窗口最小化
-    ipcMain.handle('minimizeWindow', () => {
-        const mainWindow = (global as any).mainWindow as BrowserWindow;
-        if (mainWindow) {
-            mainWindow.minimize();
+    ipcMain.handle('minimizeWindow', (event) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (window) {
+            window.minimize();
         }
     });
 
     // 窗口最大化/还原切换
-    ipcMain.handle('toggleMaximizeWindow', () => {
-        const mainWindow = (global as any).mainWindow as BrowserWindow;
-        if (mainWindow) {
-            if (mainWindow.isMaximized()) {
-                mainWindow.unmaximize();
+    ipcMain.handle('toggleMaximizeWindow', (event) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (window) {
+            if (window.isMaximized()) {
+                window.unmaximize();
             } else {
-                mainWindow.maximize();
+                window.maximize();
             }
         }
     });
 
     // 关闭窗口
-    ipcMain.handle('closeWindow', () => {
-        const mainWindow = (global as any).mainWindow as BrowserWindow;
-        if (mainWindow) {
-            mainWindow.close();
+    ipcMain.handle('closeWindow', (event) => {
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (window) {
+            window.close();
         }
     });
 
@@ -377,6 +380,17 @@ function registerIpcHandlers() {
         }
         return false;
     });
+
+    // 创建新窗口
+    ipcMain.handle('createNewWindow', async (event, folderPath?: string) => {
+        try {
+            const newWindow = createWindow(folderPath);
+            return {success: true, windowId: (newWindow as any).windowId};
+        } catch (error) {
+            console.error('创建新窗口失败:', error);
+            return {success: false, error: (error as Error).message};
+        }
+    });
 }
 
 // 根据屏幕分辨率计算窗口尺寸
@@ -396,12 +410,21 @@ const getWindowSize = () => {
     }
 };
 
-const createWindow = () => {
+// 生成唯一窗口ID
+function generateWindowId(): string {
+    return `window_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// 创建新窗口，可选择指定初始文件夹
+const createWindow = (folderPath?: string) => {
     // 根据屏幕分辨率获取窗口尺寸
     const {width, height} = getWindowSize();
 
+    // 生成唯一窗口ID
+    const windowId = generateWindowId();
+
     // Create the browser window with platform-specific settings
-    const mainWindow = new BrowserWindow({
+    const newWindow = new BrowserWindow({
         width,
         height,
         webPreferences: {
@@ -420,20 +443,49 @@ const createWindow = () => {
         })
     });
 
-    // 保存窗口引用以便后续控制
-    (global as any).mainWindow = mainWindow;
+    // 存储窗口引用
+    windows.set(windowId, newWindow);
+    (newWindow as any).windowId = windowId;
+
+    // 如果这是第一个窗口，设置为global.mainWindow以兼容现有代码
+    if (windows.size === 1) {
+        (global as any).mainWindow = newWindow;
+    }
 
     // and load the index.html of the app.
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-        mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+        newWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
     } else {
-        mainWindow.loadFile(
+        newWindow.loadFile(
             path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
         );
     }
 
+    // 窗口准备好后，如果指定了文件夹路径，则设置初始文件夹
+    newWindow.webContents.once('did-finish-load', () => {
+        if (folderPath) {
+            newWindow.webContents.send('setInitialFolder', folderPath);
+        }
+    });
+
+    // 窗口关闭时清理引用
+    newWindow.on('closed', () => {
+        windows.delete(windowId);
+        // 如果关闭的是主窗口，重新指定一个主窗口
+        if ((global as any).mainWindow === newWindow) {
+            const remainingWindows = Array.from(windows.values());
+            if (remainingWindows.length > 0) {
+                (global as any).mainWindow = remainingWindows[0];
+            } else {
+                (global as any).mainWindow = null;
+            }
+        }
+    });
+
     // Open the DevTools.
-    // mainWindow.webContents.openDevTools();
+    // newWindow.webContents.openDevTools();
+
+    return newWindow;
 };
 
 // 创建应用菜单

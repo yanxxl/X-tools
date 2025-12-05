@@ -10,7 +10,7 @@ import {FileTree} from './components/common/FileTree';
 import {TitleBar} from './components/common/TitleBar';
 
 const AppContent: React.FC = () => {
-    const {currentFolder, currentFile, titleBarVisible, searchPanelOpen, setSearchPanelOpen} = useAppContext();
+    const {currentFolder, currentFile, titleBarVisible, searchPanelOpen, setSearchPanelOpen, setCurrentFolder} = useAppContext();
 
     // 窗口大小相关的状态和功能
     const WINDOW_SIZE_KEY = 'x-tools-window-size';
@@ -42,6 +42,21 @@ const AppContent: React.FC = () => {
             setSearchPanelOpen(false);
         }
     }, [currentFolder]);
+
+    // 监听初始文件夹设置（新窗口打开时）
+    useEffect(() => {
+        if (window.electronAPI) {
+            const handleSetInitialFolder = (folderPath: string) => {
+                setCurrentFolder(folderPath);
+            };
+
+            window.electronAPI.onSetInitialFolder(handleSetInitialFolder);
+
+            return () => {
+                window.electronAPI.offSetInitialFolder(handleSetInitialFolder);
+            };
+        }
+    }, [setCurrentFolder]);
 
     // 同步红绿灯显示状态与标题栏显示状态
     useEffect(() => {

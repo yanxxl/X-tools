@@ -50,6 +50,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
 
     // 设置当前文件夹并加载历史记录
     const handleSetCurrentFolder = (folder: string | null) => {
+        console.log('setCurrentFolder', folder);
         setCurrentFolder(folder);
         // 切换文件夹时清空当前文件
         setCurrentFile(null);

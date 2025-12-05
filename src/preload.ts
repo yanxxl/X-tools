@@ -46,6 +46,12 @@ interface ElectronAPI {
     toggleMaximizeWindow: () => Promise<void>;
     /** 关闭窗口 */
     closeWindow: () => Promise<void>;
+    /** 创建新窗口 */
+    createNewWindow: (folderPath?: string) => Promise<{success: boolean; windowId?: string; error?: string}>;
+    /** 监听初始文件夹设置 */
+    onSetInitialFolder: (callback: (folderPath: string) => void) => void;
+    /** 取消监听初始文件夹设置 */
+    offSetInitialFolder: (callback: (folderPath: string) => void) => void;
     
     // === 文件操作 ===
     /** 使用系统默认应用打开文件 */
@@ -100,6 +106,9 @@ const electronAPI: ElectronAPI = {
     minimizeWindow: () => ipcRenderer.invoke('minimizeWindow') as Promise<void>,
     toggleMaximizeWindow: () => ipcRenderer.invoke('toggleMaximizeWindow') as Promise<void>,
     closeWindow: () => ipcRenderer.invoke('closeWindow') as Promise<void>,
+    createNewWindow: (folderPath?: string) => ipcRenderer.invoke('createNewWindow', folderPath) as Promise<{success: boolean; windowId?: string; error?: string}>,
+    onSetInitialFolder: (callback) => ipcRenderer.on('setInitialFolder', (event, folderPath) => callback(folderPath)),
+    offSetInitialFolder: (callback) => ipcRenderer.off('setInitialFolder', (event, folderPath) => callback(folderPath)),
     
     // 文件操作
     openFile: (filePath: string) => ipcRenderer.invoke('openFile', filePath) as Promise<void>,

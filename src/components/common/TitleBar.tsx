@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
-import {Button, Dropdown, Flex, message} from "antd";
-import {DeleteOutlined, DownOutlined, EyeInvisibleOutlined, FolderOpenOutlined, PlusOutlined, SearchOutlined, SyncOutlined} from '@ant-design/icons';
+import {Button, Dropdown, Flex, message, Modal} from "antd";
+import {DeleteOutlined, DownOutlined, EyeInvisibleOutlined, FolderOpenOutlined, PlusOutlined, SearchOutlined, SyncOutlined, CopyOutlined} from '@ant-design/icons';
 import {useAppContext} from '../../contexts/AppContext';
 import {truncateFolderName} from '../../utils/uiUtils';
 import {Config, removeFolderPath, updateFolderPath} from "../../utils/config";
@@ -33,7 +33,6 @@ export const TitleBar: React.FC = () => {
         setCurrentFolder,
         titleBarVisible,
         setTitleBarVisible,
-        searchPanelOpen,
         setSearchPanelOpen
     } = useAppContext();
 
@@ -42,8 +41,57 @@ export const TitleBar: React.FC = () => {
     const [recentFolders, setRecentFolders] = useState<RecentFolder[]>([]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
 
+    // 显示文件夹打开方式选择对话框
+    const showFolderChoiceDialog = (onChoice: (openInNewWindow: boolean | null) => void) => {
+        const modal = Modal.confirm({
+            title: '选择打开方式',
+            content: '请选择文件夹的打开方式：',
+            icon: <FolderOpenOutlined />,
+            maskClosable: true,
+            footer: (
+                <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    padding: '30px 0 0 0'
+                }}>
+                    <Button 
+                        onClick={() => {
+                            modal.destroy();
+                            onChoice(null);
+                        }}
+                    >
+                        取消
+                    </Button>
+                    <div style={{ 
+                        display: 'flex', 
+                        gap: '12px'
+                    }}>
+                        <Button 
+                            onClick={() => {
+                                modal.destroy();
+                                onChoice(true);
+                            }}
+                        >
+                            新窗口
+                        </Button>
+                        <Button 
+                            type="primary"
+                            onClick={() => {
+                                modal.destroy();
+                                onChoice(false);
+                            }}
+                        >
+                            当前窗口
+                        </Button>
+                    </div>
+                </div>
+            ),
+        });
+    };
+
     // 处理选择文件夹
-    const handleSelectDirectory = async () => {
+    const handleSelectDirectory = async (openInNewWindow = false) => {
         if (!window.electronAPI) {
             message.warning('此功能需要在 Electron 应用中使用');
             return;
@@ -57,7 +105,19 @@ export const TitleBar: React.FC = () => {
 
             if (dirPath && config) {
                 setConfig(updateFolderPath(config, dirPath));
-                setCurrentFolder(dirPath);
+                
+                if (openInNewWindow) {
+                    // 在新窗口中打开
+                    const result = await window.electronAPI.createNewWindow(dirPath);
+                    if (result.success) {
+                        message.success('已在新窗口中打开文件夹');
+                    } else {
+                        message.error('创建新窗口失败: ' + result.error);
+                    }
+                } else {
+                    // 在当前窗口中打开
+                    setCurrentFolder(dirPath);
+                }
             }
         } catch (error) {
             console.error('选择文件夹失败:', error);
@@ -67,14 +127,34 @@ export const TitleBar: React.FC = () => {
         }
     };
 
+    // 处理最近文件夹点击
+    const handleRecentFolderClick = async (folderPath: string, openInNewWindow = false) => {
+        if (config) {
+            setConfig(updateFolderPath(config, folderPath));
+            
+            if (openInNewWindow) {
+                // 在新窗口中打开
+                const result = await window.electronAPI.createNewWindow(folderPath);
+                if (result.success) {
+                    message.success('已在新窗口中打开文件夹');
+                } else {
+                    message.error('创建新窗口失败: ' + result.error);
+                }
+            } else {
+                // 在当前窗口中打开
+                setCurrentFolder(folderPath);
+            }
+        }
+    };
+
     // 加载配置文件
     useEffect(() => {
         if (config == null) {
             if (window.electronAPI) {
                 window.electronAPI.loadConfig().then(async (loadedConfig) => {
                     setConfig(loadedConfig);
-                    // 如果有最近打开的文件夹，自动打开第一个
-                    if (loadedConfig && loadedConfig.recentFolders && loadedConfig.recentFolders.length > 0) {
+                    // 如果有最近打开的文件夹，自动打开第一个,除非当前文件夹不为空
+                    if (!currentFolder && loadedConfig && loadedConfig.recentFolders && loadedConfig.recentFolders.length > 0) {
                         const firstFolder = loadedConfig.recentFolders[0];
                         setCurrentFolder(firstFolder.path);
                     }
@@ -131,14 +211,18 @@ export const TitleBar: React.FC = () => {
                                         key: 'new',
                                         icon: <PlusOutlined/>,
                                         label: '选择新文件夹',
-                                        onClick: () => {
-                                            // 关闭下拉菜单
-                                            setDropdownOpen(false);
-                                            // 延迟执行文件夹选择，让用户看到菜单关闭的效果
-                                            setTimeout(() => {
-                                                handleSelectDirectory();
-                                            }, 100);
-                                        }
+                                            onClick: () => {
+                                                // 关闭下拉菜单
+                                                setDropdownOpen(false);
+                                                // 显示选择对话框
+                                                setTimeout(() => {
+                                                    showFolderChoiceDialog((openInNewWindow) => {
+                                                        if (openInNewWindow !== null) {
+                                                            handleSelectDirectory(openInNewWindow);
+                                                        }
+                                                    });
+                                                }, 100);
+                                            }
                                     },
                                     ...recentFolders.length > 0 ? [
                                         {
@@ -152,54 +236,82 @@ export const TitleBar: React.FC = () => {
                                                     display: 'flex',
                                                     justifyContent: 'space-between',
                                                     alignItems: 'center',
-                                                    width: '300px'
+                                                    width: '350px'
                                                 }}>
                                                     <div style={{flex: 1, display: 'flex', alignItems: 'center'}}>
-                                                        <span title={folder.path}>{truncateFolderName(folder.name || '')}</span>
+                                                        <span title={folder.path} style={{cursor: 'pointer'}}>{truncateFolderName(folder.name || '')}</span>
                                                     </div>
-                                                    <span style={{
-                                                        fontSize: '12px',
-                                                        color: '#999',
-                                                        marginRight: '8px'
-                                                    }}>{new Date(folder.timestamp).toLocaleString('zh-CN', {
-                                                        month: '2-digit',
-                                                        day: '2-digit',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                        hour12: false
-                                                    })}</span>
-                                                    <DeleteOutlined
-                                                        style={{
-                                                            fontSize: '14px',
-                                                            color: '#666',
-                                                            cursor: 'pointer',
-                                                            transition: 'all 0.3s'
-                                                        }}
-                                                        title="从列表中删除"
-                                                        onClick={(e: React.MouseEvent) => {
-                                                            e.stopPropagation()
-                                                            setConfig && setConfig(removeFolderPath(config, folder.path))
-                                                        }}
-                                                        onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
-                                                            const target = e.currentTarget;
-                                                            target.style.transform = 'scale(1.6)';
-                                                            target.style.color = '#ff4d4f';
-                                                        }}
-                                                        onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
-                                                            const target = e.currentTarget;
-                                                            target.style.transform = 'scale(1)';
-                                                            target.style.color = '#666';
-                                                        }}
-                                                    />
+                                                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                                        <span style={{
+                                                            fontSize: '12px',
+                                                            color: '#999'
+                                                        }}>{new Date(folder.timestamp).toLocaleString('zh-CN', {
+                                                            month: '2-digit',
+                                                            day: '2-digit',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            hour12: false
+                                                        })}</span>
+                                                        <CopyOutlined
+                                                            style={{
+                                                                fontSize: '14px',
+                                                                color: '#666',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.3s'
+                                                            }}
+                                                            title="在新窗口中打开"
+                                                            onClick={(e: React.MouseEvent) => {
+                                                                e.stopPropagation();
+                                                                setDropdownOpen(false);
+                                                                setTimeout(() => {
+                                                                    handleRecentFolderClick(folder.path, true);
+                                                                }, 100);
+                                                            }}
+                                                            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
+                                                                const target = e.currentTarget;
+                                                                target.style.color = '#1890ff';
+                                                            }}
+                                                            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
+                                                                const target = e.currentTarget;
+                                                                target.style.color = '#666';
+                                                            }}
+                                                        />
+                                                        <DeleteOutlined
+                                                            style={{
+                                                                fontSize: '14px',
+                                                                color: '#666',
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.3s'
+                                                            }}
+                                                            title="从列表中删除"
+                                                            onClick={(e: React.MouseEvent) => {
+                                                                e.stopPropagation();
+                                                                setConfig && setConfig(removeFolderPath(config, folder.path));
+                                                            }}
+                                                            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
+                                                                const target = e.currentTarget;
+                                                                target.style.transform = 'scale(1.6)';
+                                                                target.style.color = '#ff4d4f';
+                                                            }}
+                                                            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
+                                                                const target = e.currentTarget;
+                                                                target.style.transform = 'scale(1)';
+                                                                target.style.color = '#666';
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </div>
                                             ),
                                             onClick: () => {
                                                 // 关闭下拉菜单
                                                 setDropdownOpen(false);
-                                                // 延迟执行文件夹切换，让用户看到菜单关闭的效果
+                                                // 显示选择对话框
                                                 setTimeout(() => {
-                                                    setConfig && setConfig(updateFolderPath(config, folder.path));
-                                                    setCurrentFolder(folder.path);
+                                                    showFolderChoiceDialog((openInNewWindow) => {
+                                                        if (openInNewWindow !== null) {
+                                                            handleRecentFolderClick(folder.path, openInNewWindow);
+                                                        }
+                                                    });
                                                 }, 100);
                                             }
                                         }))
