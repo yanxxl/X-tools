@@ -3064,9 +3064,9 @@
 @media (prefers-color-scheme: dark){
 
 :is(.annotationLayer,.annotationEditorLayer) .annotationCommentButton{
-    --csstools-color-scheme--light:;
+     --csstools-color-scheme--light: unset;
+    }
   }
-}
 
 @media screen and (forced-colors: active){
 
@@ -3627,7 +3627,7 @@
 @media (prefers-color-scheme: dark){
 
 .commentPopup{
-  --csstools-color-scheme--light:;
+  --csstools-color-scheme--light: unset;
 }
 }
 
@@ -5454,7 +5454,7 @@
 @media (prefers-color-scheme: dark){
 
 :root{
-  --csstools-color-scheme--light:;
+  --csstools-color-scheme--light: unset;
 }
 }
 
@@ -5778,6 +5778,10 @@
   --secondaryToolbarButton-imageAltTextSettings-icon:var(
     --toolbarButton-editorStamp-icon
   );
+  /* Theme buttons icons */
+  --secondaryToolbarButton-themeAuto-icon:url(images/toolbarButton-presentationMode.svg);
+  --secondaryToolbarButton-themeLight-icon:url(images/toolbarButton-presentationMode.svg);
+  --secondaryToolbarButton-themeDark-icon:url(images/toolbarButton-presentationMode.svg);
   --secondaryToolbarButton-documentProperties-icon:url(images/secondaryToolbarButton-documentProperties.svg);
   --editorParams-stampAddImage-icon:url(images/toolbarButton-zoomIn.svg);
   --comment-edit-button-icon:url(images/comment-editButton.svg);
@@ -7063,6 +7067,21 @@ dialog :link{
 :is(#secondaryToolbar #secondaryToolbarButtonContainer) #documentProperties::before{
       -webkit-mask-image:var(--secondaryToolbarButton-documentProperties-icon);
               mask-image:var(--secondaryToolbarButton-documentProperties-icon);
+    }
+
+:is(#secondaryToolbar #secondaryToolbarButtonContainer) #themeAuto::before{
+      -webkit-mask-image:var(--secondaryToolbarButton-themeAuto-icon);
+              mask-image:var(--secondaryToolbarButton-themeAuto-icon);
+    }
+
+:is(#secondaryToolbar #secondaryToolbarButtonContainer) #themeLight::before{
+      -webkit-mask-image:var(--secondaryToolbarButton-themeLight-icon);
+              mask-image:var(--secondaryToolbarButton-themeLight-icon);
+    }
+
+:is(#secondaryToolbar #secondaryToolbarButtonContainer) #themeDark::before{
+      -webkit-mask-image:var(--secondaryToolbarButton-themeDark-icon);
+              mask-image:var(--secondaryToolbarButton-themeDark-icon);
     }
 
 #findbar{

@@ -632,3 +632,15 @@ pdfjs-editor-add-signature-edit-button-label = 编辑描述
 ## Edit signature description dialog
 
 pdfjs-editor-edit-signature-dialog-title = 编辑描述
+
+## 主题按钮
+
+pdfjs-theme-auto-button =
+    .title = 自动主题
+pdfjs-theme-auto-button-label = 自动
+pdfjs-theme-light-button =
+    .title = 浅色主题
+pdfjs-theme-light-button-label = 浅色
+pdfjs-theme-dark-button =
+    .title = 深色主题
+pdfjs-theme-dark-button-label = 深色

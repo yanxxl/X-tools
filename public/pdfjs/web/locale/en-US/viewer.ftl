@@ -648,6 +648,18 @@ pdfjs-editor-add-signature-image-no-data-error-title = Can’t convert this imag
 pdfjs-editor-add-signature-image-no-data-error-description = Please try uploading a different image.
 pdfjs-editor-add-signature-error-close-button = Close
 
+## Theme buttons
+
+pdfjs-theme-auto-button =
+    .title = Auto theme
+pdfjs-theme-auto-button-label = Auto
+pdfjs-theme-light-button =
+    .title = Light theme
+pdfjs-theme-light-button-label = Light
+pdfjs-theme-dark-button =
+    .title = Dark theme
+pdfjs-theme-dark-button-label = Dark
+
 ## Dialog buttons
 
 pdfjs-editor-add-signature-cancel-button = Cancel

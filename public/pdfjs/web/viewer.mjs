@@ -14673,6 +14673,28 @@ class SecondaryToolbar {
       close: true
     }];
     buttons.push({
+      element: options.themeAutoButton,
+      eventName: "switchthememode",
+      eventDetails: {
+        mode: 0
+      },
+      close: true
+    }, {
+      element: options.themeLightButton,
+      eventName: "switchthememode",
+      eventDetails: {
+        mode: 1
+      },
+      close: true
+    }, {
+      element: options.themeDarkButton,
+      eventName: "switchthememode",
+      eventDetails: {
+        mode: 2
+      },
+      close: true
+    });
+    buttons.push({
       element: options.openFileButton,
       eventName: "openfile",
       close: true
@@ -16235,7 +16257,8 @@ const PDFViewerApplication = {
       await this._parseHashParams();
     }
     let mode;
-    switch (AppOptions.get("viewerCssTheme")) {
+    const themeValue = AppOptions.get("viewerCssTheme");
+    switch (themeValue) {
       case 1:
         mode = "light";
         break;
@@ -16245,6 +16268,17 @@ const PDFViewerApplication = {
     }
     if (mode) {
       docStyle.setProperty("color-scheme", mode);
+    }
+    
+    // 初始化主题按钮的选中状态
+    if (this.appConfig.secondaryToolbar) {
+      const buttons = [this.appConfig.secondaryToolbar.themeAutoButton, this.appConfig.secondaryToolbar.themeLightButton, this.appConfig.secondaryToolbar.themeDarkButton];
+      buttons.forEach((button, index) => {
+        if (button) {
+          button.classList.toggle("toggled", index === themeValue);
+          button.setAttribute("aria-checked", index === themeValue);
+        }
+      });
     }
     this.l10n = await this.externalServices.createL10n();
     document.getElementsByTagName("html")[0].dir = this.l10n.getDirection();
@@ -17415,6 +17449,38 @@ const PDFViewerApplication = {
       window.print();
     }
   },
+  onSwitchThemeMode(evt) {
+    const mode = evt.mode;
+    AppOptions.set("viewerCssTheme", mode);
+    
+    let colorScheme;
+    switch (mode) {
+      case 1:
+        colorScheme = "light";
+        break;
+      case 2:
+        colorScheme = "dark";
+        break;
+      default:
+        colorScheme = null;
+    }
+    
+    if (colorScheme) {
+      docStyle.setProperty("color-scheme", colorScheme);
+    } else {
+      docStyle.removeProperty("color-scheme");
+    }
+    
+    // 更新按钮选中状态
+    const buttons = [this.appConfig.secondaryToolbar.themeAutoButton, this.appConfig.secondaryToolbar.themeLightButton, this.appConfig.secondaryToolbar.themeDarkButton];
+    buttons.forEach((button, index) => {
+      if (button) {
+        button.classList.toggle("toggled", index === mode);
+        button.setAttribute("aria-checked", index === mode);
+      }
+    });
+  },
+
   bindEvents() {
     if (this._eventBusAbortController) {
       return;
@@ -17464,6 +17530,7 @@ const PDFViewerApplication = {
     eventBus._on("scrollmodechanged", onViewerModesChanged.bind(this, "scrollMode"), opts);
     eventBus._on("switchspreadmode", evt => pdfViewer.spreadMode = evt.mode, opts);
     eventBus._on("spreadmodechanged", onViewerModesChanged.bind(this, "spreadMode"), opts);
+    eventBus._on("switchthememode", this.onSwitchThemeMode.bind(this), opts);
     eventBus._on("imagealttextsettings", onImageAltTextSettings.bind(this), opts);
     eventBus._on("documentproperties", () => pdfDocumentProperties?.open(), opts);
     eventBus._on("findfromurlhash", onFindFromUrlHash.bind(this), opts);
@@ -18308,7 +18375,10 @@ function getViewerConfiguration() {
       spreadEvenButton: document.getElementById("spreadEven"),
       imageAltTextSettingsButton: document.getElementById("imageAltTextSettings"),
       imageAltTextSettingsSeparator: document.getElementById("imageAltTextSettingsSeparator"),
-      documentPropertiesButton: document.getElementById("documentProperties")
+      documentPropertiesButton: document.getElementById("documentProperties"),
+      themeAutoButton: document.getElementById("themeAuto"),
+      themeLightButton: document.getElementById("themeLight"),
+      themeDarkButton: document.getElementById("themeDark")
     },
     sidebar: {
       outerContainer: document.getElementById("outerContainer"),
