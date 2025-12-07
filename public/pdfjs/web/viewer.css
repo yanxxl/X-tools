@@ -5319,7 +5319,7 @@
   --sidebar-padding:5px;
   --sidebar-min-width:180px;
   --sidebar-max-width:632px;
-  --sidebar-width:239px;
+  --sidebar-width:320px;
   --resizer-width:4px;
   --csstools-light-dark-toggle--129:var(--csstools-color-scheme--light) #00cadb;
   --resizer-hover-bg-color:var(--csstools-light-dark-toggle--129, #0062fa);
@@ -5643,7 +5643,7 @@
   --inline-start:left;
   --inline-end:right;
 
-  --sidebar-width:200px;
+  --sidebar-width:320px;
   --sidebar-transition-duration:200ms;
   --sidebar-transition-timing-function:ease;
 

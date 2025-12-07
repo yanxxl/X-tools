@@ -845,7 +845,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER
   },
   sidebarViewOnLoad: {
-    value: -1,
+    value: 2,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE
   },
   scrollModeOnLoad: {
