@@ -14,6 +14,12 @@ const config: ForgeConfig = {
         asar: true,
         name: 'X-tools',
         executableName: 'X-tools',
+        extraResource: [
+            path.join(__dirname, 'public/pdfjs'),
+        ],
+        // 仅打包当前平台和架构，加速打包过程
+        platform: process.platform,
+        arch: process.arch,
     },
     rebuildConfig: {},
     hooks: {
@@ -21,7 +27,7 @@ const config: ForgeConfig = {
             /* 在这里我们可以重命名生成的文件 */
 
             // 复制文件的通用函数，保留原始文件并创建新名称的副本
-            const copyArtifactWithNewName = (artifact, searchValue, replaceValue) => {
+            const copyArtifactWithNewName = (artifact: string, searchValue: string, replaceValue: string) => {
                 // 获取文件名
                 const basename = path.basename(artifact);
                 // 创建新的文件路径，保持目录结构一致
@@ -56,10 +62,11 @@ const config: ForgeConfig = {
         }
     },
     makers: [
-        new MakerSquirrel({}),
-        new MakerZIP({}, ['darwin', 'win32']),
-        new MakerRpm({}),
-        new MakerDeb({}),
+        // 根据当前平台选择对应的maker，减少打包时间
+        process.platform === 'darwin' ? new MakerZIP({}, ['darwin']) : 
+        process.platform === 'win32' ? new MakerSquirrel({}) : 
+        process.platform === 'linux' ? new MakerDeb({}) : 
+        new MakerZIP({}),
     ],
     plugins: [
         new VitePlugin({

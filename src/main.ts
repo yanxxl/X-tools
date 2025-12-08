@@ -288,6 +288,18 @@ function registerIpcHandlers() {
         return app.getName();
     });
 
+    // 获取应用资源目录路径
+    ipcMain.handle('getAppPath', async () => {
+        // 在Electron中，app.getAppPath()返回应用程序目录路径
+        // 我们需要构造正确的资源目录路径
+        const appPath = app.getAppPath();
+        // 应用程序目录通常是 Resources/app.asar，所以我们需要返回到Resources目录
+        const resourcesPath = appPath.replace(/\/app\.asar$/, '');
+        console.log('getAppPath: appPath =', appPath);
+        console.log('getAppPath: resourcesPath =', resourcesPath);
+        return resourcesPath;
+    });
+
     // 获取应用描述
     ipcMain.handle('getAppDescription', async () => {
         const packageJsonPath = path.join(app.getAppPath(), 'package.json');

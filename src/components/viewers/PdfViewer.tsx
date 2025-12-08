@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { toFileUrl } from '../../utils/fileType';
 
 interface PdfViewerProps {
@@ -7,9 +7,48 @@ interface PdfViewerProps {
 
 export const PdfViewer: React.FC<PdfViewerProps> = ({ path }) => {
   const pdfFileUrl = toFileUrl(path);
-  // 构造 iframe 的 src 属性，指向 pdfjs viewer.html 并传递 file 参数
-  const viewerUrl = `/pdfjs/web/viewer.html?file=${encodeURIComponent(pdfFileUrl)}`;
+  const [viewerUrl, setViewerUrl] = useState<string>('');
+  const [resourcesPath, setResourcesPath] = useState<string>('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  
+  // 构造 iframe 的 src 属性，指向 pdfjs viewer.html 并传递 file 参数
+  // 在开发环境中使用相对路径，在生产环境中使用 extraResource 路径
+  useEffect(() => {
+    const constructViewerUrl = async () => {
+      if (process.env.NODE_ENV === 'development') {
+        // 开发环境
+        const devUrl = `/pdfjs/web/viewer.html?file=${encodeURIComponent(pdfFileUrl)}`;
+        setViewerUrl(devUrl);
+        setResourcesPath('development');
+      } else {
+        // 生产环境，使用 extraResource 路径
+        // 获取应用资源目录
+        try {
+          const electronApi = (window.electronAPI as any);
+          if (electronApi?.getAppPath) {
+            const appPath = await electronApi.getAppPath();
+            setResourcesPath(appPath);
+            const prodUrl = `file://${appPath}/pdfjs/web/viewer.html?file=${encodeURIComponent(pdfFileUrl)}`;
+            setViewerUrl(prodUrl);
+          }
+        } catch (error) {
+          console.error('Failed to get app path:', error);
+          // 失败时回退到默认路径
+          setViewerUrl(`file:///pdfjs/web/viewer.html?file=${encodeURIComponent(pdfFileUrl)}`);
+        }
+      }
+      
+      // 添加调试日志
+      console.log('PdfViewer debug info:');
+      console.log('  - path:', path);
+      console.log('  - pdfFileUrl:', pdfFileUrl);
+      console.log('  - NODE_ENV:', process.env.NODE_ENV);
+      console.log('  - resourcesPath:', resourcesPath);
+      console.log('  - viewerUrl:', viewerUrl);
+    };
+    
+    constructViewerUrl();
+  }, [path, pdfFileUrl]);
 
   // 处理来自 iframe 的消息
   useEffect(() => {
@@ -57,13 +96,15 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ path }) => {
   
   return (
     <div style={{width: '100%', height: '100%', background: '#fff', borderRadius: 8, overflow: 'hidden'}}>
-      <iframe 
-        ref={iframeRef}
-        src={viewerUrl} 
-        style={{width: '100%', height: '100%', border: 'none'}} 
-        title="PDF Viewer"
-        onLoad={handleIframeLoad}
-      />
+      {viewerUrl && (
+        <iframe 
+          ref={iframeRef}
+          src={viewerUrl} 
+          style={{width: '100%', height: '100%', border: 'none'}} 
+          title="PDF Viewer"
+          onLoad={handleIframeLoad}
+        />
+      )}
     </div>
   );
 };
