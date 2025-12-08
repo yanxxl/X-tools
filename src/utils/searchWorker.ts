@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
+import {isTextFile} from './fileType';
 
 // 类型定义
 interface SearchMatch {
@@ -22,22 +23,7 @@ interface SearchProgressCallback {
     onProgress: (totalFiles: number, currentFile: number, totalLines: number) => void;
 }
 
-// 辅助函数：检测文件是否为文本文件
-function isTextFile(name: string): boolean {
-    // 常见的文本文件扩展名
-    const textExtensions = [
-        'txt', 'md', 'markdown', 'mdx', 'rst', 'adoc', 'asciidoc',
-        'html', 'htm', 'xhtml', 'xml', 'css', 'scss', 'sass', 'less',
-        'js', 'mjs', 'cjs', 'jsx', 'ts', 'tsx', 'vue', 'svelte',
-        'php', 'py', 'rb', 'go', 'java', 'c', 'cpp', 'h', 'hpp',
-        'cs', 'swift', 'kt', 'rs', 'lua', 'pl', 'pm', 'sh', 'bash',
-        'ps1', 'bat', 'cmd', 'json', 'yaml', 'yml', 'toml', 'ini',
-        'conf', 'cfg', 'env', 'properties', 'log', 'csv', 'tsv'
-    ];
-    
-    const ext = path.extname(name).toLowerCase().slice(1);
-    return textExtensions.includes(ext);
-}
+
 
 // 辅助函数：读取文件内容，自动检测编码
 async function readFileWithEncoding(filePath: string): Promise<string | null> {
