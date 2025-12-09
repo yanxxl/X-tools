@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Alert, Button, Card, Descriptions, Skeleton, Space, Typography} from 'antd';
 import {FileOutlined, FolderOpenOutlined} from '@ant-design/icons';
 import {countText, formatDate, formatFileSize, getFileTextStats, getSelectedText, truncateText} from '../../utils/format';
-import {isTextFile} from '../../utils/fileType';
+import {isTextFile} from '../../utils/fileCommonUtil';
 import {useAppContext} from '../../contexts/AppContext';
 import {FileInfo} from "../../types";
 import {ToolWindow} from './toolWindow';

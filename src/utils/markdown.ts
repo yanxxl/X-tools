@@ -1,18 +1,5 @@
 import {unified} from 'unified';
-
-// 浏览器兼容的路径处理函数
-function dirname(filePath: string): string {
-    // 处理不同平台的路径分隔符
-    const parts = filePath.split(/[/\\]/);
-    parts.pop();
-    return parts.join('/');
-}
-
-function join(...paths: string[]): string {
-    // 处理不同平台的路径分隔符
-    const normalizedPaths = paths.map(path => path.replace(/\\/g, '/'));
-    return normalizedPaths.join('/');
-}
+import {dirname, join} from './fileCommonUtil';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';

@@ -18,9 +18,9 @@ import {
   truncateTextWithQuery,
   isHiddenFile,
   getFileTypeDisplayName
-} from '../src/utils/fileType';
+} from '../src/utils/fileCommonUtil';
 
-describe('fileType.ts 测试', () => {
+describe('fileCommonUtil.ts 测试', () => {
   describe('文件类型检测', () => {
     describe('getExtension', () => {
       it('应该正确获取文件名的扩展名', () => {

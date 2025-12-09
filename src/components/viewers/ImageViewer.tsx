@@ -1,5 +1,5 @@
 import React from 'react';
-import { toFileUrl } from '../../utils/fileType';
+import { toFileUrl } from '../../utils/fileCommonUtil';
 
 interface ImageViewerProps {
   path: string;

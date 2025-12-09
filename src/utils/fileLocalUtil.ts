@@ -3,7 +3,7 @@ import path from 'node:path';
 import {FileNode} from '../types';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
-import {isTextFile} from './fileType';
+import {isTextFile} from './fileCommonUtil';
 
 // =======================================
 // 类型定义

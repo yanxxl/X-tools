@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { toFileUrl } from '../../utils/fileType';
+import { toFileUrl } from '../../utils/fileCommonUtil';
 
 interface PdfViewerProps {
   path: string;

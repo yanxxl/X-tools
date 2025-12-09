@@ -32,10 +32,7 @@ const formatTime = (timestamp: number): string => {
     }
 };
 
-// 获取文件名工具函数
-const getFileName = (filePath: string): string => {
-    return filePath.split(/[/\\]/).pop() || filePath;
-};
+import {fullname} from '../../utils/fileCommonUtil';
 
 export const FileHistoryToolWindow: React.FC = () => {
     const {currentFolder, fileHistory, setCurrentFile, clearFolderHistory} = useAppContext();
@@ -101,7 +98,7 @@ export const FileHistoryToolWindow: React.FC = () => {
                                         <FileTextOutlined className="file-icon"/>
                                         <Tooltip title={record.filePath}>
                                             <Text strong className="file-name">
-                                                {getFileName(record.filePath)}
+                                                {fullname(record.filePath)}
                                             </Text>
                                         </Tooltip>
                                     </div>

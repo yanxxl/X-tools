@@ -4,6 +4,7 @@ import {Button, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typograph
 import {CodeOutlined, EyeOutlined, FileTextOutlined} from '@ant-design/icons';
 import {OutlineItem, parseMarkdown} from '../../utils/markdown';
 import {storage, STORAGE_KEYS} from '../../utils/uiUtils';
+import {toFileUrl} from '../../utils/fileCommonUtil';
 import 'highlight.js/styles/github.css';
 import './MarkdownViewer.css';
 import 'katex/dist/katex.min.css';

@@ -1,7 +1,7 @@
 import React from 'react';
 import {Button, Typography} from 'antd';
 import {FileTextOutlined, FolderOpenOutlined} from '@ant-design/icons';
-import {detectFileType, getExtension, toFileUrl} from '../../utils/fileType';
+import {detectFileType, getExtension, toFileUrl} from '../../utils/fileCommonUtil';
 import {ImageViewer} from './ImageViewer';
 import {VideoViewer} from './VideoViewer';
 import {PdfViewer} from './PdfViewer';

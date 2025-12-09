@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {toFileUrl} from '../../utils/fileType';
+import {toFileUrl} from '../../utils/fileCommonUtil';
 import {Skeleton} from 'antd';
 import {useAppContext} from "../../contexts/AppContext";
 

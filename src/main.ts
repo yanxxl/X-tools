@@ -2,7 +2,7 @@ import {app, BrowserWindow, dialog, ipcMain, Menu, screen, shell} from 'electron
 import {promises as fs} from 'fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import {getDirectoryChildren, getFileInfo, getFileTree} from './utils/fileUtils';
+import {getDirectoryChildren, getFileInfo, getFileTree} from './utils/fileLocalUtil';
 import {loadConfig, saveConfig} from './utils/configManager';
 import {Config} from "./utils/config";
 import chardet from 'chardet';

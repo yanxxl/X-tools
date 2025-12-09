@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useState} from 'react';
 import {ConfigProvider, message, Tree} from "antd";
 import type {DataNode, TreeProps} from 'antd/es/tree';
 import {FileNode} from '../../types';
-import {detectFileType} from '../../utils/fileType';
+import {detectFileType} from '../../utils/fileCommonUtil';
 import {useAppContext} from '../../contexts/AppContext';
 import {DownOutlined, FileImageOutlined, FileOutlined, FilePdfOutlined, FileTextOutlined, FolderOutlined, PlayCircleOutlined} from '@ant-design/icons';
 

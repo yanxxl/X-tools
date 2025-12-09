@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
-import {isTextFile} from './fileType';
+import {isTextFile} from './fileCommonUtil';
 
 // 类型定义
 interface SearchMatch {

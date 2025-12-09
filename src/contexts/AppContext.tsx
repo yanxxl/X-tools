@@ -1,6 +1,6 @@
 import React, {createContext, ReactNode, useContext, useRef, useState} from 'react';
 import {fileHistoryManager, FileHistoryRecord} from '../utils/uiUtils';
-import {detectFileType} from "../utils/fileType";
+import {detectFileType} from "../utils/fileCommonUtil";
 
 export interface AppContextType {
     /** 当前选中的文件夹路径 */
