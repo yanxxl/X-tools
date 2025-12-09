@@ -288,7 +288,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                 const element = document.getElementById(item.id);
                 if (element) {
                     console.log('element', [element]);
-                    element.scrollIntoView({behavior: 'smooth', block: 'start'});
+                    element.scrollIntoView({behavior: 'smooth', block: 'center'});
                     // 添加临时高亮效果
                     element.classList.add('outline-highlight-animation');
                     setTimeout(() => {
@@ -330,7 +330,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                         view.dispatch({
                             selection: {anchor: targetPos},
                             effects: [
-                                EditorView.scrollIntoView(targetPos, {y: 'start'})
+                                EditorView.scrollIntoView(targetPos, {y: 'center'})
                             ]
                         });
 
