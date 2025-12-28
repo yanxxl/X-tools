@@ -117,6 +117,32 @@ async function collectTextFiles(dirPath: string): Promise<string[]> {
     return files;
 }
 
+// 辅助函数：递归收集指定目录下的所有文件（包括非文本文件）
+async function collectAllFiles(dirPath: string): Promise<string[]> {
+    const files: string[] = [];
+    const entries = await fs.promises.readdir(dirPath, {withFileTypes: true});
+
+    for (const entry of entries) {
+        // 跳过隐藏文件和目录
+        if (entry.name.startsWith('.')) {
+            continue;
+        }
+
+        const fullPath = path.join(dirPath, entry.name);
+
+        if (entry.isDirectory()) {
+            // 递归收集子目录中的文件
+            const subFiles = await collectAllFiles(fullPath);
+            files.push(...subFiles);
+        } else {
+            // 收集所有非隐藏文件
+            files.push(fullPath);
+        }
+    }
+
+    return files;
+}
+
 // 辅助函数：搜索单个文件的内容
 async function searchSingleFile(filePath: string, query: string): Promise<{ matches: SearchMatch[], totalLines: number } | null> {
     try {
@@ -160,8 +186,10 @@ async function searchFilesContentProgressively(
     callbacks: SearchProgressCallback,
     searchMode: 'content' | 'filename' = 'content'
 ): Promise<void> {
-    // 1. 收集所有文本文件
-    const allFiles = await collectTextFiles(dirPath);
+    // 1. 根据搜索模式选择文件收集函数
+    const allFiles = searchMode === 'filename' 
+        ? await collectAllFiles(dirPath) 
+        : await collectTextFiles(dirPath);
     const totalFiles = allFiles.length;
     let currentFileIndex = 0;
     let totalLinesSearched = 0;

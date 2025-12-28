@@ -3,6 +3,7 @@ import {Button, Card, Collapse, Empty, Input, message, Progress, Radio, Select, 
 import {DownOutlined, FileTextOutlined, FolderOutlined, HistoryOutlined, SearchOutlined, UpOutlined} from '@ant-design/icons';
 import {useAppContext} from '../../contexts/AppContext';
 import {Center} from './Center';
+import {isTextFile} from '../../utils/fileCommonUtil';
 
 const {Search} = Input;
 const {Title, Text} = Typography;
@@ -469,6 +470,13 @@ export const GlobalSearch: React.FC<SearchSplitPanelProps> = ({onClose}) => {
         try {
             setPreviewLoading(true);
             setPreviewError(null);
+
+            // 检查是否为文本文件
+            if (!isTextFile(path)) {
+                setPreviewError('该文件不是文本文件，无法预览内容');
+                setContent('');
+                return;
+            }
 
             if (window.electronAPI) {
                 const fileContent = await window.electronAPI.readFile(path);
