@@ -319,16 +319,17 @@ function registerIpcHandlers() {
 
         return new Promise((resolve, reject) => {
             // 创建Worker线程 - 根据是否打包使用不同的路径
-            let workerPath;
+            let workerPath: string;
             if (__dirname.includes('.vite/build')) {
                 // 开发模式下，Worker文件直接在.vite/build目录下
-                workerPath = path.join(__dirname, 'searchWorker.js');
+                workerPath = path.resolve(__dirname, 'searchWorker.js');
             } else if (app.isPackaged) {
                 // 打包后，Worker文件会在resources目录下
-                workerPath = path.join(process.resourcesPath, 'searchWorker.js');
+                workerPath = path.resolve(process.resourcesPath, 'searchWorker.js');
             } else {
                 // 其他情况，使用源码路径
-                workerPath = path.join(app.getAppPath(), 'src', 'utils', 'searchWorker.ts');
+                const appPath = app.getAppPath();
+                workerPath = path.resolve(appPath, 'src', 'utils', 'searchWorker.ts');
             }
 
             const worker = new Worker(workerPath, {
