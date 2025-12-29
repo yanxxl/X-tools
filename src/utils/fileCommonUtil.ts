@@ -230,59 +230,6 @@ export function truncateText(text: string, maxLength: number): string {
   return text.substring(0, maxLength) + '...';
 }
 
-/**
- * 截短文本，确保查询词可见
- * @param text 原始文本
- * @param maxLength 最大长度
- * @param query 查询词
- */
-export function truncateTextWithQuery(text: string, maxLength: number, query: string): string {
-  if (text.length <= maxLength) {
-    return text;
-  }
-
-  // 查找查询词在文本中的位置
-  const queryIndex = text.toLowerCase().indexOf(query.toLowerCase());
-
-  if (queryIndex === -1) {
-    // 如果没有找到查询词，直接截短
-    return text.substring(0, maxLength - 3) + '...';
-  }
-
-  // 确保查询词在截短后的文本中可见
-  const queryStart = queryIndex;
-  const queryEnd = queryIndex + query.length;
-
-  // 计算左右两侧应该保留的字符数
-  const totalAvailable = maxLength - query.length - 3; // 3个字符用于省略号
-  const leftAvailable = Math.floor(totalAvailable / 2);
-  const rightAvailable = totalAvailable - leftAvailable;
-
-  // 计算实际截取范围
-  let start = Math.max(0, queryStart - leftAvailable);
-  let end = Math.min(text.length, queryEnd + rightAvailable);
-
-  // 调整以确保不超过总长度
-  if (end - start > maxLength - 3) {
-    if (start > 0) {
-      start = Math.max(0, end - maxLength + 3);
-    } else {
-      end = Math.min(text.length, start + maxLength - 3);
-    }
-  }
-
-  // 添加省略号
-  let result = text.substring(start, end);
-  if (start > 0) {
-    result = '...' + result;
-  }
-  if (end < text.length) {
-    result = result + '...';
-  }
-
-  return result;
-}
-
 // =======================================
 // 文件操作辅助
 // =======================================
