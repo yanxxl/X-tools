@@ -4,7 +4,26 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
-import {isTextFile} from './fileCommonUtil';
+
+// 内联定义 isTextFile 函数
+// 在 windows 系统中，引入模块找不到，特此内联。注意及时更新若 src/utils/fileCommonUtil.ts 中修改。
+function isTextFile(name: string): boolean {
+    const ext = name.toLowerCase().split('.').pop() || '';
+    const textExtensions = new Set([
+        'txt','md','json','log','csv','tsv','ini','conf','cfg','env','yaml','yml','xml',
+        'html','htm','css','scss','less',
+        'js','jsx','ts','tsx',
+        'py','rb','go','rs','java','kt','swift','c','h','cpp','hpp','cs','php','sh','bat','ps1',
+        'srt','ass','ssa','sub','vtt',
+        'lua','pl','pm','tcl','sql','r','dart','scala','groovy','gradle',
+        'tex','bib',
+        'toml','tf','tfvars','proto','graphql','gql',
+        'awk','sed',
+        'hs','lhs','elm','erl','hrl','ex','exs','fs','fsx',
+        'out'
+    ]);
+    return textExtensions.has(ext);
+}
 
 // 类型定义
 interface SearchMatch {
