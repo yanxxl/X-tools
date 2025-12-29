@@ -149,6 +149,18 @@ const SettingsPanel: React.FC = () => {
                     <Descriptions.Item label="许可证">
                         <Text>MIT</Text>
                     </Descriptions.Item>
+                    <Descriptions.Item label="作者">
+                        <a
+                            href="#"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                window.electronAPI.openExternal('https://thinking.vip');
+                            }}
+                            style={{color: '#1890ff', cursor: 'pointer'}}
+                        >
+                            萝卜
+                        </a>
+                    </Descriptions.Item>
                     <Descriptions.Item label="源码">
                         <a
                             href="#"
