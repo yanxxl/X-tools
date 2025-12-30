@@ -1,8 +1,8 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
-import {contextBridge, ipcRenderer} from 'electron';
-import {FileNode} from './types/index';
-import {Config} from './utils/config';
+import { contextBridge, ipcRenderer } from 'electron';
+import { FileNode } from './types/index';
+import { Config } from './utils/config';
 
 /**
  * 暴露给渲染进程的Electron API接口
@@ -14,7 +14,7 @@ interface ElectronAPI {
     loadConfig: () => Promise<Config>;
     /** 保存应用配置 */
     saveConfig: (config: Config) => Promise<void>;
-    
+
     // === 文件系统操作 ===
     /** 打开文件夹选择对话框 */
     selectDirectory: () => Promise<string | null>;
@@ -36,7 +36,7 @@ interface ElectronAPI {
     onSearchFileResult: (callback: (result: any) => void) => void;
     /** 取消监听单个文件搜索结果事件 */
     offSearchFileResult: (callback: (result: any) => void) => void;
-    
+
     // === 窗口控制 ===
     /** 控制红绿灯（窗口控制按钮）的显示/隐藏 */
     setWindowButtonVisibility: (visible: boolean) => Promise<void>;
@@ -47,12 +47,14 @@ interface ElectronAPI {
     /** 关闭窗口 */
     closeWindow: () => Promise<void>;
     /** 创建新窗口 */
-    createNewWindow: (folderPath?: string) => Promise<{success: boolean; windowId?: string; error?: string}>;
+    createNewWindow: (folderPath?: string) => Promise<{ success: boolean; windowId?: string; error?: string }>;
+    /** 打开开发者工具 */
+    openDevTools: () => Promise<{ success: boolean; error?: string }>;
     /** 监听初始文件夹设置 */
     onSetInitialFolder: (callback: (folderPath: string) => void) => void;
     /** 取消监听初始文件夹设置 */
     offSetInitialFolder: (callback: (folderPath: string) => void) => void;
-    
+
     // === 文件操作 ===
     /** 使用系统默认应用打开文件 */
     openFile: (filePath: string) => Promise<void>;
@@ -90,7 +92,7 @@ const electronAPI: ElectronAPI = {
     // 配置管理
     loadConfig: () => ipcRenderer.invoke('loadConfig') as Promise<Config>,
     saveConfig: (config: Config) => ipcRenderer.invoke('saveConfig', config) as Promise<void>,
-    
+
     // 文件系统操作
     selectDirectory: () => ipcRenderer.invoke('selectDirectory') as Promise<string | null>,
     getFileTree: (path: string) => ipcRenderer.invoke('getFileTree', path) as Promise<FileNode>,
@@ -102,16 +104,17 @@ const electronAPI: ElectronAPI = {
     offSearchProgress: (callback) => ipcRenderer.off('searchProgress', (event, progress) => callback(progress)),
     onSearchFileResult: (callback) => ipcRenderer.on('searchFileResult', (event, result) => callback(result)),
     offSearchFileResult: (callback) => ipcRenderer.off('searchFileResult', (event, result) => callback(result)),
-    
+
     // 窗口控制
     setWindowButtonVisibility: (visible: boolean) => ipcRenderer.invoke('setWindowButtonVisibility', visible) as Promise<void>,
     minimizeWindow: () => ipcRenderer.invoke('minimizeWindow') as Promise<void>,
     toggleMaximizeWindow: () => ipcRenderer.invoke('toggleMaximizeWindow') as Promise<void>,
     closeWindow: () => ipcRenderer.invoke('closeWindow') as Promise<void>,
-    createNewWindow: (folderPath?: string) => ipcRenderer.invoke('createNewWindow', folderPath) as Promise<{success: boolean; windowId?: string; error?: string}>,
+    createNewWindow: (folderPath?: string) => ipcRenderer.invoke('createNewWindow', folderPath) as Promise<{ success: boolean; windowId?: string; error?: string }>,
+    openDevTools: () => ipcRenderer.invoke('openDevTools') as Promise<{ success: boolean; error?: string }>,
     onSetInitialFolder: (callback) => ipcRenderer.on('setInitialFolder', (event, folderPath) => callback(folderPath)),
     offSetInitialFolder: (callback) => ipcRenderer.off('setInitialFolder', (event, folderPath) => callback(folderPath)),
-    
+
     // 文件操作
     openFile: (filePath: string) => ipcRenderer.invoke('openFile', filePath) as Promise<void>,
     showItemInFolder: (filePath: string) => ipcRenderer.invoke('showItemInFolder', filePath) as Promise<void>,

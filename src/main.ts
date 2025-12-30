@@ -1,14 +1,14 @@
-import {app, BrowserWindow, dialog, ipcMain, Menu, screen, shell} from 'electron';
-import {promises as fs} from 'fs';
+import { app, BrowserWindow, dialog, ipcMain, Menu, screen, shell } from 'electron';
+import { promises as fs } from 'fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import {getDirectoryChildren, getFileInfo, getFileTree} from './utils/fileLocalUtil';
-import {loadConfig, saveConfig} from './utils/configManager';
-import {Config} from "./utils/config";
+import { getDirectoryChildren, getFileInfo, getFileTree } from './utils/fileLocalUtil';
+import { loadConfig, saveConfig } from './utils/configManager';
+import { Config } from "./utils/config";
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
-import {spawnSync} from 'child_process';
-import {Worker} from 'worker_threads';
+import { spawnSync } from 'child_process';
+import { Worker } from 'worker_threads';
 
 // 添加环境变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -18,7 +18,7 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 if (process.platform === 'win32') {
     // 设置Windows控制台为UTF-8编码
     try {
-        spawnSync('chcp', ['65001'], {stdio: 'inherit'});
+        spawnSync('chcp', ['65001'], { stdio: 'inherit' });
     } catch (error) {
         console.error('设置控制台编码失败:', error);
     }
@@ -239,7 +239,7 @@ function registerIpcHandlers() {
                 await fs.access(filePath);
 
                 // 文件存在，读取文件以检测编码
-                const buffer = await fs.readFile(filePath, {encoding: null});
+                const buffer = await fs.readFile(filePath, { encoding: null });
                 const detectedEncoding = chardet.detect(buffer);
 
                 if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
@@ -333,7 +333,7 @@ function registerIpcHandlers() {
             }
 
             const worker = new Worker(workerPath, {
-                workerData: {dirPath, query, searchId, searchMode}
+                workerData: { dirPath, query, searchId, searchMode }
             });
 
             // 存储Worker引用以便后续取消
@@ -350,13 +350,13 @@ function registerIpcHandlers() {
                     // 接收到单个文件的搜索结果
                     if (message.data === null) {
                         // 搜索完成
-                        event.sender.send('searchFileResult', {searchId, data: null}); // 发送结束信号到前端
+                        event.sender.send('searchFileResult', { searchId, data: null }); // 发送结束信号到前端
                         activeSearchWorkers.delete(searchId); // 清除活动Worker引用
                         resolve(results);
                     } else {
                         // 添加到结果列表并发送到前端
                         results.push(message.data);
-                        event.sender.send('searchFileResult', {searchId, data: message.data});
+                        event.sender.send('searchFileResult', { searchId, data: message.data });
                     }
                 } else if (message.type === 'error') {
                     // 搜索出错
@@ -397,10 +397,25 @@ function registerIpcHandlers() {
     ipcMain.handle('createNewWindow', async (event, folderPath?: string) => {
         try {
             const newWindow = createWindow(folderPath);
-            return {success: true, windowId: (newWindow as any).windowId};
+            return { success: true, windowId: (newWindow as any).windowId };
         } catch (error) {
             console.error('创建新窗口失败:', error);
-            return {success: false, error: (error as Error).message};
+            return { success: false, error: (error as Error).message };
+        }
+    });
+
+    // 打开开发者工具
+    ipcMain.handle('openDevTools', async (event) => {
+        try {
+            const window = BrowserWindow.fromWebContents(event.sender);
+            if (window) {
+                window.webContents.openDevTools();
+                return { success: true };
+            }
+            return { success: false, error: '无法找到对应的窗口' };
+        } catch (error) {
+            console.error('打开开发者工具失败:', error);
+            return { success: false, error: (error as Error).message };
         }
     });
 }
@@ -408,17 +423,17 @@ function registerIpcHandlers() {
 // 根据屏幕分辨率计算窗口尺寸
 const getWindowSize = () => {
     const primaryDisplay = screen.getPrimaryDisplay();
-    const {width: screenWidth, height: screenHeight} = primaryDisplay.workAreaSize;
+    const { width: screenWidth, height: screenHeight } = primaryDisplay.workAreaSize;
 
     // 判断是否大于1080p (1920x1080)
     const isHigherThan1080p = screenWidth > 1920 || screenHeight > 1080;
 
     if (isHigherThan1080p) {
         // 高分辨率显示器使用1080p窗口
-        return {width: 1920, height: 1080};
+        return { width: 1920, height: 1080 };
     } else {
         // 1080p或更低分辨率使用720p窗口
-        return {width: 1280, height: 720};
+        return { width: 1280, height: 720 };
     }
 };
 
@@ -430,12 +445,12 @@ function generateWindowId(): string {
 // 创建新窗口，可选择指定初始文件夹
 const createWindow = (folderPath?: string) => {
     // 根据屏幕分辨率获取窗口尺寸
-    const {width, height} = getWindowSize();
-    
+    const { width, height } = getWindowSize();
+
     // 获取当前活跃窗口的位置信息，用于新窗口偏移
     let x: number | undefined;
     let y: number | undefined;
-    
+
     // 获取当前焦点窗口
     const focusedWindow = BrowserWindow.getFocusedWindow();
     if (focusedWindow) {
@@ -461,7 +476,7 @@ const createWindow = (folderPath?: string) => {
         ...(process.platform === 'darwin' ? {
             // macOS specific settings
             titleBarStyle: 'hidden',
-            trafficLightPosition: {x: 12, y: 12}
+            trafficLightPosition: { x: 12, y: 12 }
         } : {
             // Windows/Linux specific settings
             frame: false, // 隐藏系统标题栏和边框
@@ -525,27 +540,27 @@ function createMenu() {
         {
             label: '编辑',
             submenu: [
-                {label: '撤销', role: 'undo'},
-                {label: '重做', role: 'redo'},
-                {type: 'separator'},
-                {label: '剪切', role: 'cut'},
-                {label: '复制', role: 'copy'},
-                {label: '粘贴', role: 'paste'},
-                {label: '全选', role: 'selectAll'}
+                { label: '撤销', role: 'undo' },
+                { label: '重做', role: 'redo' },
+                { type: 'separator' },
+                { label: '剪切', role: 'cut' },
+                { label: '复制', role: 'copy' },
+                { label: '粘贴', role: 'paste' },
+                { label: '全选', role: 'selectAll' }
             ]
         },
         // 窗口菜单（所有平台）
         {
             label: '窗口',
             submenu: [
-                {label: '最小化', role: 'minimize'},
-                {label: '关闭', role: 'close'},
-                {type: 'separator'},
-                {label: '重新加载', role: 'reload'},
-                {label: '强制重新加载', role: 'forceReload'},
-                {label: '切换开发者工具', role: 'toggleDevTools'},
-                {type: 'separator'},
-                {label: '全部显示', role: 'front'}
+                { label: '最小化', role: 'minimize' },
+                { label: '关闭', role: 'close' },
+                { type: 'separator' },
+                { label: '重新加载', role: 'reload' },
+                { label: '强制重新加载', role: 'forceReload' },
+                { label: '切换开发者工具', role: 'toggleDevTools' },
+                { type: 'separator' },
+                { label: '全部显示', role: 'front' }
             ]
         },
         // 帮助菜单（所有平台）
@@ -596,7 +611,7 @@ function createMenu() {
                             }
                         }
                     },
-                    {type: 'separator'},
+                    { type: 'separator' },
                     {
                         label: '退出',
                         accelerator: 'Cmd+Q',
