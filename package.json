@@ -10,7 +10,8 @@
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "eslint --ext .ts,.tsx .",
-    "update-icons": "node scripts/update-icons.js"
+    "update-icons": "node scripts/update-icons.js",
+    "generate-windows-icon": "node scripts/generate-windows-icon.js"
   },
   "keywords": [],
   "author": {

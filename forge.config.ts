@@ -1,11 +1,11 @@
-import type {ForgeConfig} from '@electron-forge/shared-types';
-import {MakerSquirrel} from '@electron-forge/maker-squirrel';
-import {MakerZIP} from '@electron-forge/maker-zip';
-import {MakerDeb} from '@electron-forge/maker-deb';
-import {MakerRpm} from '@electron-forge/maker-rpm';
-import {VitePlugin} from '@electron-forge/plugin-vite';
-import {FusesPlugin} from '@electron-forge/plugin-fuses';
-import {FuseV1Options, FuseVersion} from '@electron/fuses';
+import type { ForgeConfig } from '@electron-forge/shared-types';
+import { MakerSquirrel } from '@electron-forge/maker-squirrel';
+import { MakerZIP } from '@electron-forge/maker-zip';
+import { MakerDeb } from '@electron-forge/maker-deb';
+import { MakerRpm } from '@electron-forge/maker-rpm';
+import { VitePlugin } from '@electron-forge/plugin-vite';
+import { FusesPlugin } from '@electron-forge/plugin-fuses';
+import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import fs from 'fs';
 import path from 'path';
 
@@ -14,7 +14,8 @@ const config: ForgeConfig = {
         asar: true,
         name: 'X-tools',
         executableName: 'X-tools',
-        icon: path.join(__dirname, 'public/icon'),
+        // 为不同平台设置不同的图标
+        icon: path.resolve(__dirname, 'public/icon.ico'),
         extraResource: [
             path.join(__dirname, 'public/pdfjs'),
         ],
@@ -37,7 +38,7 @@ const config: ForgeConfig = {
                 // 确保 out 目录存在
                 const outDir = path.join(process.cwd(), 'out');
                 if (!fs.existsSync(outDir)) {
-                    fs.mkdirSync(outDir, {recursive: true});
+                    fs.mkdirSync(outDir, { recursive: true });
                 }
 
                 // 复制文件到 out 目录并使用新名称
@@ -63,11 +64,10 @@ const config: ForgeConfig = {
         }
     },
     makers: [
-        // 根据当前平台选择对应的maker，减少打包时间
-        process.platform === 'darwin' ? new MakerZIP({}, ['darwin']) : 
-        process.platform === 'win32' ? new MakerSquirrel({}) : 
-        process.platform === 'linux' ? new MakerDeb({}) : 
-        new MakerZIP({}),
+        new MakerSquirrel({}),
+        new MakerZIP({}, ['darwin', 'win32']),
+        new MakerRpm({}),
+        new MakerDeb({}),
     ],
     plugins: [
         new VitePlugin({

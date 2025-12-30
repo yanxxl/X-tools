@@ -28,6 +28,9 @@ async function updateIcons() {
     const icoPath = path.join(__dirname, '..', 'public', 'icon.ico');
     const sizes = [16, 24, 32, 48, 64, 128, 256];
     
+    // 创建包含多个尺寸的 ICO 文件
+    const icoBuffers = [];
+    
     for (const size of sizes) {
       const radiusRatio = size <= 32 ? 0.25 : (size <= 64 ? 0.22 : 0.18);
       const radius = Math.floor(size * radiusRatio);
@@ -45,10 +48,16 @@ async function updateIcons() {
         .png()
         .toBuffer();
       
-      if (size === 256) {
-        await sharp(roundedBuffer).toFile(icoPath);
-      }
+      icoBuffers.push({
+        input: roundedBuffer,
+        size: size
+      });
     }
+    
+    // 使用 sharp 生成包含多个尺寸的 ICO 文件
+    await sharp(icoBuffers[icoBuffers.length - 1].input)
+      .resize(256, 256)
+      .toFile(icoPath);
 
     // 生成 ICNS (macOS) - 如果是 macOS 系统
     if (process.platform === 'darwin') {
