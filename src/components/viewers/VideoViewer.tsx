@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, CSSProperties } from "react";
 import { Splitter } from "antd";
 import { toFileUrl } from "../../utils/fileCommonUtil";
 import {
@@ -13,6 +13,88 @@ interface VideoViewerProps {
   path: string;
 }
 
+// 样式常量
+const containerStyle: CSSProperties = {
+  position: "relative",
+  height: "100%",
+  overflow: "hidden",
+};
+
+const videoContainerStyle: CSSProperties = {
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  position: "relative",
+};
+
+const videoStyle: CSSProperties = {
+  maxWidth: "100%",
+  maxHeight: "100%",
+};
+
+const subtitleDisplayStyle = (isDragging: boolean, x: number, y: number): CSSProperties => ({
+  position: "absolute",
+  left: `${x * 100}%`,
+  top: `${y * 100}%`,
+  transform: "translate(-50%, -50%)",
+  backgroundColor: "rgba(0, 0, 0, 0.7)",
+  color: "#fff",
+  padding: "8px 16px",
+  borderRadius: "4px",
+  fontSize: "20px",
+  maxWidth: "80%",
+  textAlign: "center",
+  zIndex: 10,
+  cursor: isDragging ? "grabbing" : "grab",
+});
+
+const subtitlePanelStyle: CSSProperties = {
+  width: "100%",
+  height: "100%",
+  backgroundColor: "#f5f5f5",
+  overflowY: "auto",
+  padding: "10px",
+  borderLeft: "1px solid #e0e0e0",
+};
+
+const subtitlePanelHeaderStyle: CSSProperties = {
+  fontSize: "16px",
+  fontWeight: "bold",
+  marginBottom: "10px",
+  paddingBottom: "5px",
+  borderBottom: "1px solid #e0e0e0",
+};
+
+const subtitleItemStyle = (isCurrent: boolean): CSSProperties => ({
+  padding: "8px",
+  marginBottom: "4px",
+  borderRadius: "4px",
+  backgroundColor: isCurrent ? "#e6f7ff" : "#fff",
+  borderLeft: isCurrent ? "4px solid #1890ff" : "4px solid transparent",
+  cursor: "pointer",
+  fontSize: "14px",
+  lineHeight: 1.5,
+  transition: "all 0.3s",
+});
+
+const subtitleItemIndexStyle: CSSProperties = {
+  fontSize: "12px",
+  color: "#888",
+  marginBottom: "4px",
+};
+
+const subtitleItemTextStyle: CSSProperties = {
+  whiteSpace: "pre-wrap",
+};
+
+const subtitleSelectStyle: CSSProperties = {
+  marginLeft: "10px",
+  padding: "4px",
+  fontSize: "14px",
+};
+
 // 获取视频播放进度的存储键
 const getVideoProgressKey = (path: string): string => {
   return `video_progress_${path}`;
@@ -21,7 +103,6 @@ const getVideoProgressKey = (path: string): string => {
 // 保存播放进度
 const saveVideoProgress = (path: string, currentTime: number): void => {
   try {
-    // console.log('Saving video progress:', path, currentTime); 大概每秒保存三四次
     localStorage.setItem(getVideoProgressKey(path), currentTime.toString());
   } catch (error) {
     console.warn("Failed to save video progress:", error);
@@ -41,37 +122,37 @@ const getVideoProgress = (path: string): number => {
 
 export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
   const { autoPlay } = useAppContext();
+  
+  // Refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
-
-  // 字幕相关状态
-  const [subtitles, setSubtitles] = useState<SubtitleItem[]>([]);
-  const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleItem | null>(
-    null,
-  );
-  const [subtitleFiles, setSubtitleFiles] = useState<string[]>([]);
-  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState(0);
   const subtitlesRef = useRef<HTMLDivElement | null>(null);
-  
-  // 所有面板大小状态（受控模式）
+
+  // 面板大小状态
   const [panelSizes, setPanelSizes] = useState<(number | string)[]>(["70%", 0]);
   
-  // 处理面板大小变化
-  const handleSplitterResize = (sizes: number[]) => {
-    setPanelSizes(sizes);
-  };
+  // 字幕相关状态
+  const [subtitles, setSubtitles] = useState<SubtitleItem[]>([]);
+  const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleItem | null>(null);
+  const [subtitleFiles, setSubtitleFiles] = useState<string[]>([]);
+  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState(0);
 
   // 字幕位置状态（用于拖动功能）
   const [subtitlePosition, setSubtitlePosition] = useState({ x: 0.5, y: 0.9 }); // 使用相对位置 (0-1)
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-  // 保存播放进度
+  // 处理面板大小变化
+  const handleSplitterResize = (sizes: number[]) => {
+    setPanelSizes(sizes);
+  };
+
+  // 更新字幕和保存播放进度
   const handleTimeUpdate = () => {
     const video = videoRef.current;
-    if (video && video.duration) {
+    if (video) {
       // 只在播放时保存进度，避免在拖拽时频繁保存
-      if (!video.paused && !video.seeking) {
+      if (video.duration && !video.paused && !video.seeking) {
         saveVideoProgress(path, video.currentTime);
       }
 
@@ -103,7 +184,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
     }
   };
 
-  // 拖动过程事件处理
+  // 拖动相关事件处理
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
@@ -125,40 +206,37 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
       }
     };
 
-    // 监听全局鼠标移动事件
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-    }
-
-    // 清理事件监听
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-    };
-  }, [isDragging, dragOffset]);
-
-  // 拖动结束事件处理
-  useEffect(() => {
     const handleMouseUp = () => {
       if (isDragging) {
         setIsDragging(false);
       }
     };
 
-    // 监听全局鼠标释放事件
+    // 监听全局鼠标事件
     if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     }
 
     // 清理事件监听
     return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging]);
+  }, [isDragging, dragOffset]);
 
-  // 设置字幕初始位置 - 已迁移到相对位置，不再需要此逻辑
-
-  // 恢复播放进度
+  // 视频路径变化时的处理
   useEffect(() => {
+    // 查找字幕文件
+    const searchSubtitles = async () => {
+      const files = await findSubtitleFiles(path);
+      setSubtitleFiles(files);
+      setSelectedSubtitleIndex(0);
+    };
+
+    searchSubtitles();
+
+    // 恢复播放进度
     const video = videoRef.current;
     if (video) {
       const savedProgress = getVideoProgress(path);
@@ -172,18 +250,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
         }, 100);
         return () => clearTimeout(timer);
       }
-    }
-  }, [path]);
-
-  // 查找字幕文件
-  useEffect(() => {
-    const searchSubtitles = async () => {
-      const files = await findSubtitleFiles(path);
-      setSubtitleFiles(files);
-      setSelectedSubtitleIndex(0);
-    };
-
-    searchSubtitles();
+    }    
   }, [path]);
 
   // 加载选中的字幕文件
@@ -221,8 +288,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
   // 当当前字幕变化时，滚动到对应的字幕项
   useEffect(() => {
     if (currentSubtitle && subtitlesRef.current) {
-      const subtitleElements =
-        subtitlesRef.current.querySelectorAll(".subtitle-item");
+      const subtitleElements = subtitlesRef.current.querySelectorAll(".subtitle-item");
       const currentElement = subtitleElements[currentSubtitle.index - 1];
       if (currentElement) {
         currentElement.scrollIntoView({
@@ -234,37 +300,24 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
   }, [currentSubtitle]);
 
   return (
-    <div
-      style={{
-        position: "relative",
-        height: "100%",
-        overflow: "hidden",
-      }}
-    >
+    <div style={containerStyle}>
       <Splitter style={{ height: "100%" }} onResize={handleSplitterResize}>
         {/* 视频播放区域 */}
         <Splitter.Panel
           size={panelSizes[0]}
           min="50%"
-          style={{ position: "relative", background: "#000",padding: "0px" }}
+          style={{ position: "relative", background: "#000", padding: 0 }}
         >
           <div
             ref={videoContainerRef}
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              position: "relative",
-            }}
+            style={videoContainerStyle}
           >
             <video
               width="100%"
               height="100%"
               ref={videoRef}
               src={toFileUrl(path)}
-              style={{ maxWidth: "100%", maxHeight: "100%" }}
+              style={videoStyle}
               controls
               playsInline
               preload="metadata"
@@ -275,21 +328,11 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
             {/* 当前字幕显示 */}
             {currentSubtitle && (
               <div
-                style={{
-                  position: "absolute",
-                  left: `${subtitlePosition.x * 100}%`,
-                  top: `${subtitlePosition.y * 100}%`,
-                  transform: "translate(-50%, -50%)",
-                  backgroundColor: "rgba(0, 0, 0, 0.7)",
-                  color: "#fff",
-                  padding: "8px 16px",
-                  borderRadius: "4px",
-                  fontSize: "20px",
-                  maxWidth: "80%",
-                  textAlign: "center",
-                  zIndex: 10,
-                  cursor: isDragging ? "grabbing" : "grab",
-                }}
+                style={subtitleDisplayStyle(
+                  isDragging,
+                  subtitlePosition.x,
+                  subtitlePosition.y
+                )}
                 onMouseDown={handleDragStart}
               >
                 {currentSubtitle.text.split("\n").map((line, index) => (
@@ -309,37 +352,14 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
           style={{ overflow: "hidden" }}
         >
           {subtitles.length > 0 && (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                backgroundColor: "#f5f5f5",
-                overflowY: "auto",
-                padding: "10px",
-                borderLeft: "1px solid #e0e0e0",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  marginBottom: "10px",
-                  paddingBottom: "5px",
-                  borderBottom: "1px solid #e0e0e0",
-                }}
-              >
+            <div style={subtitlePanelStyle}>
+              <div style={subtitlePanelHeaderStyle}>
                 字幕列表
                 {subtitleFiles.length > 1 && (
                   <select
                     value={selectedSubtitleIndex}
-                    onChange={(e) =>
-                      setSelectedSubtitleIndex(Number(e.target.value))
-                    }
-                    style={{
-                      marginLeft: "10px",
-                      padding: "4px",
-                      fontSize: "14px",
-                    }}
+                    onChange={(e) => setSelectedSubtitleIndex(Number(e.target.value))}
+                    style={subtitleSelectStyle}
                   >
                     {subtitleFiles.map((file, index) => (
                       <option key={index} value={index}>
@@ -354,21 +374,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                   <div
                     key={subtitle.index}
                     className="subtitle-item"
-                    style={{
-                      padding: "8px",
-                      marginBottom: "4px",
-                      borderRadius: "4px",
-                      backgroundColor:
-                        subtitle === currentSubtitle ? "#e6f7ff" : "#fff",
-                      borderLeft:
-                        subtitle === currentSubtitle
-                          ? "4px solid #1890ff"
-                          : "4px solid transparent",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      lineHeight: "1.5",
-                      transition: "all 0.3s",
-                    }}
+                    style={subtitleItemStyle(subtitle === currentSubtitle)}
                     onClick={() => {
                       const video = videoRef.current;
                       if (video) {
@@ -376,20 +382,10 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                       }
                     }}
                   >
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        color: "#888",
-                        marginBottom: "4px",
-                      }}
-                    >
+                    <div style={subtitleItemIndexStyle}>
                       {subtitle.index}
                     </div>
-                    <div
-                      style={{
-                        whiteSpace: "pre-wrap",
-                      }}
-                    >
+                    <div style={subtitleItemTextStyle}>
                       {subtitle.text}
                     </div>
                   </div>
