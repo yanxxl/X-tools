@@ -129,7 +129,7 @@ const highlightKeyword = (text: string, keyword: string): React.ReactNode => {
   if (!keyword.trim()) {
     return text;
   }
-  
+
   const parts = text.split(new RegExp(`(${keyword})`, "gi"));
   return parts.map((part, index) => {
     if (part.toLowerCase() === keyword.toLowerCase()) {
@@ -167,7 +167,7 @@ const saveVideoProgress = (path: string, currentTime: number): void => {
 const getSubtitleDisplayName = (subtitlePath: string, index: number): string => {
   const fileName = fullname(subtitlePath);
   const videoName = name(subtitlePath);
-  
+
   // 尝试从文件名中提取语言代码或其他标识
   // 匹配格式：video.[identifier].ext
   const parts = fileName.split('.');
@@ -175,12 +175,12 @@ const getSubtitleDisplayName = (subtitlePath: string, index: number): string => 
     // 移除扩展名和视频名称部分
     const identifierParts = parts.slice(1, -1);
     const identifier = identifierParts.join('.');
-    
+
     if (identifier && fileName.startsWith(videoName + '.')) {
       return identifier;
     }
   }
-  
+
   // 如果没有匹配到，使用索引+1作为序号
   return `字幕 ${index + 1}`;
 };
@@ -198,7 +198,7 @@ const getVideoProgress = (path: string): number => {
 
 export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
   const { autoPlay } = useAppContext();
-  
+
   // Refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const videoContainerRef = useRef<HTMLDivElement | null>(null);
@@ -206,7 +206,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
 
   // 面板大小状态
   const [panelSizes, setPanelSizes] = useState<(number | string)[]>(["70%", 0]);
-  
+
   // 字幕相关状态
   const [subtitles, setSubtitles] = useState<SubtitleItem[]>([]);
   const [currentSubtitle, setCurrentSubtitle] = useState<SubtitleItem | null>(null);
@@ -217,10 +217,10 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
   const [subtitlePosition, setSubtitlePosition] = useState({ x: 0.5, y: 0.9 }); // 使用相对位置 (0-1)
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  
+
   // 字幕显示控制状态
   const [subtitleVisible, setSubtitleVisible] = useState(true);
-  
+
   // 搜索功能状态
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -327,14 +327,12 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
       if (savedProgress > 0) {
         // 设置一个小的延迟确保视频已经准备好
         const timer = setTimeout(() => {
-          if (video.duration && savedProgress < video.duration - 2) {
-            video.currentTime = savedProgress;
-            console.log(`Restored video progress: ${savedProgress}s`);
-          }
+          video.currentTime = savedProgress;
+          console.log(`Restored video progress: ${savedProgress}s`);
         }, 100);
         return () => clearTimeout(timer);
       }
-    }    
+    }
   }, [path]);
 
   // 加载选中的字幕文件
@@ -347,7 +345,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
         const subtitlePath = subtitleFiles[selectedSubtitleIndex];
         const parsedSubtitles = await loadAndParseSubtitle(subtitlePath);
         setSubtitles(parsedSubtitles);
-        
+
         // 主动设置字幕，即使视频未播放
         const video = videoRef.current;
         if (video) {
@@ -356,7 +354,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
         } else {
           setCurrentSubtitle(null);
         }
-        
+
         // 设置字幕面板大小
         setPanelSizes(["70%", 320]);
       } else {
@@ -382,16 +380,16 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
       }
     }
   }, [currentSubtitle]);
-  
+
   // 搜索过滤逻辑
   useEffect(() => {
     if (!searchKeyword.trim()) {
       setFilteredSubtitles(subtitles);
       return;
     }
-    
+
     const keyword = searchKeyword.toLowerCase();
-    const filtered = subtitles.filter(subtitle => 
+    const filtered = subtitles.filter(subtitle =>
       subtitle.text.toLowerCase().includes(keyword)
     );
     setFilteredSubtitles(filtered);
@@ -471,20 +469,20 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                       </select>
                     )}
                   </div>
-                  
+
                   {/* 右侧：其他操作按钮 */}
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     {/* 字幕显示/隐藏按钮 */}
-                    <div 
+                    <div
                       style={{ ...iconButtonStyle, color: subtitleVisible ? "#aaa" : "#ccc" }}
                       onClick={() => setSubtitleVisible(!subtitleVisible)}
                       title={subtitleVisible ? "隐藏字幕" : "显示字幕"}
                     >
-                     <EyeFilled />
+                      <EyeFilled />
                     </div>
-                    
+
                     {/* 搜索按钮 */}
-                    <div 
+                    <div
                       style={iconButtonStyle}
                       onClick={() => setSearchVisible(!searchVisible)}
                       title={searchVisible ? "关闭搜索" : "搜索字幕"}
@@ -493,49 +491,49 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* 搜索框行 */}
-                    {searchVisible && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
-                        {/* 搜索框容器，包含输入框和命中条数 */}
-                        <div style={{ display: "flex", alignItems: "center", width: "100%", position: "relative" }}>
-                          <input
-                            type="text"
-                            style={{ ...searchInputStyle, paddingRight: "40px" }}
-                            placeholder="搜索字幕..."
-                            value={searchKeyword}
-                            onChange={(e) => setSearchKeyword(e.target.value)}
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === "Escape") {
-                                setSearchVisible(false);
-                                setSearchKeyword("");
-                              }
-                            }}
-                          />
-                          {/* 命中条数显示 */}
-                          <div style={{ 
-                            position: "absolute", 
-                            right: "12px", 
-                            fontSize: "12px", 
-                            color: "#999",
-                            pointerEvents: "none"
-                          }}>
-                            {filteredSubtitles.length}
-                          </div>
-                        </div>
-                        <div 
-                          style={iconButtonStyle}
-                          onClick={() => {
+                {searchVisible && (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+                    {/* 搜索框容器，包含输入框和命中条数 */}
+                    <div style={{ display: "flex", alignItems: "center", width: "100%", position: "relative" }}>
+                      <input
+                        type="text"
+                        style={{ ...searchInputStyle, paddingRight: "40px" }}
+                        placeholder="搜索字幕..."
+                        value={searchKeyword}
+                        onChange={(e) => setSearchKeyword(e.target.value)}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
                             setSearchVisible(false);
                             setSearchKeyword("");
-                          }}
-                          title="关闭搜索"
-                        >
-                          ✕
-                        </div>
+                          }
+                        }}
+                      />
+                      {/* 命中条数显示 */}
+                      <div style={{
+                        position: "absolute",
+                        right: "12px",
+                        fontSize: "12px",
+                        color: "#999",
+                        pointerEvents: "none"
+                      }}>
+                        {filteredSubtitles.length}
                       </div>
-                    )}
+                    </div>
+                    <div
+                      style={iconButtonStyle}
+                      onClick={() => {
+                        setSearchVisible(false);
+                        setSearchKeyword("");
+                      }}
+                      title="关闭搜索"
+                    >
+                      ✕
+                    </div>
+                  </div>
+                )}
               </div>
               <div ref={subtitlesRef} style={subtitleListStyle}>
                 {filteredSubtitles.map((subtitle) => (
