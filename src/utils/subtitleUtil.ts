@@ -179,7 +179,13 @@ export function parseSrtSubtitle(content: string): SubtitleItem[] {
   });
   
   // 按开始时间排序
-  return subtitles.sort((a, b) => a.startTime - b.startTime);
+  const sortedSubtitles = subtitles.sort((a, b) => a.startTime - b.startTime);
+  
+  // 重新分配连续的序号
+  return sortedSubtitles.map((subtitle, index) => ({
+    ...subtitle,
+    index: index + 1
+  }));
 }
 
 /**
@@ -233,7 +239,13 @@ export function parseVttSubtitle(content: string): SubtitleItem[] {
   });
   
   // 按开始时间排序
-  return subtitles.sort((a, b) => a.startTime - b.startTime);
+  const sortedSubtitles = subtitles.sort((a, b) => a.startTime - b.startTime);
+  
+  // 重新分配连续的序号
+  return sortedSubtitles.map((subtitle, index) => ({
+    ...subtitle,
+    index: index + 1
+  }));
 }
 
 /**
@@ -287,7 +299,13 @@ export function parseAssSubtitle(content: string): SubtitleItem[] {
   });
   
   // 按开始时间排序
-  return subtitles.sort((a, b) => a.startTime - b.startTime);
+  const sortedSubtitles = subtitles.sort((a, b) => a.startTime - b.startTime);
+  
+  // 重新分配连续的序号
+  return sortedSubtitles.map((subtitle, index) => ({
+    ...subtitle,
+    index: index + 1
+  }));
 }
 
 /**
@@ -340,7 +358,13 @@ export function parseSubSubtitle(content: string): SubtitleItem[] {
   }
   
   // 按开始时间排序
-  return subtitles.sort((a, b) => a.startTime - b.startTime);
+  const sortedSubtitles = subtitles.sort((a, b) => a.startTime - b.startTime);
+  
+  // 重新分配连续的序号
+  return sortedSubtitles.map((subtitle, index) => ({
+    ...subtitle,
+    index: index + 1
+  }));
 }
 
 /**
