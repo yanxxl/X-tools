@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, CSSProperties } from "react";
 import { Splitter } from "antd";
-import { toFileUrl } from "../../utils/fileCommonUtil";
+import { toFileUrl, fullname, name } from "../../utils/fileCommonUtil";
 import {
   findSubtitleFiles,
   loadAndParseSubtitle,
@@ -107,6 +107,28 @@ const saveVideoProgress = (path: string, currentTime: number): void => {
   } catch (error) {
     console.warn("Failed to save video progress:", error);
   }
+};
+
+// 解析字幕文件名，提取有意义的名称
+const getSubtitleDisplayName = (subtitlePath: string, index: number): string => {
+  const fileName = fullname(subtitlePath);
+  const videoName = name(subtitlePath);
+  
+  // 尝试从文件名中提取语言代码或其他标识
+  // 匹配格式：video.[identifier].ext
+  const parts = fileName.split('.');
+  if (parts.length >= 3) {
+    // 移除扩展名和视频名称部分
+    const identifierParts = parts.slice(1, -1);
+    const identifier = identifierParts.join('.');
+    
+    if (identifier && fileName.startsWith(videoName + '.')) {
+      return identifier;
+    }
+  }
+  
+  // 如果没有匹配到，使用索引+1作为序号
+  return `字幕 ${index + 1}`;
 };
 
 // 获取播放进度
@@ -363,7 +385,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                   >
                     {subtitleFiles.map((file, index) => (
                       <option key={index} value={index}>
-                        字幕 {index + 1}
+                        {getSubtitleDisplayName(file, index)}
                       </option>
                     ))}
                   </select>
