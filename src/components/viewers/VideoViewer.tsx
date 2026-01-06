@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, CSSProperties } from "react";
 import { Splitter } from "antd";
-import { EyeOutlined, EyeInvisibleOutlined, SearchOutlined } from "@ant-design/icons";
+import { EyeFilled, SearchOutlined } from "@ant-design/icons";
 import { toFileUrl, fullname, name } from "../../utils/fileCommonUtil";
 import {
   findSubtitleFiles,
@@ -476,11 +476,11 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     {/* 字幕显示/隐藏按钮 */}
                     <div 
-                      style={iconButtonStyle}
+                      style={{ ...iconButtonStyle, color: subtitleVisible ? "#aaa" : "#ccc" }}
                       onClick={() => setSubtitleVisible(!subtitleVisible)}
                       title={subtitleVisible ? "隐藏字幕" : "显示字幕"}
                     >
-                      {subtitleVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                     <EyeFilled />
                     </div>
                     
                     {/* 搜索按钮 */}
@@ -495,34 +495,47 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                 </div>
                 
                 {/* 搜索框行 */}
-                {searchVisible && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
-                    <input
-                      type="text"
-                      style={searchInputStyle}
-                      placeholder="搜索字幕..."
-                      value={searchKeyword}
-                      onChange={(e) => setSearchKeyword(e.target.value)}
-                      autoFocus
-                      onKeyDown={(e) => {
-                        if (e.key === "Escape") {
-                          setSearchVisible(false);
-                          setSearchKeyword("");
-                        }
-                      }}
-                    />
-                    <div 
-                      style={iconButtonStyle}
-                      onClick={() => {
-                        setSearchVisible(false);
-                        setSearchKeyword("");
-                      }}
-                      title="关闭搜索"
-                    >
-                      ✕
-                    </div>
-                  </div>
-                )}
+                    {searchVisible && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+                        {/* 搜索框容器，包含输入框和命中条数 */}
+                        <div style={{ display: "flex", alignItems: "center", width: "100%", position: "relative" }}>
+                          <input
+                            type="text"
+                            style={{ ...searchInputStyle, paddingRight: "40px" }}
+                            placeholder="搜索字幕..."
+                            value={searchKeyword}
+                            onChange={(e) => setSearchKeyword(e.target.value)}
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") {
+                                setSearchVisible(false);
+                                setSearchKeyword("");
+                              }
+                            }}
+                          />
+                          {/* 命中条数显示 */}
+                          <div style={{ 
+                            position: "absolute", 
+                            right: "12px", 
+                            fontSize: "12px", 
+                            color: "#999",
+                            pointerEvents: "none"
+                          }}>
+                            {filteredSubtitles.length}
+                          </div>
+                        </div>
+                        <div 
+                          style={iconButtonStyle}
+                          onClick={() => {
+                            setSearchVisible(false);
+                            setSearchKeyword("");
+                          }}
+                          title="关闭搜索"
+                        >
+                          ✕
+                        </div>
+                      </div>
+                    )}
               </div>
               <div ref={subtitlesRef} style={subtitleListStyle}>
                 {filteredSubtitles.map((subtitle) => (
