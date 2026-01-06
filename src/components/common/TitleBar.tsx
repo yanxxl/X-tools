@@ -53,22 +53,7 @@ export const TitleBar: React.FC = () => {
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [recentFolders, setRecentFolders] = useState<RecentFolder[]>([]);
 
-    // 初始化时获取平台信息
-    useEffect(() => {
-        const getPlatformInfo = async () => {
-            if (window.electronAPI) {
-                const isMacPlatform = await window.electronAPI.getIsMac();
-                setIsMac(isMacPlatform);
-            }
-        };
-
-        getPlatformInfo();
-    }, []);
-
-    useEffect(() => {
-        setRecentFolders(config?.recentFolders || []);
-    }, [config]);
-
+    // 4. 函数定义
     /**
      * 显示文件夹打开方式选择对话框
      * @param onChoice 选择回调函数，参数为是否在新窗口打开（null表示取消）
@@ -231,6 +216,24 @@ export const TitleBar: React.FC = () => {
     const handleOpenSearchPanel = (): void => {
         setSearchPanelOpen(true);
     };
+
+    // 5. 副作用定义
+    // 初始化时获取平台信息
+    useEffect(() => {
+        const getPlatformInfo = async () => {
+            if (window.electronAPI) {
+                const isMacPlatform = await window.electronAPI.getIsMac();
+                setIsMac(isMacPlatform);
+            }
+        };
+
+        getPlatformInfo();
+    }, []);
+
+    // 监听配置变化，更新最近文件夹列表
+    useEffect(() => {
+        setRecentFolders(config?.recentFolders || []);
+    }, [config]);
 
 
 

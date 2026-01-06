@@ -59,14 +59,7 @@ const AppContent: React.FC = () => {
         setSearchPanelOpen(false);
     };
 
-    /**
-     * 监听窗口大小变化并保存
-     * 1. 组件挂载时恢复上次保存的窗口大小
-     * 2. 监听窗口大小变化事件并保存到localStorage
-     * 3. 组件卸载时移除事件监听器
-     * 4. 组件挂载时关闭搜索面板
-     * 5. 组件挂载时获取当前窗口的文件夹
-     */
+    // 窗口大小相关的副作用
     useEffect(() => {
         // 组件挂载时恢复窗口大小
         const savedSize = getWindowSize();
@@ -105,6 +98,7 @@ const AppContent: React.FC = () => {
         };
     }, []);
 
+    // 配置相关的副作用
     useEffect(() => {
         if (config) {
             try {
@@ -128,11 +122,7 @@ const AppContent: React.FC = () => {
         }
     }, [config]);
 
-    /**
-     * 同步窗口按钮显示状态与标题栏/搜索面板状态
-     * 当搜索面板打开时，隐藏窗口按钮
-     * 当搜索面板关闭时，根据标题栏可见性显示窗口按钮
-     */
+    // 窗口按钮显示状态相关的副作用
     useEffect(() => {
         if (window.electronAPI?.setWindowButtonVisibility) {
             if (searchPanelOpen) {
