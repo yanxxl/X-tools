@@ -1,7 +1,7 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {toFileUrl} from '../../utils/fileCommonUtil';
-import {Skeleton} from 'antd';
-import {useAppContext} from "../../contexts/AppContext";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { toFileUrl } from '../../utils/fileCommonUtil';
+import { Skeleton } from 'antd';
+import { useAppContext } from "../../contexts/AppContext";
 
 interface VideoViewerProps {
     path: string;
@@ -15,6 +15,7 @@ const getVideoProgressKey = (path: string): string => {
 // 保存播放进度
 const saveVideoProgress = (path: string, currentTime: number): void => {
     try {
+        // console.log('Saving video progress:', path, currentTime); 大概每秒保存三四次
         localStorage.setItem(getVideoProgressKey(path), currentTime.toString());
     } catch (error) {
         console.warn('Failed to save video progress:', error);
@@ -32,43 +33,9 @@ const getVideoProgress = (path: string): number => {
     }
 };
 
-export const VideoViewer: React.FC<VideoViewerProps> = ({path}) => {
-    const src = useMemo(() => toFileUrl(path), [path]);
+export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
+    const { autoPlay } = useAppContext()
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const [isReady, setIsReady] = useState(false);
-    const [hasRestoredProgress, setHasRestoredProgress] = useState(false);
-    const {autoPlay} = useAppContext()
-
-    useEffect(() => {
-        setIsReady(false);
-        setHasRestoredProgress(false);
-        const el = videoRef.current;
-        if (el) {
-            // 触发重新加载，尽快获取元数据
-            el.load();
-        }
-    }, [src]);
-
-    // 恢复播放进度
-    useEffect(() => {
-        const video = videoRef.current;
-        if (video && isReady && !hasRestoredProgress) {
-            const savedProgress = getVideoProgress(path);
-            if (savedProgress > 0) {
-                // 设置一个小的延迟确保视频已经准备好
-                const timer = setTimeout(() => {
-                    if (video.duration && savedProgress < video.duration - 2) {
-                        video.currentTime = savedProgress;
-                        console.log(`Restored video progress: ${savedProgress}s`);
-                    }
-                    setHasRestoredProgress(true);
-                }, 100);
-                return () => clearTimeout(timer);
-            } else {
-                setHasRestoredProgress(true);
-            }
-        }
-    }, [isReady, hasRestoredProgress, path]);
 
     // 保存播放进度
     const handleTimeUpdate = () => {
@@ -81,33 +48,35 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({path}) => {
         }
     };
 
-    const handleLoadedMetadata = () => {
-        // 元数据已到，可尽快呈现第一帧
-        setIsReady(true);
-    };
-
-    const handleCanPlay = () => {
-        setIsReady(true);
-    };
+    // 恢复播放进度
+    useEffect(() => {
+        const video = videoRef.current;
+        if (video) {
+            const savedProgress = getVideoProgress(path);
+            if (savedProgress > 0) {
+                // 设置一个小的延迟确保视频已经准备好
+                const timer = setTimeout(() => {
+                    if (video.duration && savedProgress < video.duration - 2) {
+                        video.currentTime = savedProgress;
+                        console.log(`Restored video progress: ${savedProgress}s`);
+                    }
+                }, 100);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [path]);
 
     return (
-        <div style={{position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%'}}>
-            {!isReady && (
-                <div style={{position: 'absolute', inset: 0, padding: 24}}>
-                    <Skeleton active paragraph={{rows: 2}}/>
-                </div>
-            )}
+        <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
             <video
                 width="100%"
                 height="100%"
                 ref={videoRef}
-                src={src}
-                style={{maxWidth: '100%', maxHeight: '100%', background: '#000'}}
+                src={toFileUrl(path)}
+                style={{ maxWidth: '100%', maxHeight: '100%', background: '#000' }}
                 controls
                 playsInline
                 preload="metadata"
-                onLoadedMetadata={handleLoadedMetadata}
-                onCanPlay={handleCanPlay}
                 onTimeUpdate={handleTimeUpdate}
                 autoPlay={autoPlay}
             />
