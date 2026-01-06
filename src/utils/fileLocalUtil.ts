@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {FileNode} from '../types';
+import { FileNode } from '../types';
 
 // =======================================
 // 文件树相关功能
@@ -38,21 +38,8 @@ export function getFileTree(dirPath: string, deep = false): FileNode {
               isDirectory: fileStats.isDirectory(),
             };
 
-            // 如果是目录且不是深度加载，则不加载子节点，只标记为有子节点
-            if (fileStats.isDirectory() && !deep) {
-              // 检查是否有子文件/目录（不包括隐藏文件）
-              try {
-                const subFiles = fs.readdirSync(filePath);
-                const hasChildren = subFiles.some(subFile => !subFile.startsWith('.'));
-                if (hasChildren) {
-                  // 添加一个标记，表示这个目录有子节点但尚未加载
-                  (fileNode as any).hasUnloadedChildren = true;
-                }
-              } catch {
-                // 如果无法读取目录，忽略
-              }
-            } else if (fileStats.isDirectory() && deep) {
-              // 深度模式下递归加载
+            // 深度模式下递归加载
+            if (fileStats.isDirectory() && deep) {
               return getFileTree(filePath, true);
             }
 
@@ -86,7 +73,7 @@ export function getFileTree(dirPath: string, deep = false): FileNode {
  */
 export function getDirectoryChildren(dirPath: string): FileNode[] {
   const stats = fs.statSync(dirPath);
-  
+
   if (!stats.isDirectory()) {
     return [];
   }
@@ -105,20 +92,6 @@ export function getDirectoryChildren(dirPath: string): FileNode[] {
             path: filePath,
             isDirectory: fileStats.isDirectory(),
           };
-
-          // 如果是目录，检查是否有子文件/目录
-          if (fileStats.isDirectory()) {
-            try {
-              const subFiles = fs.readdirSync(filePath);
-              const hasChildren = subFiles.some(subFile => !subFile.startsWith('.'));
-              if (hasChildren) {
-                (fileNode as any).hasUnloadedChildren = true;
-              }
-            } catch {
-              // 如果无法读取目录，忽略
-            }
-          }
-
           return fileNode;
         } catch (error) {
           // 忽略无法访问的文件或目录
