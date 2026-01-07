@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 
 // 第三方库
 import { App, ConfigProvider, Drawer, Splitter } from "antd";
@@ -16,18 +16,33 @@ import { TitleBar } from './components/common/TitleBar';
 // 视图组件
 import { FileViewer } from './components/viewers/FileViewer';
 import { ToolWindowsPane } from './components/windows/ToolWindowsPane';
+
+// 工具函数
 import { fullname } from './utils/fileCommonUtil';
 
 // 常量定义
 const WINDOW_SIZE_KEY = 'x-tools-window-size';
 
 const AppContent: React.FC = () => {
+    // 1. 上下文获取
     const {
-        setCurrentFolder, currentFile, titleBarVisible, searchPanelOpen, setSearchPanelOpen,config,setConfig, leftPanelVisible, setLeftPanelVisible, rightPanelVisible, setRightPanelVisible
+        setCurrentFolder, 
+        currentFile, 
+        titleBarVisible, 
+        searchPanelOpen, 
+        setSearchPanelOpen,
+        config,
+        setConfig, 
+        leftPanelVisible, 
+        setLeftPanelVisible, 
+        rightPanelVisible, 
+        setRightPanelVisible
     } = useAppContext();
 
+    // 2. 组件状态
     const [sizes, setSizes] = useState<number[]>([320, undefined, 320]);
 
+    // 3. 辅助函数
     /**
      * 保存窗口大小到local storage
      * @param width - 窗口宽度
@@ -56,13 +71,17 @@ const AppContent: React.FC = () => {
         }
     };
 
+    // 4. 事件处理函数
     /**
      * 处理关闭搜索面板事件
      */
     const handleCloseSearchPanel = (): void => {
         setSearchPanelOpen(false);
     };
-    // 监听面板大小变化事件
+
+    /**
+     * 处理面板大小变化事件
+     */
     const handleSplitterChange = (sizes: number[]) => {
         console.log('面板大小变化:', sizes);
 
@@ -70,7 +89,7 @@ const AppContent: React.FC = () => {
 
         // 当面板大小达到最小值时自动隐藏
         if (0 < sizes[0] && sizes[0] < 150) {
-            setSizes([0, undefined, sizes[2]])
+            setSizes([0, undefined, sizes[2]]);
             setLeftPanelVisible(false);
         } else {
             setLeftPanelVisible(true);
@@ -80,10 +99,11 @@ const AppContent: React.FC = () => {
             setSizes([sizes[0], undefined, 0]);
             setRightPanelVisible(false);
         } else {
-            setRightPanelVisible(true)
+            setRightPanelVisible(true);
         }
     };
 
+    // 5. 副作用
     // 窗口大小相关的副作用
     useEffect(() => {
         // 组件挂载时恢复窗口大小
@@ -147,6 +167,7 @@ const AppContent: React.FC = () => {
         }
     }, [config]);
 
+    // 面板可见性相关的副作用
     useEffect(() => {
         if (leftPanelVisible && sizes[0] === 0) setSizes([320, undefined, sizes[2]]);
         if (!leftPanelVisible && sizes[0] !== 0) setSizes([0, undefined, sizes[2]]);
@@ -167,6 +188,7 @@ const AppContent: React.FC = () => {
         }
     }, [titleBarVisible, searchPanelOpen]);
 
+    // 6. 渲染
     return (
         <>
             {/* 标题栏 */}

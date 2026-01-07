@@ -267,7 +267,7 @@ export const TitleBar: React.FC = () => {
             {titleBarVisible && (
                 <Flex
                     className={'top-bar'}
-                    style={{ height: 40, position: 'relative', zIndex: 100,borderBottom:'1px solid #e5e5e5' }}
+                    style={{ height: 40, position: 'relative', zIndex: 100, borderBottom: '1px solid #e5e5e5' }}
                     align={'center'}
                 >
                     {/* Mac平台左侧保留区域 */}
