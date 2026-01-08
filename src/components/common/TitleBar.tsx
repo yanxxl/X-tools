@@ -4,15 +4,15 @@ import React, { useEffect, useState } from 'react';
 // 第三方库导入
 import {Button, Divider, Dropdown, Flex, message, Modal} from "antd";
 import {
+    BorderOutlined,
+    CloseOutlined,
     CopyOutlined,
     DeleteOutlined,
     DownOutlined,
-    EyeInvisibleOutlined,
     FolderOpenOutlined,
+    MinusOutlined,
     PlusOutlined,
-    SearchOutlined,
-    SyncOutlined
-} from '@ant-design/icons';
+    SearchOutlined} from '@ant-design/icons';
 
 // 应用内部导入
 import { useAppContext } from '../../contexts/AppContext';
@@ -173,19 +173,7 @@ export const TitleBar: React.FC = () => {
         }
     };
 
-    /**
-     * 处理重新加载界面操作
-     */
-    const handleReload = (): void => {
-        window.location.reload();
-    };
 
-    /**
-     * 处理隐藏标题栏操作
-     */
-    const handleHideTitleBar = (): void => {
-        setTitleBarVisible(false);
-    };
 
     /**
      * 处理最小化窗口操作
@@ -214,12 +202,6 @@ export const TitleBar: React.FC = () => {
         }
     };
 
-    /**
-     * 处理打开搜索面板操作
-     */
-    const handleOpenSearchPanel = (): void => {
-        setSearchPanelOpen(true);
-    };
 
     // 5. 副作用定义
     // 初始化时获取平台信息
@@ -463,7 +445,7 @@ export const TitleBar: React.FC = () => {
                                     onClick={handleMinimizeWindow}
                                     style={{ padding: 0, width: 36, height: 36, borderRadius: 0 }}
                                 >
-                                    <span style={{ fontSize: '16px', lineHeight: '1' }}>−</span>
+                                    <MinusOutlined />
                                 </Button>
 
                                 {/* 最大化/还原按钮 */}
@@ -473,7 +455,7 @@ export const TitleBar: React.FC = () => {
                                     onClick={handleToggleMaximizeWindow}
                                     style={{ padding: 0, width: 36, height: 36, borderRadius: 0 }}
                                 >
-                                    <span style={{ fontSize: '16px', lineHeight: '1' }}>□</span>
+                                    <BorderOutlined />
                                 </Button>
 
                                 {/* 关闭按钮 */}
@@ -493,7 +475,7 @@ export const TitleBar: React.FC = () => {
                                         target.style.color = '#000000';
                                     }}
                                 >
-                                    <span style={{ fontSize: '16px', lineHeight: '1' }}>×</span>
+                                    <CloseOutlined />
                                 </Button>
                             </div>
                         )}
