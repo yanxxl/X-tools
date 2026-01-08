@@ -195,7 +195,12 @@ const AppContent: React.FC = () => {
             <TitleBar />
 
             <Splitter style={{height: titleBarVisible ? 'calc(100vh - 40px)' : '100vh'}} onResize={handleSplitterChange}>
-                <Splitter.Panel min={99} max={'45%'} size={sizes[0]}>
+                <Splitter.Panel 
+                    min={99} 
+                    max={'45%'} 
+                    size={sizes[0]}
+                    style={{ display: leftPanelVisible ? 'block' : 'none' }}
+                >
                     <FileTree/>
                 </Splitter.Panel>
                 <Splitter.Panel style={{padding: 0}} size={sizes[1]}>
@@ -212,7 +217,12 @@ const AppContent: React.FC = () => {
                         )}
                     </Container>
                 </Splitter.Panel>
-                <Splitter.Panel min={99} max={'45%'} size={sizes[2]}>
+                <Splitter.Panel 
+                    min={99} 
+                    max={'45%'} 
+                    size={sizes[2]}
+                    style={{ display: rightPanelVisible ? 'block' : 'none' }}
+                >
                     <Container>
                         <ToolWindowsPane/>
                     </Container>

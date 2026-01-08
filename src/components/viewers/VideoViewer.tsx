@@ -577,7 +577,11 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
           size={subtitlePanelVisible ? panelSizes[1] : 0}
           min={80}
           max="50%"
-          style={{ overflow: "hidden", padding: "0px" }}
+          style={{ 
+            overflow: "hidden", 
+            padding: "0px",
+            display: subtitlePanelVisible ? "block" : "none"
+          }}
         >
           {subtitles.length > 0 && (
             <div style={subtitlePanelStyle}>
