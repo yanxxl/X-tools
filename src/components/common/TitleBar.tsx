@@ -424,7 +424,7 @@ export const TitleBar: React.FC = () => {
                         paddingRight: 16,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 8
+                        gap: 12
                     }}>
                         <Button
                             type="text"

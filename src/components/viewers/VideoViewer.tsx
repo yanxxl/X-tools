@@ -274,8 +274,8 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
         y: absoluteY - rect.height * subtitlePosition.y,
       });
     }
-  }; 
-  
+  };
+
   // 视频路径变化时的处理
   useEffect(() => {
     // 查找字幕文件
@@ -498,14 +498,16 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                   {/* 右侧：其他操作按钮 */}
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                     {/* 字幕显示/隐藏按钮 */}
-                    <div
-                      style={{ ...iconButtonStyle, color: subtitleVisible ? "#aaa" : "#ccc" }}
+                    <span className="span-icon"
+                      title={"隐藏/显示当前字幕"}
                       onClick={() => setSubtitleVisible(!subtitleVisible)}
-                      title={subtitleVisible ? "隐藏字幕" : "显示字幕"}
+                      style={{ display: "inline-flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center" }}
                     >
-                      <EyeFilled />
-                    </div>
-
+                      <span className="span-icon"
+                        style={{ height: "0.2rem", width: "0.7rem", marginBottom: "0.15rem", background: subtitleVisible ? "#aaa" : "#eee" }}
+                      />
+                    </span>
+                  
                     {/* 搜索按钮 */}
                     <div
                       style={iconButtonStyle}
