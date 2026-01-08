@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, CSSProperties } from "react";
-import { Splitter } from "antd";
-import { SearchOutlined, LeftOutlined, RightOutlined } from "@ant-design/icons";
+import { Button, Splitter } from "antd";
+import { SearchOutlined, LeftOutlined, RightOutlined, CloseOutlined } from "@ant-design/icons";
 import { toFileUrl, fullname, name } from "../../utils/fileCommonUtil";
 import {
   findSubtitleFiles,
@@ -78,14 +78,6 @@ const subtitlePanelHeaderStyle: CSSProperties = {
 };
 
 // 移除不再使用的headerActionsStyle
-
-const iconButtonStyle: CSSProperties = {
-  cursor: "pointer",
-  fontSize: "1rem",
-  padding: "4px",
-  borderRadius: "4px",
-  transition: "background-color 0.3s",
-};
 
 const searchInputStyle: CSSProperties = {
   padding: "4px 8px",
@@ -551,22 +543,22 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                     </span>
                   
                     {/* 搜索按钮 */}
-                    <div
-                      style={iconButtonStyle}
-                      onClick={() => setSearchVisible(!searchVisible)}
+                    <Button
+                      type="text"
+                      icon={<SearchOutlined />}
                       title={searchVisible ? "关闭搜索" : "搜索字幕"}
-                    >
-                      <SearchOutlined />
-                    </div>
+                      onClick={() => setSearchVisible(!searchVisible)}
+                      style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
+                    />
 
                     {/* 字幕面板隐藏/显示按钮 */}
-                    <div
-                      style={iconButtonStyle}
-                      onClick={() => setSubtitlePanelVisible(!subtitlePanelVisible)}
+                    <Button
+                      type="text"
+                      icon={<RightOutlined />}
                       title={subtitlePanelVisible ? "隐藏字幕列表" : "显示字幕列表"}
-                    >
-                      <RightOutlined />
-                    </div>
+                      onClick={() => setSubtitlePanelVisible(!subtitlePanelVisible)}
+                      style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
+                    />
                   </div>
                 </div>
 
@@ -600,16 +592,16 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                         {filteredSubtitles.length}
                       </div>
                     </div>
-                    <div
-                      style={iconButtonStyle}
+                    <Button
+                      type="text"
+                      icon={<CloseOutlined />}
+                      title="关闭搜索"
                       onClick={() => {
                         setSearchVisible(false);
                         setSearchKeyword("");
                       }}
-                      title="关闭搜索"
-                    >
-                      ✕
-                    </div>
+                      style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
+                    />
                   </div>
                 )}
               </div>
