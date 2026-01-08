@@ -87,11 +87,11 @@ const searchInputStyle: CSSProperties = {
   flex: 1,
   minWidth: "200px",
 };
-const subtitleItemStyle = (isCurrent: boolean): CSSProperties => ({
+const subtitleItemStyle = (isCurrent: boolean, isHovered: boolean): CSSProperties => ({
   padding: "8px",
   marginBottom: "4px",
   borderRadius: "4px",
-  backgroundColor: isCurrent ? "#e6f7ff" : "#fff",
+  backgroundColor: isCurrent ? "#e6f7ff" : (isHovered ? "#f5f5f5" : "#fff"),
   borderLeft: isCurrent ? "4px solid #1890ff" : "4px solid transparent",
   cursor: "pointer",
   fontSize: "14px",
@@ -103,6 +103,9 @@ const subtitleItemIndexStyle: CSSProperties = {
   fontSize: "12px",
   color: "#888",
   marginBottom: "4px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
 };
 
 const subtitleItemTextStyle: CSSProperties = {
@@ -114,6 +117,13 @@ const highlightStyle: CSSProperties = {
   padding: "1px 2px",
   borderRadius: "2px",
   fontWeight: "bold",
+};
+
+// 格式化时间函数
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
 };
 
 // 高亮关键词函数
@@ -673,16 +683,40 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                   <div
                     key={subtitle.index}
                     className="subtitle-item"
-                    style={subtitleItemStyle(subtitle === currentSubtitle)}
+                    style={subtitleItemStyle(subtitle === currentSubtitle, false)}
                     onClick={() => {
                       const video = videoRef.current;
                       if (video) {
                         video.currentTime = subtitle.startTime;
                       }
                     }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = subtitle === currentSubtitle ? "#d4edff" : "#f5f5f5";
+                      const timeElement = e.currentTarget.querySelector('.subtitle-time') as HTMLElement;
+                      if (timeElement) {
+                        timeElement.style.opacity = '1';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = subtitle === currentSubtitle ? "#e6f7ff" : "#fff";
+                      if (!searchKeyword) {
+                        const timeElement = e.currentTarget.querySelector('.subtitle-time') as HTMLElement;
+                        if (timeElement) {
+                          timeElement.style.opacity = '0';
+                        }
+                      }
+                    }}
                   >
                     <div style={subtitleItemIndexStyle}>
                       {subtitle.index}
+                      <span style={{ 
+                        opacity: searchKeyword ? 1 : 0, 
+                        transition: 'opacity 0.3s',
+                        pointerEvents: 'none'
+                      }} 
+                      className="subtitle-time">
+                        {formatTime(subtitle.startTime)}
+                      </span>
                     </div>
                     <div style={subtitleItemTextStyle}>
                       {highlightKeyword(subtitle.text, searchKeyword)}
