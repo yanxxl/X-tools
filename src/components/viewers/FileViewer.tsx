@@ -7,6 +7,7 @@ import {VideoViewer} from './VideoViewer';
 import {PdfViewer} from './PdfViewer';
 import {MarkdownViewer} from './MarkdownViewer';
 import {TextViewer} from './TextViewer';
+import {DocxViewer} from './DocxViewer';
 
 interface FilePreviewProps {
     filePath: string;
@@ -30,6 +31,10 @@ export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName, init
 
     if (type === 'pdf') {
         return <PdfViewer path={filePath}/>;
+    }
+
+    if (type === 'docx') {
+        return <div style={{height: '100%'}}><DocxViewer path={filePath}/></div>;
     }
 
     // Markdown 文件使用专门的 MarkdownViewer

@@ -228,6 +228,17 @@ function registerIpcHandlers() {
         }
     });
 
+    // 读取二进制文件内容
+    ipcMain.handle('readFileBinary', async (event, filePath: string) => {
+        try {
+            const buffer = await fs.readFile(filePath);
+            return buffer;
+        } catch (error) {
+            console.error('读取二进制文件失败:', error);
+            throw error;
+        }
+    });
+
     // 写入文件内容
     ipcMain.handle('writeFile', async (event, filePath: string, content: string) => {
         try {

@@ -1,7 +1,7 @@
 // =======================================
 // 类型定义
 // =======================================
-export type DetectedFileType = 'text' | 'image' | 'video' | 'pdf' | 'other';
+export type DetectedFileType = 'text' | 'image' | 'video' | 'pdf' | 'docx' | 'other';
 
 // =======================================
 // 常量定义
@@ -21,6 +21,9 @@ const FILE_EXTENSIONS = {
   
   // PDF文件扩展名
   PDF: new Set(['pdf']),
+  
+  // DOCX文件扩展名
+  DOCX: new Set(['docx']),
   
   // 文本文件扩展名
   TEXT: new Set([
@@ -51,6 +54,7 @@ const FILE_TYPE_DISPLAY_NAMES: Record<DetectedFileType, string> = {
   image: '图片文件',
   video: '视频文件',
   pdf: 'PDF文件',
+  docx: 'DOCX文件',
   other: '其他文件'
 };
 
@@ -79,6 +83,7 @@ export function detectFileType(name: string): DetectedFileType {
   if (FILE_EXTENSIONS.IMAGE.has(ext)) return 'image';
   if (FILE_EXTENSIONS.VIDEO.has(ext)) return 'video';
   if (FILE_EXTENSIONS.PDF.has(ext)) return 'pdf';
+  if (FILE_EXTENSIONS.DOCX.has(ext)) return 'docx';
   if (FILE_EXTENSIONS.TEXT.has(ext)) return 'text';
   return 'other';
 }
