@@ -189,6 +189,7 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
                         <div style={{
                             flex: 1,
                             overflow: 'auto',
+                            justifyContent: 'center',
                         }}>
                             {/* 缩放内容 */}
                             <div
@@ -196,8 +197,6 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
                                 style={{
                                     transform: `scale(${zoomLevel / 100})`,
                                     transformOrigin: 'top',
-                                    margin: '0 auto',
-                                    maxWidth: '100%'
                                 }}
                             />
                         </div>
