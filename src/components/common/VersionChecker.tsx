@@ -38,7 +38,16 @@ export const VersionChecker: React.FC = () => {
     };
 
     useEffect(() => {
+        // 组件挂载时检查一次
         checkVersionUpdate();
+        
+        // 设置定时器，每十分钟检查一次
+        const intervalId = setInterval(() => {
+            checkVersionUpdate();
+        }, 10 * 60 * 1000); // 10分钟 * 60秒 * 1000毫秒
+        
+        // 组件卸载时清除定时器
+        return () => clearInterval(intervalId);
     }, []);
 
     // 关闭通知
