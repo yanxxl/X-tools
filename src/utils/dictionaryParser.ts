@@ -68,6 +68,36 @@ export async function parseMarkdownToDictionary(filePath: string): Promise<Dicti
             nextElement = nextElement.nextElementSibling;
         }
         
+        // If no content found, look for child headers
+        if (definition.length === 0 && nextElement) {
+            const currentLevel = parseInt(header.tagName.charAt(1));
+            const childHeaders: HTMLElement[] = [];
+            
+            // Collect all child headers (headers with higher level than current)
+            let siblingElement = nextElement;
+            while (siblingElement) {
+                if (siblingElement.tagName.match(/^H[1-6]$/)) {
+                    const siblingLevel = parseInt(siblingElement.tagName.charAt(1));
+                    if (siblingLevel > currentLevel) {
+                        childHeaders.push(siblingElement as HTMLElement);
+                    } else if (siblingLevel <= currentLevel) {
+                        // Stop when we reach a header with same or lower level
+                        break;
+                    }
+                }
+                siblingElement = siblingElement.nextElementSibling;
+            }
+            
+            // If we found child headers, create a paragraph with them
+            if (childHeaders.length > 0) {
+                const paragraph = doc.createElement('p');
+                paragraph.innerHTML = childHeaders.map(child => 
+                    `<strong>${child.textContent || ''}</strong>`
+                ).join('、');
+                definition.push(paragraph);
+            }
+        }
+        
         // 为每个分割后的词条创建一个条目
         terms.forEach(term => {
             entries.push({

@@ -20,9 +20,11 @@ const DictionaryPanel: React.FC = () => {
     // 使用词典管理器管理多个词典
     const [dictionaryManager] = useState(() => createDictionaryManager());
     const [searchTerm, setSearchTerm] = useState<string>('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
     const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
     const [dictionaries, setDictionaries] = useState<Array<{ id: string; name: string; filePath: string; enabled: boolean; error?: string }>>([]);
+
 
     // 组件初始化时从本地存储加载词典
     useEffect(() => {
@@ -63,6 +65,34 @@ const DictionaryPanel: React.FC = () => {
             dictionaryManager.off('change', updateDictionaries);
         };
     }, [dictionaryManager]);
+
+    // Handle selection change
+    const handleSelectionChange = useCallback(() => {
+        const selectedText = window.getSelection()?.toString().trim();
+        if (selectedText && selectedText.length > 0) {
+            setSearchTerm(selectedText);
+        }
+    }, []);
+
+    // Debounce search term to avoid frequent searches
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    // 添加选中文本监听
+    useEffect(() => {
+        // 添加selectionchange事件监听器
+        document.addEventListener('selectionchange', handleSelectionChange);
+
+        // 组件卸载时移除事件监听器
+        return () => {
+            document.removeEventListener('selectionchange', handleSelectionChange);
+        };
+    }, [handleSelectionChange]);
 
     // Add selected files as dictionaries
     const addDictionaries = useCallback(async (files: string[]) => {
@@ -105,11 +135,11 @@ const DictionaryPanel: React.FC = () => {
 
     // 搜索结果（使用useMemo优化）
     const searchResults = useMemo(() => {
-        if (!searchTerm.trim()) {
+        if (!debouncedSearchTerm.trim()) {
             return [];
         }
-        return dictionaryManager.search(searchTerm.trim());
-    }, [searchTerm, dictionaryManager]);
+        return dictionaryManager.search(debouncedSearchTerm.trim());
+    }, [debouncedSearchTerm, dictionaryManager]);
 
 
     return (
@@ -232,7 +262,9 @@ const DictionaryPanel: React.FC = () => {
                     placeholder="输入要搜索的术语..."
                     prefix={<SearchOutlined />}
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                    }}
                     allowClear
                     style={{ marginBottom: 16 }}
                 />
@@ -241,10 +273,10 @@ const DictionaryPanel: React.FC = () => {
                 <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', width: '100%', minHeight: 0 }}>
                     <div style={{ marginBottom: 8 }}>
                         <Text type="secondary">
-                            {searchTerm.trim() ?
-                                `找到 ${searchResults.length} 条结果` :
-                                `已启用 ${dictionaryManager.getEnabledDictionaries().length}/${dictionaryManager.dictionaries.size} 个词典`
-                            }
+                            {debouncedSearchTerm.trim() ?
+                            `找到 ${searchResults.length} 条结果` :
+                            `已启用 ${dictionaryManager.getEnabledDictionaries().length}/${dictionaryManager.dictionaries.size} 个词典`
+                        }
                         </Text>
                     </div>
 

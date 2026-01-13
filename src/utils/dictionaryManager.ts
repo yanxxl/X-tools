@@ -221,12 +221,23 @@ export function createDictionaryManager(): DictionaryManager {
         const enabledDictionaries = getEnabledDictionaries();
         const results: DictionaryEntry[] = [];
 
+        // 首先查找完全匹配的词条
         enabledDictionaries.forEach(dictionary => {
-            const matchingEntries = dictionary.entries.filter(entry =>
-                entry.term.toLowerCase().includes(term.toLowerCase().trim())
+            const exactMatches = dictionary.entries.filter(entry =>
+                entry.term.toLowerCase() === term.toLowerCase().trim()
             );
-            results.push(...matchingEntries);
+            results.push(...exactMatches);
         });
+
+        // 如果没有完全匹配的结果，再查找包含搜索词的词条
+        if (results.length === 0) {
+            enabledDictionaries.forEach(dictionary => {
+                const partialMatches = dictionary.entries.filter(entry =>
+                    entry.term.toLowerCase().includes(term.toLowerCase().trim())
+                );
+                results.push(...partialMatches);
+            });
+        }
 
         // 如果没有包含词的，那就用搜索词包含词条搜索
         if (results.length === 0) {
