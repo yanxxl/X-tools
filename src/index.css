@@ -52,3 +52,11 @@ body {
     border: 1px solid gray;
     transition: background-color 0.2s;
 }
+
+.text-content {
+    font-size: 14px;
+    line-height: 22px;
+}
+.text-content p {
+    margin-bottom: 12px;
+}

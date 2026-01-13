@@ -22,6 +22,8 @@ interface ElectronAPI {
     // === 文件系统操作 ===
     /** 打开文件夹选择对话框 */
     selectDirectory: () => Promise<string | null>;
+    /** 打开文件选择对话框（支持多选） */
+    openFileDialog: (options?: any) => Promise<string[]>;
     /** 获取文件树结构（懒加载模式） */
     getFileTree: (path: string) => Promise<FileNode>;
     /** 懒加载获取目录子节点 */
@@ -105,6 +107,7 @@ const electronAPI: ElectronAPI = {
 
     // 文件系统操作
     selectDirectory: () => ipcRenderer.invoke('selectDirectory') as Promise<string | null>,
+    openFileDialog: (options?: any) => ipcRenderer.invoke('openFileDialog', options) as Promise<string[]>,
     getFileTree: (path: string) => ipcRenderer.invoke('getFileTree', path) as Promise<FileNode>,
     getDirectoryChildren: (dirPath: string) => ipcRenderer.invoke('getDirectoryChildren', dirPath) as Promise<FileNode[]>,
     getFileInfo: (filePath: string) => ipcRenderer.invoke('getFileInfo', filePath),

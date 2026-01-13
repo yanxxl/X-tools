@@ -51,6 +51,7 @@ export const FileHistoryToolWindow: React.FC = () => {
     return (
         <div className="file-history-tool-window">
             <Card
+                style={{ margin: 0, overflow: 'hidden',flex: 1 ,borderRadius: 0 }}
                 size="small"
                 title={
                     <div className="history-header">

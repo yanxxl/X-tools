@@ -123,3 +123,31 @@ export const clearLocalStorageItems = (keys: string[]): string[] => {
   
   return clearedKeys;
 };
+
+/**
+ * 保存字典配置到本地存储
+ * @param dictionaries 字典配置数组
+ */
+export const saveDictionariesToStorage = (dictionaries: Array<{id: string; name: string; filePath: string; enabled: boolean}>): void => {
+  try {
+    localStorage.setItem('dictionaries', JSON.stringify(dictionaries));
+  } catch (error) {
+    console.error('保存字典配置失败:', error);
+  }
+};
+
+/**
+ * 从本地存储加载字典配置
+ * @returns 字典配置数组
+ */
+export const loadDictionariesFromStorage = (): Array<{id: string; name: string; filePath: string; enabled: boolean}> => {
+  try {
+    const data = localStorage.getItem('dictionaries');
+    if (data) {
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('加载字典配置失败:', error);
+  }
+  return [];
+};

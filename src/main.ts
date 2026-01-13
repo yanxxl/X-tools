@@ -92,6 +92,19 @@ function registerIpcHandlers() {
         return null;
     });
 
+    // 处理文件选择对话框请求（支持多选）
+    ipcMain.handle('openFileDialog', async (event, options) => {
+        const result = await dialog.showOpenDialog(options || {
+            properties: ['openFile', 'multiSelections'],
+            title: '选择文件',
+        });
+
+        if (!result.canceled && result.filePaths.length > 0) {
+            return result.filePaths;
+        }
+        return [];
+    });
+
     ipcMain.handle('loadConfig', async () => {
         return loadConfig();
     });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Tooltip } from 'antd';
 import { ToolOutlined } from '@ant-design/icons';
 import { ToolWindow } from './toolWindow';
@@ -9,6 +9,7 @@ import './ToolWindowsPane.css';
 export const ToolWindowsPane: React.FC = () => {
     const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
     const [availableWindows, setAvailableWindows] = useState<ToolWindow[]>([]);
+    const toolWindowsPaneRef = useRef<HTMLDivElement>(null);
 
     // 初始化工具窗口
     useEffect(() => {
@@ -19,6 +20,8 @@ export const ToolWindowsPane: React.FC = () => {
         if (!activeWindowId && windows.length > 0) {
             setActiveWindowId(windows[0].id);
         }
+
+        console.log('toolWindowsPaneRef.current:', toolWindowsPaneRef.current);
     }, [activeWindowId]);
 
     // 切换工具窗口
@@ -45,10 +48,10 @@ export const ToolWindowsPane: React.FC = () => {
             {/* 工具窗口显示区域 */}
             <div className="tool-window-content">
                 {/* 主要查看器区域，占据大部分空间 */}
-                <div className="viewer-container">
+                <div className="viewer-container" ref={toolWindowsPaneRef}>
                     {activeWindow && activeWindow.view}
                 </div>
-                
+
                 {/* 版本检查器区域，位于底部 */}
                 <div className="checker-container">
                     {/* 这里显示版本更新通知 */}
