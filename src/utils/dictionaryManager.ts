@@ -209,6 +209,16 @@ export function createDictionaryManager(): DictionaryManager {
     };
 
     /**
+     * 判断搜索词是否为英文（不包含中文）
+     * @param term 搜索词
+     * @returns 是否为英文
+     */
+    const isEnglishSearchTerm = (term: string): boolean => {
+        // 如果不包含中文，就算英文
+        return !/[\u4e00-\u9fa5]/.test(term);
+    };
+
+    /**
      * 搜索所有启用的词典
      * @param term 搜索词
      * @returns 匹配的词条数组
@@ -222,6 +232,7 @@ export function createDictionaryManager(): DictionaryManager {
         const results: DictionaryEntry[] = [];
 
         const searchTerm = term.toLowerCase().trim();
+        const isEnglish = isEnglishSearchTerm(term);
 
         // 首先查找完全匹配的词条（term或terms中的任何一个）
         enabledDictionaries.forEach(dictionary => {
@@ -243,13 +254,31 @@ export function createDictionaryManager(): DictionaryManager {
             });
         }
 
-        // 如果没有包含词的，那就用搜索词包含词条搜索（term或terms中的任何一个）
+        // 如果没有包含词的，根据语言类型应用不同的匹配规则
         if (results.length === 0) {
             enabledDictionaries.forEach(dictionary => {
-                const matchingEntries = dictionary.entries.filter(entry =>
-                    searchTerm.includes(entry.term.toLowerCase().trim()) ||
-                    entry.terms.some(t => searchTerm.includes(t.toLowerCase().trim()))
-                );
+                let matchingEntries;
+                
+                if (isEnglish) {
+                    // 英文搜索：搜索词包含词条的全词匹配
+                    matchingEntries = dictionary.entries.filter(entry => {
+                        const entryTerm = entry.term.toLowerCase().trim();
+                        const wordBoundary = new RegExp(`\\b${entryTerm}\\b`, 'i');
+                        return wordBoundary.test(searchTerm) ||
+                               entry.terms.some(t => {
+                                   const term = t.toLowerCase().trim();
+                                   const wordBoundary = new RegExp(`\\b${term}\\b`, 'i');
+                                   return wordBoundary.test(searchTerm);
+                               });
+                    });
+                } else {
+                    // 中文搜索：搜索词包含词条的包含匹配
+                    matchingEntries = dictionary.entries.filter(entry =>
+                        searchTerm.includes(entry.term.toLowerCase().trim()) ||
+                        entry.terms.some(t => searchTerm.includes(t.toLowerCase().trim()))
+                    );
+                }
+                
                 results.push(...matchingEntries);
             });
         }
