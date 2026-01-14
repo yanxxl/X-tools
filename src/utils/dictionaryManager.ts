@@ -13,7 +13,7 @@ export interface DictionaryManager {
     moveDictionaryDown: (dictionaryId: string) => void;
     search: (term: string) => DictionaryEntry[];
     getEnabledDictionaries: () => Dictionary[];
-    loadFromStorage: () => Promise<void>;
+    loadFromStorage: (force?: boolean) => Promise<void>;
     saveToStorage: () => void;
     // 添加事件监听方法
     on: (event: 'change', callback: () => void) => void;
@@ -38,15 +38,28 @@ export function createDictionaryManager(): DictionaryManager {
 
     /**
      * 从本地存储加载词典
+     * @param force 是否强制重新加载（默认：false）
      */
-    const loadFromStorage = async (): Promise<void> => {
+    const loadFromStorage = async (force = false): Promise<void> => {
+        // 如果已经有词典数据且不强制刷新，直接返回，避免重复加载和解析
+        if (dictionaries.size > 0 && !force) {
+            return;
+        }
+        
         const savedDictionaries = loadDictionariesFromStorage();
 
-        // 清空当前词典列表
-        dictionaries.clear();
+        // 如果是强制刷新，先清空当前词典列表
+        if (force) {
+            dictionaries.clear();
+        }
 
         // 重新加载所有词典
         for (const savedDict of savedDictionaries) {
+            // 如果不是强制刷新且词典已存在，跳过
+            if (!force && dictionaries.has(savedDict.filePath)) {
+                continue;
+            }
+            
             try {
                 const dictionary = await parseMarkdownToDictionary(savedDict.filePath);
                 // 恢复保存的启用状态

@@ -5,14 +5,14 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button, Card, Input, Empty, Space, Typography, message, Checkbox, Tooltip, List, Flex } from 'antd';
 
 // Ant Design icons
-import { 
-    DeleteOutlined, 
-    SettingOutlined, 
-    UpOutlined, 
-    DownOutlined, 
-    SearchOutlined, 
-    PlusOutlined, 
-    ReloadOutlined 
+import {
+    DeleteOutlined,
+    SettingOutlined,
+    UpOutlined,
+    DownOutlined,
+    SearchOutlined,
+    PlusOutlined,
+    ReloadOutlined
 } from '@ant-design/icons';
 
 // Project components
@@ -21,6 +21,9 @@ import { ToolWindow } from './toolWindow';
 // Project utils
 import { createDictionaryManager } from '../../utils/dictionaryManager';
 import { nameWithoutExtension } from '../../utils/fileCommonUtil';
+
+// 创建全局词典管理器实例
+const dictionaryManager = createDictionaryManager();
 
 
 /**
@@ -38,8 +41,6 @@ const DictionaryPanel: React.FC = () => {
     // =========================================================================
     // State hooks
     // =========================================================================
-    // 使用词典管理器管理多个词典
-    const [dictionaryManager] = useState(() => createDictionaryManager());
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
     const [loading, setLoading] = useState<boolean>(false);
@@ -143,7 +144,7 @@ const DictionaryPanel: React.FC = () => {
         };
 
         loadDictionaries();
-    }, [dictionaryManager]);
+    }, []);
 
     // 监听词典变化，更新状态
     useEffect(() => {
@@ -169,7 +170,7 @@ const DictionaryPanel: React.FC = () => {
         return () => {
             dictionaryManager.off('change', updateDictionaries);
         };
-    }, [dictionaryManager]);
+    }, []);
 
     // Debounce search term to avoid frequent searches
     useEffect(() => {
@@ -198,7 +199,7 @@ const DictionaryPanel: React.FC = () => {
                                 icon={<ReloadOutlined />}
                                 onClick={async () => {
                                     try {
-                                        await dictionaryManager.loadFromStorage();
+                                        await dictionaryManager.loadFromStorage(true);
                                         message.success('词典已刷新');
                                     } catch (error) {
                                         message.error('刷新词典失败');
@@ -324,9 +325,7 @@ const DictionaryPanel: React.FC = () => {
                             style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}
                             dataSource={searchResults}
                             renderItem={(entry, index) => (
-                                <List.Item key={index}
-                                    style={{  borderBottom: '1px solid #f0f0f0'}}
-                                >
+                                <List.Item key={index} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f0f0f0', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
                                     <div>
                                         {/* 显示catalog */}
                                         {entry.catalog.length > 0 && (
