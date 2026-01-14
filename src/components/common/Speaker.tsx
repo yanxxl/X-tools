@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Button, Space, Tooltip } from 'antd';
-import { LeftOutlined, PauseCircleOutlined, PlayCircleOutlined, RightOutlined } from '@ant-design/icons';
+import { CloseOutlined, LeftOutlined, PauseCircleOutlined, PlayCircleOutlined, RightOutlined } from '@ant-design/icons';
 import { useAppContext } from '../../contexts/AppContext';
 
 interface TextToSpeechProps {
@@ -62,13 +62,16 @@ const cleanTextForSpeech = (text: string): string => {
  * 接收CSS选择符参数，实现语音朗读功能
  */
 const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
-    // ==================== 属性定义 ====================
-    
-    // 状态管理
+    // ==================== 状态管理 ====================
+
+    // 状态定义
+    const [opened, setOpened] = useState(false);
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(-1); // 初始值为-1，避免默认选中第一行
     const [selectedText, setSelectedText] = useState('');
     const [elements, setElements] = useState<HTMLElement[]>([]);
+
+    // ==================== 引用与上下文 ====================
 
     // 引用管理
     const synthRef = useRef<SpeechSynthesis | null>(null);
@@ -80,45 +83,7 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
     // 上下文
     const { currentFile } = useAppContext();
 
-    // ==================== 方法定义 ====================
-    
-    /**
-     * 获取视口内第一个可见头部的元素索引，如果没有则找可见尾部的元素
-     * @param elementsList 可选的元素列表，如果不提供则使用当前elements状态
-     * @returns 可见元素的索引，如果没有可见元素则返回0
-     */
-    const getFirstVisibleElementIndex = (elementsList?: HTMLElement[]): number => {
-        const targetElements = elementsList || elements;
-        if (targetElements.length === 0) return 0;
-
-        // 1. 寻找第一个可见头部的元素
-        for (let i = 0; i < targetElements.length; i++) {
-            const rect = targetElements[i].getBoundingClientRect();
-            // 头部可见：top 在视口内，80 是考虑两层标题栏影响
-            if (rect.top >= 80 && rect.top <= window.innerHeight) {
-                return i;
-            }
-        }
-
-        // 2. 如果没有可见头部的元素，寻找第一个可见尾部的元素
-        for (let i = 0; i < targetElements.length; i++) {
-            const rect = targetElements[i].getBoundingClientRect();
-            // 尾部可见：bottom 在视口内
-            if (rect.bottom >= 0 && rect.bottom <= window.innerHeight) {
-                return i;
-            }
-        }
-
-        // 3. 如果以上都没有找到，回退到原始逻辑
-        for (let i = 0; i < targetElements.length; i++) {
-            const rect = targetElements[i].getBoundingClientRect();
-            if (rect.top <= window.innerHeight && rect.bottom >= 0 && rect.left <= window.innerWidth && rect.right >= 0) {
-                return i;
-            }
-        }
-
-        return 0;
-    };
+    // ==================== 工具函数 ====================
 
     /**
      * 处理文本选中
@@ -161,53 +126,6 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
             // 设置高亮样式
             element.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
         }
-    };
-
-    /**
-     * 检查当前元素是否需要重新定位（索引无效、元素不可见或不是头部可见元素）
-     * @param index 当前元素索引
-     * @param elementsList 元素列表
-     * @returns 是否需要重新定位
-     */
-    const shouldRepositionElement = (index: number, elementsList: HTMLElement[]): boolean => {
-        // 索引无效，需要重新定位
-        if (index < 0 || index >= elementsList.length) {
-            return true;
-        }
-
-        const element = elementsList[index];
-        if (!element) {
-            return true;
-        }
-
-        // 获取元素的位置信息
-        const rect = element.getBoundingClientRect();
-
-        // 完全不可见的条件：元素底部在视口顶部之上，或元素顶部在视口底部之下
-        const isCompletelyInvisible = rect.bottom < 0 || rect.top > window.innerHeight;
-
-        // 如果元素完全不可见，需要重新定位
-        if (isCompletelyInvisible) {
-            return true;
-        }
-
-        // 检查当前元素是否是头部可见的元素（优先播放头部可见元素）
-        const isCurrentElementHeadVisible = rect.top >= 0 && rect.top <= window.innerHeight;
-
-        // 如果当前元素不是头部可见的元素，检查是否存在头部可见的元素
-        if (!isCurrentElementHeadVisible) {
-            // 寻找是否存在头部可见的元素
-            for (let i = 0; i < elementsList.length; i++) {
-                const elementRect = elementsList[i].getBoundingClientRect();
-                if (elementRect.top >= 0 && elementRect.top <= window.innerHeight) {
-                    // 存在头部可见的元素，但当前元素不是，需要重新定位
-                    return true;
-                }
-            }
-        }
-
-        // 元素完全可见，且是头部可见的元素（或没有头部可见的元素），不需要重新定位
-        return false;
     };
 
     /**
@@ -266,7 +184,7 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
     };
 
     // ==================== 副作用处理 ====================
-    
+
     // 初始化语音合成实例、轮询和滚动监听
     useEffect(() => {
         synthRef.current = window.speechSynthesis;
@@ -276,28 +194,11 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
             handleSelectedText();
         }, 1000);
 
-        // 添加滚动事件监听，当页面滚动时检查当前元素的可见性
-        const handleScroll = () => {
-            if (isPlaying && !selectedText && elements.length > 0) {
-                // 检查当前播放的元素是否可见
-                if (shouldRepositionElement(currentIndex, elements)) {
-                    // 当前元素不可见或不是头部可见元素，重新定位到第一个可见头部的元素
-                    const firstVisibleIndex = getFirstVisibleElementIndex();
-                    if (firstVisibleIndex !== currentIndex) {
-                        setCurrentIndex(firstVisibleIndex);
-                    }
-                }
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll);
-
         // 清理函数
         return () => {
             synthRef.current?.cancel();
             clearInterval(pollIntervalRef.current || 0);
             restoreOriginalStyles();
-            window.removeEventListener('scroll', handleScroll);
         };
     }, [isPlaying, selectedText, elements, currentIndex]);
 
@@ -309,6 +210,7 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
     // 当currentIndex变化时，取消当前播放
     useEffect(() => {
         synthRef.current?.cancel();
+        highlightCurrentElement(currentIndex);
     }, [currentIndex]);
 
     // 监听文件路径变化，清空状态
@@ -377,37 +279,66 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
         play(text);
     }, [isPlaying, currentIndex, elements, selectedText]);
 
+    // 当opened状态改变时的处理
+    useEffect(() => {
+        if (!opened) {
+            // 重置元素光标样式
+            elements.forEach(element => {
+                element.style.cursor = '';
+            });
+            // 关闭时清理所有状态
+            synthRef.current?.cancel();
+            setIsPlaying(false);
+            setCurrentIndex(-1);
+            setSelectedText('');
+            setElements([]);
+            restoreOriginalStyles();
+        } else {
+            // 打开时初始化元素列表
+            const elementsList = getElementsFromSelector();
+            setElements(elementsList);
+
+            // 为元素列表添加手型光标样式
+            elementsList.forEach(element => {
+                element.style.cursor = 'pointer';
+
+                element.addEventListener('click', () => {
+                    setCurrentIndex(elementsList.indexOf(element));
+                });
+            });
+        }
+    }, [opened]);
+
     // ==================== 渲染输出 ====================
-    
+
+    // 当 open 为 false 时，返回一个 play 按钮
+    if (!opened) {
+        return (
+            <Button
+                type="default"
+                size="small"
+                icon={<PlayCircleOutlined />}
+                onClick={() => setOpened(true)}
+            />
+        );
+    }
+
     return (
-        <Space size="small">
+        <Space size="small" style={{ border: '1px solid #eee', padding: '2px' }}>
             <Tooltip title={isPlaying ? '暂停' : '播放'}>
                 <Button
                     type="primary"
                     size="small"
                     icon={isPlaying ? <PauseCircleOutlined /> : <PlayCircleOutlined />}
                     onClick={() => {
-                        // 如果是第一次播放且currentIndex为-1，设置为当前可见元素的索引
-                        if (!isPlaying) {
-                            // 先获取元素列表并设置到状态中
-                            const elementsList = getElementsFromSelector();
-                            setElements(elementsList);
-                            // 如果当前元素不可见，找到第一个可见元素的索引
-                            if (shouldRepositionElement(currentIndex, elementsList)) {
-                                const firstVisibleIndex = getFirstVisibleElementIndex(elementsList);
-                                setCurrentIndex(firstVisibleIndex);
-                            }
-                        }
                         setIsPlaying(!isPlaying);
                     }}
-                >
-                    {isPlaying ? '暂停' : '播放'}
-                </Button>
+                />
             </Tooltip>
 
             {selectedText
                 ? <span style={{ backgroundColor: 'lightgray', padding: '4px' }}>{selectedText.substring(0, 2)}...</span>
-                : currentIndex !== -1 && (
+                : (
                     <>
                         {/* 上一个按钮 */}
                         <Tooltip title="上一个">
@@ -439,6 +370,14 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
                     </>
                 )
             }
+
+            <Tooltip title="关闭">
+                <Button
+                    size="small"
+                    icon={<CloseOutlined />}
+                    onClick={() => setOpened(false)}
+                />
+            </Tooltip>
         </Space>
     );
 };
