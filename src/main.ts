@@ -9,6 +9,8 @@ import chardet from 'chardet';
 import iconv from 'iconv-lite';
 import { spawnSync } from 'child_process';
 import { Worker } from 'worker_threads';
+import { OfficeParser } from './office/OfficeParser';
+import { OfficeParserConfig } from './office/types';
 
 // 添加环境变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -248,6 +250,17 @@ function registerIpcHandlers() {
             return buffer;
         } catch (error) {
             console.error('读取二进制文件失败:', error);
+            throw error;
+        }
+    });
+
+    // 解析PPTX文件
+    ipcMain.handle('parsePptx', async (event, filePath: string, config?: OfficeParserConfig) => {
+        try {
+            const result = await OfficeParser.parseOffice(filePath, config);
+            return result;
+        } catch (error) {
+            console.error('解析PPTX文件失败:', error);
             throw error;
         }
     });

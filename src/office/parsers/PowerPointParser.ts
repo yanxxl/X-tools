@@ -827,19 +827,6 @@ export const parsePowerPoint = async (buffer: Buffer, config: OfficeParserConfig
         type: 'pptx',
         metadata: metadata,
         content: content,
-        attachments: attachments,
-        toText: () => content.map(c => {
-            // Recursive text extraction
-            const getText = (node: OfficeContentNode): string => {
-                let t = '';
-                if (node.children) {
-                    t += node.children.map(getText).filter(t => t != '').join(!node.children[0]?.children ? '' : config.newlineDelimiter ?? '\n');
-                }
-                else
-                    t += node.text || '';
-                return t;
-            };
-            return getText(c);
-        }).filter(t => t != '').join(config.newlineDelimiter ?? '\n')
+        attachments: attachments
     };
 };

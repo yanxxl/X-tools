@@ -884,8 +884,7 @@ export const parsePdf = async (buffer: Buffer, config: OfficeParserConfig): Prom
         type: 'pdf',
         metadata: metadata,
         content: content,
-        attachments: attachments,
-        toText: () => content.map(c => c.text).join(config.newlineDelimiter ?? '\n\n')
+        attachments: attachments
     };
 };
 

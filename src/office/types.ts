@@ -673,19 +673,5 @@ export interface OfficeParserAST {
      */
     attachments: OfficeAttachment[];
 
-    /**
-     * Converts the entire AST to plain text.
-     * This method flattens the document structure and returns just the text content,
-     * stripping out all formatting, metadata, and structure.
-     * 
-     * The text is concatenated using the delimiter specified in `config.newlineDelimiter` (default: '\n').
-     * 
-     * @returns A plain text representation of the document
-     * @example
-     * ```typescript
-     * const text = ast.toText();
-     * console.log(text); // "Hello world\nChapter 1\n..."
-     * ```
-     */
-    toText(): string;
+
 }

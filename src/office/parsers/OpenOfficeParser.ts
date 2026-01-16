@@ -1461,24 +1461,6 @@ export const parseOpenOffice = async (buffer: Buffer, config: OfficeParserConfig
             styleMap: combinedStyleMap
         },
         content: content,
-        attachments: attachments,
-        toText: () => content.map(c => {
-            const getText = (node: OfficeContentNode): string => {
-                let t = '';
-                if (node.children && node.children.length > 0) {
-                    // Check if children have their own children (container vs leaf)
-                    // If children are leaf nodes (text/image), join with empty string
-                    // If children are container nodes (paragraphs/rows), join with newline
-                    const hasGrandChildren = node.children.some(child => child.children && child.children.length > 0);
-                    const separator = hasGrandChildren ? (config.newlineDelimiter ?? '\n') : '';
-
-                    t += node.children.map(getText).filter(t => t != '').join(separator);
-                } else {
-                    t += node.text || '';
-                }
-                return t;
-            };
-            return getText(c);
-        }).filter(t => t != '').join(config.newlineDelimiter ?? '\n')
+        attachments: attachments
     };
 };

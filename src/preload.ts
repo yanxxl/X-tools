@@ -86,6 +86,8 @@ interface ElectronAPI {
     getPlatform: () => Promise<string>;
     /** 获取应用资源目录路径 */
     getAppPath: () => Promise<string>;
+    /** 解析PPTX文件 */
+    parsePptx: (filePath: string, config?: any) => Promise<any>;
 }
 
 // 扩展Window接口，使electronAPI全局可用
@@ -143,6 +145,8 @@ const electronAPI: ElectronAPI = {
     // 平台信息
     getIsMac: () => ipcRenderer.invoke('getIsMac') as Promise<boolean>,
     getPlatform: () => ipcRenderer.invoke('getPlatform') as Promise<string>,
+    // 解析PPTX文件
+    parsePptx: (filePath: string, config?: any) => ipcRenderer.invoke('parsePptx', filePath, config) as Promise<any>,
 };
 
 // 暴露API给渲染进程

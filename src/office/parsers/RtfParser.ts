@@ -1737,14 +1737,7 @@ export const parseRtf = async (buffer: Buffer, config: OfficeParserConfig): Prom
                 // RTF Limitation: No style map available (RTF uses inline styles)
             },
             content: content,
-            attachments: attachments, // PNG and JPEG images extracted from \\pict groups
-            toText: () => {
-                let text = content.map(c => c.text).join(config.newlineDelimiter ?? '\n');
-                if (config.putNotesAtLast && notes.length > 0) {
-                    text += (config.newlineDelimiter ?? '\n') + notes.map(c => c.text).join(config.newlineDelimiter ?? '\n');
-                }
-                return text;
-            }
+            attachments: attachments // PNG and JPEG images extracted from \\pict groups
         };
 
         // If putNotesAtLast is true, append notes to the end of the content array
