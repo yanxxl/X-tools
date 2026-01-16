@@ -254,16 +254,7 @@ function registerIpcHandlers() {
         }
     });
 
-    // 解析PPTX文件
-    ipcMain.handle('parsePptx', async (event, filePath: string, config?: OfficeParserConfig) => {
-        try {
-            const result = await OfficeParser.parseOffice(filePath, config);
-            return result;
-        } catch (error) {
-            console.error('解析PPTX文件失败:', error);
-            throw error;
-        }
-    });
+
 
     // 解析Office文档（通用方法）
     ipcMain.handle('parseOffice', async (event, filePath: string, config?: OfficeParserConfig) => {

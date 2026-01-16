@@ -86,8 +86,7 @@ interface ElectronAPI {
     getPlatform: () => Promise<string>;
     /** 获取应用资源目录路径 */
     getAppPath: () => Promise<string>;
-    /** 解析PPTX文件 */
-    parsePptx: (filePath: string, config?: any) => Promise<any>;
+
     /** 解析Office文档（通用方法） */
     parseOffice: (filePath: string, config?: any) => Promise<any>;
 }
@@ -147,8 +146,7 @@ const electronAPI: ElectronAPI = {
     // 平台信息
     getIsMac: () => ipcRenderer.invoke('getIsMac') as Promise<boolean>,
     getPlatform: () => ipcRenderer.invoke('getPlatform') as Promise<string>,
-    // 解析PPTX文件
-    parsePptx: (filePath: string, config?: any) => ipcRenderer.invoke('parsePptx', filePath, config) as Promise<any>,
+
     // 解析Office文档（通用方法）
     parseOffice: (filePath: string, config?: any) => ipcRenderer.invoke('parseOffice', filePath, config) as Promise<any>,
 };

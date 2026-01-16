@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Button, Slider, message, Tooltip } from 'antd';
-import { ArrowLeftOutlined, ArrowRightOutlined, ZoomInOutlined, ZoomOutOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ArrowRightOutlined, ZoomInOutlined, ZoomOutOutlined, ReloadOutlined } from '@ant-design/icons';
 import { OfficeParserAST, OfficeContentNode, OfficeAttachment } from '../../office/types';
 
 interface PptxViewerProps {
@@ -19,9 +19,9 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
         const parsePptx = async () => {
             setLoading(true);
             try {
-                const contentAST = await window.electronAPI.parsePptx(path, { 
-                    extractAttachments: true, 
-                    includeRawContent: false 
+                const contentAST = await window.electronAPI.parseOffice(path, {
+                    extractAttachments: true,
+                    includeRawContent: true
                 });
                 setPresentationData(contentAST);
                 setCurrentSlideIndex(0);
@@ -61,6 +61,34 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
             setZoomLevel(value);
         }
     };
+
+    const handleResetZoom = () => {
+        setZoomLevel(100);
+    };
+
+    // 键盘事件处理
+    const handleKeyDown = (e: KeyboardEvent) => {
+        switch (e.key) {
+            case 'ArrowLeft':
+            case 'ArrowUp':
+                handlePrevSlide();
+                e.preventDefault();
+                break;
+            case 'ArrowRight':
+            case 'ArrowDown':
+                handleNextSlide();
+                e.preventDefault();
+                break;
+        }
+    };
+
+    // 键盘事件监听
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [handleKeyDown]);
 
     // 获取当前幻灯片的图片
     const getSlideImages = (slide: OfficeContentNode): OfficeAttachment[] => {
@@ -158,9 +186,87 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                 case 'image':
                     // 图片会在单独的区域渲染
                     return null;
-                default:
+                case 'table':
+                    // 渲染表格
                     return (
-                        <div>
+                        <table style={{
+                            borderCollapse: 'collapse',
+                            width: '100%',
+                            marginBottom: '16px'
+                        }}>
+                            <tbody>
+                                {node.children?.map((row, rowIndex) => (
+                                    <React.Fragment key={rowIndex}>{renderNode(row)}</React.Fragment>
+                                ))}
+                            </tbody>
+                        </table>
+                    );
+                case 'row':
+                    // 渲染表格行
+                    return (
+                        <tr>
+                            {node.children?.map((cell, cellIndex) => (
+                                <React.Fragment key={cellIndex}>{renderNode(cell)}</React.Fragment>
+                            ))}
+                        </tr>
+                    );
+                case 'cell':
+                    // 渲染表格单元格
+                    return (
+                        <td style={{
+                            padding: '8px 12px',
+                            border: '1px solid #d9d9d9',
+                            textAlign: 'left',
+                            verticalAlign: 'top'
+                        }}>
+                            {node.children?.map((child, index) => (
+                                <div key={index}>{renderNode(child)}</div>
+                            ))}
+                        </td>
+                    );
+                case 'chart':
+                    // 渲染图表占位符
+                    return (
+                        <div style={{
+                            padding: '20px',
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: '4px',
+                            textAlign: 'center',
+                            marginBottom: '16px'
+                        }}>
+                            [图表] - {node.text || '未命名图表'}
+                        </div>
+                    );
+                case 'drawing':
+                    // 渲染绘图占位符
+                    return (
+                        <div style={{
+                            padding: '20px',
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: '4px',
+                            textAlign: 'center',
+                            marginBottom: '16px'
+                        }}>
+                            [绘图] - {node.text || '未命名绘图'}
+                        </div>
+                    );
+                case 'note':
+                    // 渲染备注
+                    return (
+                        <div style={{
+                            padding: '12px',
+                            backgroundColor: '#fff3cd',
+                            borderRadius: '4px',
+                            border: '1px solid #ffeaa7',
+                            marginBottom: '16px'
+                        }}>
+                            <strong>备注:</strong> {renderNode({ ...node, type: 'paragraph' })}
+                        </div>
+                    );
+                default:
+                    // 处理其他未识别的节点类型
+                    return (
+                        <div style={{ marginBottom: '8px' }}>
                             {node.children?.map((child, index) => (
                                 <div key={index}>{renderNode(child)}</div>
                             ))}
@@ -233,44 +339,17 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                 alignItems: 'center'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span>幻灯片 {currentSlideIndex + 1} / {totalSlides}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Button
-                            type="text"
-                            size="small"
-                            onClick={handleZoomOut}
-                            disabled={zoomLevel <= 50}
-                            icon={<ZoomOutOutlined />}
-                        />
-                        <span style={{ minWidth: '50px', textAlign: 'center' }}>{zoomLevel}%</span>
-                        <Button
-                            type="text"
-                            size="small"
-                            onClick={handleZoomIn}
-                            disabled={zoomLevel >= 200}
-                            icon={<ZoomInOutlined />}
-                        />
-                        <Slider
-                            min={50}
-                            max={200}
-                            step={10}
-                            value={zoomLevel}
-                            onChange={handleZoomChange}
-                            style={{ width: '150px' }}
-                        />
-                    </div>
-                </div>
-                
-                <div>
                     <Button
                         type="primary"
                         icon={<ArrowLeftOutlined />}
                         onClick={handlePrevSlide}
                         disabled={currentSlideIndex === 0}
-                        style={{ marginRight: '8px' }}
                     >
                         上一张
                     </Button>
+                    
+                    <span>幻灯片 {currentSlideIndex + 1} / {totalSlides}</span>
+                    
                     <Button
                         type="primary"
                         icon={<ArrowRightOutlined />}
@@ -280,34 +359,66 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                         下一张
                     </Button>
                 </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Button
+                        type="text"
+                        size="small"
+                        onClick={handleZoomOut}
+                        disabled={zoomLevel <= 50}
+                        icon={<ZoomOutOutlined />}
+                    />
+                    <span style={{ minWidth: '50px', textAlign: 'center' }}>{zoomLevel}%</span>
+                    <Button
+                        type="text"
+                        size="small"
+                        onClick={handleZoomIn}
+                        disabled={zoomLevel >= 200}
+                        icon={<ZoomInOutlined />}
+                    />
+                    <Button
+                        type="text"
+                        size="small"
+                        onClick={handleResetZoom}
+                        disabled={zoomLevel === 100}
+                        icon={<ReloadOutlined />}
+                    />
+                </div>
             </div>
 
             {/* 幻灯片内容区域 */}
             <div style={{
                 flex: 1,
                 overflow: 'auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
                 padding: '20px',
                 backgroundColor: '#f0f2f5'
             }}>
-                <div
-                    ref={slideContainerRef}
-                    style={{
-                        transform: `scale(${zoomLevel / 100})`,
-                        transformOrigin: 'top center',
-                        backgroundColor: 'white',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                        padding: '20px',
-                        maxWidth: '900px',
-                        width: '100%'
-                    }}
-                >
-                    <div className="slide">
-                        {renderSlideContent(currentSlide)}
-                        {renderSlideImages(currentSlide)}
+                {/* 确保容器与内容区域大小一致，避免缩放影响滚动 */}
+                <div style={{
+                    width: '100%',
+                    minHeight: '100%',
+                    display: 'flex',
+                    justifyContent: 'center' // 仅水平居中，不垂直居中
+                }}>
+                    <div
+                        ref={slideContainerRef}
+                        style={{
+                            transform: `scale(${zoomLevel / 100})`,
+                            transformOrigin: 'top center', // 调整缩放原点到顶部中心
+                            backgroundColor: 'white',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            padding: '20px',
+                            width: 'auto', // 让宽度完全由内容决定
+                            minWidth: '800px', // 保持合理的最小宽度
+                            maxWidth: '100%', // 确保不超过容器宽度
+                            overflow: 'visible'
+                        }}
+                    >
+                        <div className="slide">
+                            {renderSlideContent(currentSlide)}
+                            {renderSlideImages(currentSlide)}
+                        </div>
                     </div>
                 </div>
             </div>
