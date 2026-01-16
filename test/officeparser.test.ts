@@ -14,14 +14,14 @@ async function testOfficeParser() {
         const ext = path.extname(file).toLowerCase();
 
         // 只测试Office文档格式
-        if (['.docx', '.xlsx', '.pptx'].includes(ext)) {
-        // if (['.pptx'].includes(ext)) {
+        // if (['.docx', '.xlsx', '.pptx'].includes(ext)) {
+        if (['.xlsx'].includes(ext)) {
             console.log(`正在解析文件: ${file}`);
             console.log('='.repeat(40));
 
             try {
                 // 使用 OfficeParser 解析
-                const contentAST = await OfficeParser.parseOffice(filePath, {extractAttachments: false, includeRawContent: false});
+                const contentAST = await OfficeParser.parseOffice(filePath, {extractAttachments: true, includeRawContent: true});
 
                 console.log(`文件类型: ${contentAST.type || 'Unknown'}`);
                 console.log(`元数据:`, contentAST.metadata ? JSON.stringify(contentAST.metadata, null, 2) : 'None');
@@ -66,8 +66,8 @@ async function testOfficeParser() {
                 console.log(JSON.stringify(contentAST, null, 2));
 
                 // 获取纯文本
-                console.log(`纯文本内容:`);
-                console.log(contentAST.toText());
+                // console.log(`纯文本内容:`);
+                // console.log(contentAST.toText());
 
                 console.log('');
             } catch (error) {

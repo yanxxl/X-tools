@@ -9,6 +9,7 @@ import {MarkdownViewer} from './MarkdownViewer';
 import {TextViewer} from './TextViewer';
 import {DocxViewer} from './DocxViewer';
 import {PptxViewer} from './PptxViewer';
+import {XlsxViewer} from './XlsxViewer';
 
 interface FilePreviewProps {
     filePath: string;
@@ -40,6 +41,10 @@ export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName, init
 
     if (type === 'pptx') {
         return <div style={{height: '100%'}}><PptxViewer path={filePath}/></div>;
+    }
+
+    if (type === 'xlsx') {
+        return <div style={{height: '100%'}}><XlsxViewer path={filePath}/></div>;
     }
 
     // Markdown 文件使用专门的 MarkdownViewer

@@ -88,6 +88,8 @@ interface ElectronAPI {
     getAppPath: () => Promise<string>;
     /** 解析PPTX文件 */
     parsePptx: (filePath: string, config?: any) => Promise<any>;
+    /** 解析Office文档（通用方法） */
+    parseOffice: (filePath: string, config?: any) => Promise<any>;
 }
 
 // 扩展Window接口，使electronAPI全局可用
@@ -147,6 +149,8 @@ const electronAPI: ElectronAPI = {
     getPlatform: () => ipcRenderer.invoke('getPlatform') as Promise<string>,
     // 解析PPTX文件
     parsePptx: (filePath: string, config?: any) => ipcRenderer.invoke('parsePptx', filePath, config) as Promise<any>,
+    // 解析Office文档（通用方法）
+    parseOffice: (filePath: string, config?: any) => ipcRenderer.invoke('parseOffice', filePath, config) as Promise<any>,
 };
 
 // 暴露API给渲染进程
