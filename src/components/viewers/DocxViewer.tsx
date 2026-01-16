@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { message, Button, InputNumber, Splitter } from 'antd';
-import { MinusOutlined, PlusOutlined } from '@ant-design/icons';
+import { message, Button, Splitter } from 'antd';
+import { ZoomInOutlined, ZoomOutOutlined, ReloadOutlined } from '@ant-design/icons';
 // eslint-disable-next-line import/no-unresolved
 import * as docxPreview from 'docx-preview';
 
@@ -29,10 +29,8 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
         setZoomLevel(prev => Math.max(prev - 10, 50)); // 最小缩小到50%
     };
 
-    const handleZoomChange = (value: number | null) => {
-        if (value !== null) {
-            setZoomLevel(Math.max(50, Math.min(value, 200))); // 限制在50%-200%
-        }
+    const handleResetZoom = () => {
+        setZoomLevel(100);
     };
 
     // 从DOM中提取大纲并设置到状态中
@@ -75,7 +73,7 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
 
     useEffect(() => {
         if (!containerRef.current) return;
-
+        console.log('docx container', containerRef.current);
         const renderDocx = async () => {
             if (!containerRef.current) return;
 
@@ -87,7 +85,9 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
                 const fileBuffer = await window.electronAPI.readFileBinary(path);
 
                 // 渲染 docx
-                await docxPreview.renderAsync(fileBuffer, containerRef.current, null, {});
+                await docxPreview.renderAsync(fileBuffer, containerRef.current, containerRef.current, { inWrapper: true });
+
+
 
                 // 文档渲染完成后，从DOM中提取大纲并设置ID
                 extractOutline();
@@ -104,17 +104,52 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
     }, [path]);
 
     return (
-        <div style={{ height: '100%' }}>
-            <Splitter>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* 文件名显示和缩放控制栏 */}
+            <div style={{
+                padding: '12px 16px',
+                borderBottom: '1px solid #e8e8e8',
+                backgroundColor: '#fafafa',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+            }}>
+                <span style={{ fontSize: '14px', color: '#333' }}>{path.split('/').pop()}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Button
+                        type="text"
+                        size="small"
+                        onClick={handleZoomOut}
+                        disabled={zoomLevel <= 50}
+                        icon={<ZoomOutOutlined />}
+                    />
+                    <span style={{ minWidth: '50px', textAlign: 'center' }}>{zoomLevel}%</span>
+                    <Button
+                        type="text"
+                        size="small"
+                        onClick={handleZoomIn}
+                        disabled={zoomLevel >= 200}
+                        icon={<ZoomInOutlined />}
+                    />
+                    <Button
+                        type="text"
+                        size="small"
+                        onClick={handleResetZoom}
+                        disabled={zoomLevel === 100}
+                        icon={<ReloadOutlined />}
+                    />
+                </div>
+            </div>
+
+            <Splitter style={{ height: 'calc(100% - 48px)' }}>
                 {/* 大纲面板 */}
                 <Splitter.Panel
-                    defaultSize="240px"
-                    min="20%"
+                    defaultSize="20%"
+                    min="0"
                     max="45%"
                     collapsible
                 >
-                    <div style={{ height: '100%', padding: '16px' }}>
-                        <h3 style={{ marginBottom: '16px' }}>文档大纲</h3>
+                    <div style={{ padding: '16px' }}>
                         {outline.length > 0 ? (
                             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                 {outline.map((item) => (
@@ -143,60 +178,33 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
                         )}
                     </div>
                 </Splitter.Panel>
-                <Splitter.Panel min="55%" max="80%">
+                <Splitter.Panel defaultSize="80%" min="55%">
                     {/* 文档内容区域 */}
-                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        {/* 缩放控制栏 */}
-                        <div style={{
-                            padding: '8px 16px',
-                            borderBottom: '1px solid #e8e8e8',
-                            backgroundColor: '#fafafa',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'flex-end',
-                            gap: '4px'
-                        }}>
-                            <Button
-                                type="text"
-                                size="small"
-                                onClick={handleZoomOut}
-                                disabled={zoomLevel <= 50}
-                                icon={<MinusOutlined />}
-                                style={{ minWidth: '28px' }}
-                            />
-                            <InputNumber
-                                min={50}
-                                max={200}
-                                step={10}
-                                value={zoomLevel}
-                                onChange={handleZoomChange}
-                                size="small"
-                                style={{ width: 100 }}
-                                formatter={(value) => `${value}%`}
-                                parser={(value) => value?.replace('%', '') as unknown as number}
-                            />
-                            <Button
-                                type="text"
-                                size="small"
-                                onClick={handleZoomIn}
-                                disabled={zoomLevel >= 200}
-                                icon={<PlusOutlined />}
-                                style={{ minWidth: '28px' }}
-                            />
-                        </div>
-
-                        {/* 文档内容容器 */}
-                        <div style={{
-                            flex: 1,
-                            overflow: 'auto',
-                            justifyContent: 'center',
-                        }}>
-                            {/* 缩放内容 */}
-                            <div
-                                ref={containerRef}
+                    <div style={{ overflow: 'auto' }}>
+                        <style>
+                            {
+                                `
+                                .docx-wrapper {
+                                    min-width: 720pt;
+                                    padding: 30px !important;
+                                    box-sizing: border-box;
+                                }
+`}
+                        </style>
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                overflow: 'hidden'
+                            }}
+                        >
+                            <div ref={containerRef}
                                 style={{
                                     transform: `scale(${zoomLevel / 100})`,
                                     transformOrigin: 'top',
+                                    minWidth: '720pt',
+                                    width: '720pt',
+                                    boxSizing: 'border-box'
                                 }}
                             />
                         </div>

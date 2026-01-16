@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Button, message, Tooltip } from 'antd';
+import { Button, message } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined, ZoomInOutlined, ZoomOutOutlined, ReloadOutlined } from '@ant-design/icons';
 import { OfficeParserAST, OfficeContentNode, OfficeAttachment } from '../../office/types';
 
@@ -250,13 +250,12 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
         return (
             <div className="slide-images">
                 {images.map((image, index) => (
-                    <Tooltip key={index} title={image.altText || image.name}>
-                        <img 
-                            src={`data:${image.mimeType};base64,${image.data}`} 
-                            alt={image.altText || image.name} 
-                            className="slide-image"
-                        />
-                    </Tooltip>
+                    <img 
+                        key={index}
+                        src={`data:${image.mimeType};base64,${image.data}`} 
+                        alt={image.altText || image.name} 
+                        className="slide-image"
+                    />
                 ))}
             </div>
         );
