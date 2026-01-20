@@ -1,7 +1,7 @@
-import React, {createContext, ReactNode, useContext, useRef, useState, useEffect} from 'react';
-import {fileHistoryManager, FileHistoryRecord} from '../utils/uiUtils';
-import {detectFileType} from "../utils/fileCommonUtil";
-import {Config, updateFolderPath} from "../utils/config";
+import React, { createContext, ReactNode, useContext, useRef, useState, useEffect } from 'react';
+import { fileHistoryManager, FileHistoryRecord } from '../utils/uiUtils';
+import { detectFileType } from "../utils/fileCommonUtil";
+import { Config, updateFolderPath } from "../utils/config";
 
 export interface AppContextType {
     /** 当前选中的文件夹路径 */
@@ -55,7 +55,7 @@ export interface AppProviderProps {
     children: ReactNode;
 }
 
-export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
+export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
     const [currentFile, setCurrentFile] = useState<string | null>(null);
     const [fileHistory, setFileHistory] = useState<FileHistoryRecord[]>([]);
@@ -75,12 +75,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
 
     const handleSetCurrentFolder = (folder: string | null) => {
         console.log('setCurrentFolder', folder);
-        if(!folder) return;
+        if (!folder) return;
 
         setCurrentFolder(folder);
         window.electronAPI.saveConfig(updateFolderPath(config, folder));
         window.electronAPI.setCurrentWindowFolder(folder);
-        
+
         setCurrentFile(null);
         if (folder) {
             const history = fileHistoryManager.getFolderHistory(folder);
@@ -128,6 +128,28 @@ export const AppProvider: React.FC<AppProviderProps> = ({children}) => {
             setFileHistory([]);
         }
     };
+
+    useEffect(() => {
+        // 启动一个worker来处理搜索
+        const searchWorker = new Worker(new URL('../utils/indexWorker.ts', import.meta.url), {
+            type: 'module'
+        });
+
+        // 处理worker消息
+        searchWorker.onmessage = (event) => {
+            console.log('Worker message received:', event.data);
+        };
+
+        // 处理worker错误
+        searchWorker.onerror = (error) => {
+            console.error('Worker error:', error);
+        };
+
+        // 组件卸载时清理worker
+        return () => {
+            searchWorker.terminate();
+        };
+    }, []);
 
     useEffect(() => {
         localStorage.setItem('leftPanelVisible', JSON.stringify(leftPanelVisible));
