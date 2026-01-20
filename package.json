@@ -60,6 +60,7 @@
     "docx-preview": "^0.3.7",
     "electron-squirrel-startup": "^1.0.1",
     "file-type": "^16.5.4",
+    "flexsearch": "^0.8.212",
     "highlight.js": "^11.11.1",
     "iconv-lite": "^0.7.0",
     "jszip": "^3.10.1",
