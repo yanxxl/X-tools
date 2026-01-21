@@ -1,8 +1,8 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {Button, Card, Empty, List, Tooltip, Typography} from 'antd';
 import {ClockCircleOutlined, DeleteOutlined, HistoryOutlined} from '@ant-design/icons';
 import {useAppContext} from '../../contexts/AppContext';
-import {FileHistoryRecord} from '../../utils/uiUtils';
+import {fileHistoryManager, FileHistoryRecord, formatTime} from '../../utils/uiUtils';
 import {FileIcon} from '../common/FileIcon';
 import './FileHistoryToolWindow.css';
 // 创建工具窗口实例
@@ -10,42 +10,44 @@ import {ToolWindow} from './toolWindow';
 
 const {Text} = Typography;
 
-
-// 时间格式化工具函数
-const formatTime = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMins < 1) {
-        return '刚刚';
-    } else if (diffMins < 60) {
-        return `${diffMins}分钟前`;
-    } else if (diffHours < 24) {
-        return `${diffHours}小时前`;
-    } else if (diffDays < 7) {
-        return `${diffDays}天前`;
-    } else {
-        return date.toLocaleDateString('zh-CN');
-    }
-};
-
 import {fullname} from '../../utils/fileCommonUtil';
 
 export const FileHistoryToolWindow: React.FC = () => {
-    const {currentFolder, fileHistory, setCurrentFile, clearFolderHistory} = useAppContext();
+    const {currentFolder, currentFile, setCurrentFile} = useAppContext();
+    const [fileHistory, setFileHistory] = useState<FileHistoryRecord[]>([]);
+
+    // 当当前文件夹或当前文件变化时，更新历史记录
+    useEffect(() => {
+        if (currentFolder) {
+            // 如果当前文件存在，添加访问记录
+            if (currentFile) {
+                fileHistoryManager.addFileAccess(currentFile);
+            }
+            const history = fileHistoryManager.getFolderHistory(currentFolder);
+            setFileHistory(history);
+        } else {
+            setFileHistory([]);
+        }
+    }, [currentFolder, currentFile]);
 
     // 处理点击历史记录项
     const handleHistoryItemClick = (record: FileHistoryRecord) => {
         setCurrentFile(record.filePath);
+        // 添加文件访问记录
+        fileHistoryManager.addFileAccess(record.filePath);
+        // 更新历史记录列表
+        if (currentFolder) {
+            const updatedHistory = fileHistoryManager.getFolderHistory(currentFolder);
+            setFileHistory(updatedHistory);
+        }
     };
 
     // 处理清理历史记录
     const handleClearHistory = () => {
-        clearFolderHistory();
+        if (currentFolder) {
+            fileHistoryManager.clearFolderHistory(currentFolder);
+            setFileHistory([]);
+        }
     };
 
     return (

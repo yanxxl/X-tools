@@ -83,6 +83,29 @@ export const storage = {
   }
 };
 
+/**
+ * 时间格式化工具函数
+ */
+export const formatTime = (timestamp: number): string => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) {
+        return '刚刚';
+    } else if (diffMins < 60) {
+        return `${diffMins}分钟前`;
+    } else if (diffHours < 24) {
+        return `${diffHours}小时前`;
+    } else if (diffDays < 7) {
+        return `${diffDays}天前`;
+    } else {
+        return date.toLocaleDateString('zh-CN');
+    }
+};
 // 存储键名常量
 export const STORAGE_KEYS = {
   MARKDOWN_FONT_SIZE: 'markdown-viewer-font-size',
