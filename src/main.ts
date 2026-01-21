@@ -497,6 +497,7 @@ const createWindow = (folderPath?: string) => {
     });
 
     // 记录窗口与文件夹的映射关系
+    if (!folderPath) folderPath = loadConfig().recentFolders?.[0]?.path || null;
     windowFolderMap.set(newWindow, folderPath);
 
     // 如果这是第一个窗口，设置为global.mainWindow以兼容现有代码

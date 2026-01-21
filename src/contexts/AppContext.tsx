@@ -1,25 +1,15 @@
 import React, { createContext, ReactNode, useContext, useRef, useState, useEffect } from 'react';
-import { fileHistoryManager, FileHistoryRecord } from '../utils/uiUtils';
+import { fileHistoryManager } from '../utils/uiUtils';
 import { detectFileType } from "../utils/fileCommonUtil";
-import { Config, updateFolderPath } from "../utils/config";
 
 export interface AppContextType {
     /** 当前选中的文件夹路径 */
     currentFolder: string | null;
     /** 当前选中的文件路径 */
     currentFile: string | null;
-    /** 设置当前文件夹 */
-    setCurrentFolder: (folder: string | null) => void;
     /** 设置当前文件 */
     setCurrentFile: (file: string | null) => void;
-    /** 文件访问历史记录 */
-    fileHistory: FileHistoryRecord[];
-    /** 添加文件访问记录 */
-    addFileAccess: (filePath: string) => void;
-    /** 获取当前文件夹的最后访问文件 */
-    getLastAccessedFile: () => FileHistoryRecord | null;
-    /** 清除当前文件夹的历史记录 */
-    clearFolderHistory: () => void;
+
 
     autoPlay: boolean;
 
@@ -33,10 +23,7 @@ export interface AppContextType {
     /** 设置搜索面板开关 */
     setSearchPanelOpen: (open: boolean) => void;
 
-    /** 应用配置 */
-    config: Config | null;
-    /** 设置应用配置 */
-    setConfig: (config: Config | null) => void;
+
 
     /** 左侧面板是否可见 */
     leftPanelVisible: boolean;
@@ -58,10 +45,9 @@ export interface AppProviderProps {
 export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const [currentFolder, setCurrentFolder] = useState<string | null>(null);
     const [currentFile, setCurrentFile] = useState<string | null>(null);
-    const [fileHistory, setFileHistory] = useState<FileHistoryRecord[]>([]);
     const [titleBarVisible, setTitleBarVisible] = useState<boolean>(true);
     const [searchPanelOpen, setSearchPanelOpen] = useState<boolean>(false);
-    const [config, setConfig] = useState<Config | null>(null);
+
     const [leftPanelVisible, setLeftPanelVisible] = useState<boolean>(() => {
         const saved = localStorage.getItem('leftPanelVisible');
         return saved !== null ? JSON.parse(saved) : true;
@@ -73,61 +59,42 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
     const autoPlay = useRef(true);
 
-    const handleSetCurrentFolder = (folder: string | null) => {
-        console.log('setCurrentFolder', folder);
-        if (!folder) return;
-
-        setCurrentFolder(folder);
-        window.electronAPI.saveConfig(updateFolderPath(config, folder));
-        window.electronAPI.setCurrentWindowFolder(folder);
-
-        setCurrentFile(null);
-        if (folder) {
-            const history = fileHistoryManager.getFolderHistory(folder);
-            setFileHistory(history);
-
-            const lastFile = fileHistoryManager.getLastAccessedFile(folder);
-            if (lastFile) {
-                const fileName = lastFile.filePath.split(/[\\/]/).pop() || '';
-                if (detectFileType(fileName) == "video" || detectFileType(fileName) == "audio") autoPlay.current = false;
-
-                setCurrentFile(lastFile.filePath);
-            }
-        } else {
-            setFileHistory([]);
-        }
-    };
-
     const handleSetCurrentFile = (file: string | null) => {
+        // 运行到这里，便不是第一个打开的文件了，恢复自动播放，人点击视频不就是为了看吗？
         if (!autoPlay.current) autoPlay.current = true;
-
         setCurrentFile(file);
-
-        if (file && currentFolder) {
-            fileHistoryManager.addFileAccess(file);
-            const updatedHistory = fileHistoryManager.getFolderHistory(currentFolder);
-            setFileHistory(updatedHistory);
-        }
     };
 
-    const addFileAccess = (filePath: string) => {
-        if (currentFolder) {
-            fileHistoryManager.addFileAccess(filePath);
-            const updatedHistory = fileHistoryManager.getFolderHistory(currentFolder);
-            setFileHistory(updatedHistory);
-        }
-    };
 
-    const getLastAccessedFile = (): FileHistoryRecord | null => {
-        return currentFolder ? fileHistoryManager.getLastAccessedFile(currentFolder) : null;
-    };
 
-    const clearFolderHistory = () => {
-        if (currentFolder) {
-            fileHistoryManager.clearFolderHistory(currentFolder);
-            setFileHistory([]);
-        }
-    };
+    useEffect(() => {
+        const init = async () => {
+            console.log('开始初始化应用上下文');
+            try {
+                console.log('正在获取当前窗口文件夹');
+                const currentFolder = await window.electronAPI.getCurrentWindowFolder();
+                console.log('当前窗口文件夹:', currentFolder);
+
+                if (currentFolder) {
+                    console.log('设置当前文件夹:', currentFolder);
+                    setCurrentFolder(currentFolder);
+
+                    const lastFile = fileHistoryManager.getLastAccessedFile(currentFolder);
+                    if (lastFile) {
+                        const fileName = lastFile.filePath.split(/[\\/]/).pop() || '';
+                        if (detectFileType(fileName) == "video" || detectFileType(fileName) == "audio") autoPlay.current = false;
+
+                        setCurrentFile(lastFile.filePath);
+                    }
+                }
+            } catch (error) {
+                console.error('初始化过程中出错:', error);
+            } finally {
+                console.log('应用上下文初始化完成');
+            }
+        };
+        if (!currentFolder) init();
+    }, []);
 
     useEffect(() => {
         // 启动一个worker来处理搜索
@@ -162,19 +129,12 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const value: AppContextType = {
         currentFolder,
         currentFile,
-        setCurrentFolder: handleSetCurrentFolder,
         setCurrentFile: handleSetCurrentFile,
-        fileHistory,
-        addFileAccess,
-        getLastAccessedFile,
-        clearFolderHistory,
         autoPlay: autoPlay.current,
         titleBarVisible,
         setTitleBarVisible,
         searchPanelOpen,
         setSearchPanelOpen,
-        config,
-        setConfig,
         leftPanelVisible,
         setLeftPanelVisible,
         rightPanelVisible,

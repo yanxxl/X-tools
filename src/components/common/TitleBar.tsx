@@ -2,42 +2,22 @@
 import React, { useEffect, useState } from 'react';
 
 // 第三方库导入
-import {Button, Divider, Dropdown, Flex, message, Modal} from "antd";
-import {
-    BorderOutlined,
-    CloseOutlined,
-    CopyOutlined,
-    DeleteOutlined,
-    DownOutlined,
-    FolderOpenOutlined,
-    MinusOutlined,
-    PlusOutlined,
-    SearchOutlined} from '@ant-design/icons';
+import { Button, Divider, Dropdown, Flex, message, Modal } from "antd";
+import { BorderOutlined, CloseOutlined, DownOutlined, FolderOpenOutlined, MinusOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 
 // 应用内部导入
 import { useAppContext } from '../../contexts/AppContext';
 import { truncateFolderName } from '../../utils/uiUtils';
-import { removeFolderPath } from '../../utils/config';
+import { removeFolderPath, updateFolderPath } from '../../utils/config';
 import { RecentFolder } from '../../types';
-
-/**
- * 浏览器兼容的basename函数
- * 由于浏览器环境中没有Node.js的path.basename，我们实现一个兼容版本
- * @param path 文件或文件夹路径
- * @returns 路径的最后一部分（文件名或文件夹名）
- */
-export function basename(path: string): string {
-    // 处理不同平台的路径分隔符（/ 和 \）
-    const parts = path.split(/[/\\]/);
-    return parts[parts.length - 1] || '';
-}
+import { CloseButton } from './CloseButton';
+import { fullname } from '../../utils/fileCommonUtil';
 
 export const TitleBar: React.FC = () => {
     // 1. 获取应用上下文
     const {
         currentFolder,
         currentFile,
-        setCurrentFolder,
         titleBarVisible,
         setTitleBarVisible,
         setSearchPanelOpen,
@@ -45,8 +25,6 @@ export const TitleBar: React.FC = () => {
         setLeftPanelVisible,
         rightPanelVisible,
         setRightPanelVisible,
-        config,
-        setConfig,
     } = useAppContext();
 
     // 2. 平台相关状态
@@ -115,30 +93,12 @@ export const TitleBar: React.FC = () => {
      * @param openInNewWindow 是否在新窗口中打开文件夹
      */
     const handleSelectDirectory = async (openInNewWindow = false): Promise<void> => {
-        if (!window.electronAPI) {
-            message.warning('此功能需要在 Electron 应用中使用');
-            return;
-        }
-
         try {
             setLoading(true);
-
             // 调用Electron API选择文件夹
             const dirPath = await window.electronAPI.selectDirectory();
-
             if (dirPath) {
-                if (openInNewWindow) {
-                    // 在新窗口中打开文件夹
-                    const result = await window.electronAPI.createNewWindow(dirPath);
-                    if (result.success) {
-                        message.success('已在新窗口中打开文件夹');
-                    } else {
-                        message.error(`创建新窗口失败: ${result.error}`);
-                    }
-                } else {
-                    // 在当前窗口中打开文件夹
-                    setCurrentFolder(dirPath);
-                }
+                await openFolder(dirPath, openInNewWindow);
             }
         } catch (error) {
             console.error('选择文件夹失败:', error);
@@ -153,15 +113,20 @@ export const TitleBar: React.FC = () => {
      * @param folderPath 最近文件夹的路径
      * @param openInNewWindow 是否在新窗口中打开
      */
-    const handleRecentFolderClick = async (folderPath: string, openInNewWindow = false): Promise<void> => {
+    const openFolder = async (dirPath: string, openInNewWindow = false): Promise<void> => {
+        // 更新 config 中的 recentFolders
+        window.electronAPI.loadConfig().then((config) => {
+            if (config) {
+                const updatedConfig = updateFolderPath(config, dirPath);
+                window.electronAPI.saveConfig(updatedConfig);
+                // 更新本地状态
+                setRecentFolders(updatedConfig.recentFolders || []);
+            }
+        });
+
         if (openInNewWindow) {
             // 在新窗口中打开文件夹
-            if (!window.electronAPI) {
-                message.warning('此功能需要在 Electron 应用中使用');
-                return;
-            }
-
-            const result = await window.electronAPI.createNewWindow(folderPath);
+            const result = await window.electronAPI.createNewWindow(dirPath);
             if (result.success) {
                 message.success('已在新窗口中打开文件夹');
             } else {
@@ -169,10 +134,10 @@ export const TitleBar: React.FC = () => {
             }
         } else {
             // 在当前窗口中打开文件夹
-            setCurrentFolder(folderPath);
+            window.electronAPI.setCurrentWindowFolder(dirPath);
+            window.location.reload();
         }
     };
-
 
 
     /**
@@ -214,14 +179,12 @@ export const TitleBar: React.FC = () => {
         };
 
         getPlatformInfo();
+
+        window.electronAPI.loadConfig().then((config) => {
+            console.log('config', config);
+            setRecentFolders(config?.recentFolders || []);
+        });
     }, []);
-
-    // 监听配置变化，更新最近文件夹列表
-    useEffect(() => {
-        setRecentFolders(config?.recentFolders || []);
-    }, [config]);
-
-
 
     return (
         <>
@@ -311,53 +274,19 @@ export const TitleBar: React.FC = () => {
                                                             minute: '2-digit',
                                                             hour12: false
                                                         })}</span>
-                                                        <CopyOutlined
-                                                            style={{
-                                                                fontSize: '14px',
-                                                                color: '#666',
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.3s'
-                                                            }}
-                                                            title="在新窗口中打开"
+                                                        <CloseButton
+                                                            title="删除记录"
                                                             onClick={(e: React.MouseEvent) => {
                                                                 e.stopPropagation();
-                                                                setDropdownOpen(false);
-                                                                setTimeout(() => {
-                                                                    handleRecentFolderClick(folder.path, true);
-                                                                }, 100);
-                                                            }}
-                                                            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
-                                                                const target = e.currentTarget;
-                                                                target.style.color = '#1890ff';
-                                                            }}
-                                                            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
-                                                                const target = e.currentTarget;
-                                                                target.style.color = '#666';
-                                                            }}
-                                                        />
-                                                        <DeleteOutlined
-                                                            style={{
-                                                                fontSize: '14px',
-                                                                color: '#666',
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.3s'
-                                                            }}
-                                                            title="从列表中删除"
-                                                            onClick={(e: React.MouseEvent) => {
-                                                                e.stopPropagation();
-                                                                if (config) {
-                                                                    setConfig(removeFolderPath(config, folder.path));
-                                                                }
-                                                            }}
-                                                            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
-                                                                const target = e.currentTarget;
-                                                                target.style.transform = 'scale(1.6)';
-                                                                target.style.color = '#ff4d4f';
-                                                            }}
-                                                            onMouseLeave={(e: React.MouseEvent<HTMLElement>) => {
-                                                                const target = e.currentTarget;
-                                                                target.style.transform = 'scale(1)';
-                                                                target.style.color = '#666';
+                                                                // 直接通过 electronAPI 移除文件夹路径
+                                                                window.electronAPI.loadConfig().then((config) => {
+                                                                    if (config) {
+                                                                        const updatedConfig = removeFolderPath(config, folder.path);
+                                                                        window.electronAPI.saveConfig(updatedConfig);
+                                                                        // 更新本地状态
+                                                                        setRecentFolders(updatedConfig.recentFolders || []);
+                                                                    }
+                                                                });
                                                             }}
                                                         />
                                                     </div>
@@ -370,7 +299,7 @@ export const TitleBar: React.FC = () => {
                                                 setTimeout(() => {
                                                     showFolderChoiceDialog((openInNewWindow) => {
                                                         if (openInNewWindow !== null) {
-                                                            handleRecentFolderClick(folder.path, openInNewWindow);
+                                                            openFolder(folder.path, openInNewWindow);
                                                         }
                                                     });
                                                 }, 100);
@@ -387,7 +316,7 @@ export const TitleBar: React.FC = () => {
                                 type="link"
                                 loading={loading}
                             >
-                                {currentFolder ? truncateFolderName(basename(currentFolder)) : '选择文件夹'} <DownOutlined />
+                                {currentFolder ? truncateFolderName(fullname(currentFolder)) : '选择文件夹'} <DownOutlined />
                             </Button>
                         </Dropdown>
                     </div>
@@ -395,7 +324,7 @@ export const TitleBar: React.FC = () => {
                     {/* 中间区域 - 当前文件名显示 */}
                     <div style={{ flex: '1 3 auto', minWidth: 0 }}>
                         <div className="one-line text-center">
-                            {currentFile ? basename(currentFile) : ''}
+                            {currentFile ? fullname(currentFile) : ''}
                         </div>
                     </div>
 

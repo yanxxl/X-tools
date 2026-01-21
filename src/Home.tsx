@@ -26,13 +26,10 @@ const WINDOW_SIZE_KEY = 'x-tools-window-size';
 const AppContent: React.FC = () => {
     // 1. 上下文获取
     const {
-        setCurrentFolder, 
         currentFile, 
         titleBarVisible, 
         searchPanelOpen, 
         setSearchPanelOpen,
-        config,
-        setConfig, 
         leftPanelVisible, 
         setLeftPanelVisible, 
         rightPanelVisible, 
@@ -132,40 +129,11 @@ const AppContent: React.FC = () => {
             setSearchPanelOpen(false);
         }
 
-        // 加载配置文件
-        window.electronAPI.loadConfig().then(async (loadedConfig) => {
-            setConfig(loadedConfig);
-        });
-
         // 组件卸载时移除监听器
         return () => {
             window.removeEventListener('resize', handleResize);
         };
     }, []);
-
-    // 配置相关的副作用
-    useEffect(() => {
-        if (config) {
-            try {
-                window.electronAPI.getCurrentWindowFolder().then((folderPath) => {
-                    if (folderPath) {
-                        console.log('当前窗口文件夹:', folderPath);
-                        setCurrentFolder(folderPath);
-                    } else {
-                        console.log('当前窗口没有文件夹');
-                        if (config.recentFolders.length > 0) {
-                            console.log('设置最近文件夹:', config.recentFolders[0].path);
-                            setCurrentFolder(config.recentFolders[0].path);
-                        } else {
-                            console.log('没有最近文件夹');
-                        }
-                    }
-                });
-            } catch (error) {
-                console.error('获取当前窗口文件夹失败:', error);
-            }
-        }
-    }, [config]);
 
     // 面板可见性相关的副作用
     useEffect(() => {
