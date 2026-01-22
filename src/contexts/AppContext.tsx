@@ -62,6 +62,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const handleSetCurrentFile = (file: string | null) => {
         // 运行到这里，便不是第一个打开的文件了，恢复自动播放，人点击视频不就是为了看吗？
         if (!autoPlay.current) autoPlay.current = true;
+        fileHistoryManager.addFileAccess(file);
         setCurrentFile(file);
     };
 

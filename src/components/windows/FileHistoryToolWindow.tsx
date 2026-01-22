@@ -19,10 +19,6 @@ export const FileHistoryToolWindow: React.FC = () => {
     // 当当前文件夹或当前文件变化时，更新历史记录
     useEffect(() => {
         if (currentFolder) {
-            // 如果当前文件存在，添加访问记录
-            if (currentFile) {
-                fileHistoryManager.addFileAccess(currentFile);
-            }
             const history = fileHistoryManager.getFolderHistory(currentFolder);
             setFileHistory(history);
         } else {
