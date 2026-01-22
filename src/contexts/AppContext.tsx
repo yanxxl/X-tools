@@ -1,5 +1,5 @@
 import React, { createContext, ReactNode, useContext, useRef, useState, useEffect } from 'react';
-import { fileHistoryManager } from '../utils/uiUtils';
+import { fileHistoryManager } from '../utils/storage';
 import { detectFileType } from "../utils/fileCommonUtil";
 
 export interface AppContextType {

@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Button, Space} from 'antd';
 import {MinusOutlined, PlusOutlined} from '@ant-design/icons';
-import {storage, STORAGE_KEYS} from '../../utils/uiUtils';
+import {storage, STORAGE_KEYS} from '../../utils/storage';
 
 interface FontSizeAdjusterProps {
     onFontSizeChange?: (size: number) => void;

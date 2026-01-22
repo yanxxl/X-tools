@@ -3,7 +3,7 @@ import type {MenuProps} from 'antd';
 import {Button, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typography} from 'antd';
 import {CodeOutlined, EyeOutlined, FileTextOutlined} from '@ant-design/icons';
 import {OutlineItem, parseMarkdown} from '../../utils/markdown';
-import {storage, STORAGE_KEYS} from '../../utils/uiUtils';
+import {storage, STORAGE_KEYS} from '../../utils/storage';
 import {toFileUrl} from '../../utils/fileCommonUtil';
 import 'highlight.js/styles/github.css';
 import './MarkdownViewer.css';

@@ -2,7 +2,8 @@ import React, {useState, useEffect} from 'react';
 import {Button, Card, Empty, List, Tooltip, Typography} from 'antd';
 import {ClockCircleOutlined, DeleteOutlined, HistoryOutlined} from '@ant-design/icons';
 import {useAppContext} from '../../contexts/AppContext';
-import {fileHistoryManager, FileHistoryRecord, formatTime} from '../../utils/uiUtils';
+import {fileHistoryManager, FileHistoryRecord} from '../../utils/storage';
+import {formatTime} from '../../utils/uiUtils';
 import {FileIcon} from '../common/FileIcon';
 import './FileHistoryToolWindow.css';
 // 创建工具窗口实例
