@@ -22,6 +22,7 @@ export function getFileTree(dirPath: string, deep = false): FileNode {
     name,
     path: dirPath,
     isDirectory: stats.isDirectory(),
+    mtimeMs: stats.mtimeMs,
   };
 
   if (stats.isDirectory()) {
@@ -38,6 +39,7 @@ export function getFileTree(dirPath: string, deep = false): FileNode {
               name: file,
               path: filePath,
               isDirectory: fileStats.isDirectory(),
+              mtimeMs: fileStats.mtimeMs,
             };
 
             // 深度模式下递归加载
@@ -93,6 +95,7 @@ export function getDirectoryChildren(dirPath: string): FileNode[] {
             name: file,
             path: filePath,
             isDirectory: fileStats.isDirectory(),
+            mtimeMs: fileStats.mtimeMs,
           };
           return fileNode;
         } catch (error) {

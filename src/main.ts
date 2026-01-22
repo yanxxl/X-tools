@@ -115,10 +115,10 @@ function registerIpcHandlers() {
         saveConfig(config);
     });
 
-    // 处理获取文件树请求（懒加载模式）
+    // 处理获取文件树请求
     ipcMain.handle('getFileTree', async (event, dirPath: string) => {
         try {
-            return getFileTree(dirPath, false); // 使用懒加载模式
+            return getFileTree(dirPath, true); // 全部加载
         } catch (error) {
             console.error('获取文件树失败:', error);
             throw error;
