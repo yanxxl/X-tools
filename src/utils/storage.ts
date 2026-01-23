@@ -103,5 +103,19 @@ export const fileHistoryManager = {
     } catch (error) {
       console.error('添加文件访问记录失败:', error);
     }
+  },
+
+  /**
+   * 清理指定文件夹的文件访问历史记录
+   */
+  clearFolderHistory: (folderPath: string): void => {
+    try {
+      const allHistory = storage.get<FileHistoryRecord[]>(STORAGE_KEYS.FILE_ACCESS_HISTORY, []);
+      // 过滤掉指定文件夹的记录
+      const filteredHistory = allHistory.filter(record => !record.filePath.startsWith(folderPath));
+      storage.set(STORAGE_KEYS.FILE_ACCESS_HISTORY, filteredHistory);
+    } catch (error) {
+      console.error('清理文件夹历史记录失败:', error);
+    }
   }
 };

@@ -11,6 +11,7 @@ import { spawnSync } from 'child_process';
 import { Worker } from 'worker_threads';
 import { OfficeParser } from './office/OfficeParser';
 import { OfficeParserConfig } from './office/types';
+import workerpool from 'workerpool';
 
 // 添加环境变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -77,6 +78,34 @@ const windowFolderMap = new Map<Electron.BrowserWindow, string | undefined>();
 
 // 平台检测
 const isMac = process.platform === 'darwin';
+
+// 线程池实例
+let pool: workerpool.Pool | null = null;
+
+// 初始化线程池
+function initializeThreadPool() {
+    try {
+        // 根据是否打包使用不同的路径
+        let workerPath: string;
+
+        if (__dirname.includes('.vite/build')) {
+            // 开发模式下，Worker文件直接在.vite/build目录下
+            workerPath = path.join(__dirname, 'myWorker.js');
+        } else if (app.isPackaged) {
+            // 打包后，Worker文件在ASAR归档中，使用app.getAppPath()获取路径
+            workerPath = path.join(app.getAppPath(), '.vite/build', 'myWorker.js');
+        } else {
+            // 其他情况，使用源码路径
+            workerPath = path.join(app.getAppPath(), 'src', 'utils', 'myWorker.ts');
+        }
+
+        pool = workerpool.pool(workerPath);
+
+        console.log('线程池初始化成功，工作器路径:', workerPath);
+    } catch (error) {
+        console.error('线程池初始化失败:', error);
+    }
+}
 
 // 注册所有IPC处理程序
 function registerIpcHandlers() {
@@ -212,7 +241,7 @@ function registerIpcHandlers() {
         }
     });
 
-      // 读取文件内容
+    // 读取文件内容
     ipcMain.handle('readFile', async (event, filePath: string) => {
         try {
             const content = await readFileText(filePath);
@@ -434,6 +463,25 @@ function registerIpcHandlers() {
             return { success: false, error: (error as Error).message };
         }
     });
+
+    // 线程池执行函数
+    ipcMain.handle('threadPoolExecute', async (event, functionName: string, args: any[] = []) => {
+        if (!pool) {
+            initializeThreadPool();
+        }
+
+        if (!pool) {
+            return { success: false, error: '线程池未初始化' };
+        }
+
+        try {
+            const result = await pool.exec(functionName, args);
+            return { success: true, result };
+        } catch (error) {
+            console.error('线程池任务执行失败:', error);
+            return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        }
+    });
 }
 
 // 根据屏幕分辨率计算窗口尺寸
@@ -518,7 +566,7 @@ const createWindow = (folderPath?: string) => {
     newWindow.on('closed', () => {
         // 清理窗口与文件夹的映射关系
         windowFolderMap.delete(newWindow);
-        
+
         // 如果关闭的是主窗口，重新指定一个主窗口
         if ((global as any).mainWindow === newWindow) {
             const remainingWindows = BrowserWindow.getAllWindows();
@@ -658,6 +706,9 @@ registerIpcHandlers();
 app.whenReady().then(() => {
     // 显示软件版本号，Electron 版本号
     console.log(`${app.getName()} ${app.getVersion()} - Electron ${process.versions.electron}`);
+
+    // 初始化线程池
+    initializeThreadPool();
 
     createWindow();
     if (isMac) createMenu();
