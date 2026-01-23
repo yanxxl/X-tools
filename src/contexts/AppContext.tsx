@@ -80,7 +80,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                     console.log('设置当前文件夹:', currentFolder);
                     setCurrentFolder(currentFolder);
 
-                    const lastFile = fileHistoryManager.getLastAccessedFile(currentFolder);
+                    const lastFile = fileHistoryManager.getFolderHistory(currentFolder).pop();
                     if (lastFile) {
                         const fileName = lastFile.filePath.split(/[\\/]/).pop() || '';
                         if (detectFileType(fileName) == "video" || detectFileType(fileName) == "audio") autoPlay.current = false;
