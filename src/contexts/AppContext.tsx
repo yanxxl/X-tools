@@ -98,28 +98,6 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }, []);
 
     useEffect(() => {
-        // 启动一个worker来处理搜索
-        const searchWorker = new Worker(new URL('../utils/indexWorker.ts', import.meta.url), {
-            type: 'module'
-        });
-
-        // 处理worker消息
-        searchWorker.onmessage = (event) => {
-            console.log('Worker message received:', event.data);
-        };
-
-        // 处理worker错误
-        searchWorker.onerror = (error) => {
-            console.error('Worker error:', error);
-        };
-
-        // 组件卸载时清理worker
-        return () => {
-            searchWorker.terminate();
-        };
-    }, []);
-
-    useEffect(() => {
         localStorage.setItem('leftPanelVisible', JSON.stringify(leftPanelVisible));
     }, [leftPanelVisible]);
 
