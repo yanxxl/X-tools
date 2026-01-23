@@ -218,9 +218,7 @@ const AppContent: React.FC = () => {
                 }}
             >
                 <div style={{ height: '100%' }}>
-                    <GlobalSearch
-                        onClose={handleCloseSearchPanel}
-                    />
+                    <GlobalSearch/>
                 </div>
             </Drawer>
         </>
