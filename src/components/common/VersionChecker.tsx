@@ -68,7 +68,7 @@ export const VersionChecker: React.FC = () => {
                         {/* 最新版本标签 */}
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span>{updateInfo.isLatest ? '' : '发现新版本'}</span>
+                            <span>{!updateInfo.isLatest && '发现新版本'}</span>
                             {!updateInfo.isLatest && <Tag color="blue">{updateInfo.version}</Tag>}
                         </div>
 
