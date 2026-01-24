@@ -69,37 +69,67 @@ export const GlobalSearch: React.FC = () => {
 
         console.log(`待搜索文件数: ${searchFiles.length}`);
 
-        // 顺序执行搜索
-        const executeSearchSequentially = async () => {
+        // 并发执行搜索，最多 6 个并发
+        const executeSearchConcurrently = async () => {
             const totalFiles = searchFiles.length;
+            const maxConcurrent = 6;
+            let activeTasks = 0;
+            let currentIndex = 0;
 
-            for (let i = 0; i < totalFiles; i++) {
+            const processNextFile = async () => {
                 // 检查是否需要取消搜索
                 if (cancelSearchRef.current) {
                     console.log('搜索已取消');
-                    break;
+                    return;
                 }
 
-                const file = searchFiles[i];
+                // 检查是否所有文件都已处理
+                if (currentIndex >= totalFiles) {
+                    return;
+                }
+
+                // 增加活跃任务计数
+                activeTasks++;
+
+                const file = searchFiles[currentIndex];
+                currentIndex++;
 
                 console.log(`搜索文件: ${file}`);
                 try {
                     const result = await window.electronAPI.threadPoolExecute('searchFileContent', [file, searchQuery, searchMode]);
                     if (result.success && result.result && !cancelSearchRef.current) {
-                        console.log(`搜索到匹配项: ${file} , ${result.result.matches.length} 个匹配`);
+                        console.log(`搜索结果: ${file} , ${result.result.matches.length} 个匹配，耗时 ${result.result.searchTime} ms`);
                         setSearchResults(prev => [...prev, result.result]);
                     }
                 } catch (error) {
                     console.error(`搜索文件失败: ${file}`, error);
+                } finally {
+                    // 减少活跃任务计数
+                    activeTasks--;
+                    // 继续处理下一个文件
+                    if (!cancelSearchRef.current) {
+                        processNextFile();
+                    }
                 }
+            };
+
+            // 启动初始并发任务
+            for (let i = 0; i < Math.min(maxConcurrent, totalFiles); i++) {
+                processNextFile();
             }
 
-            setSearching(false);
-            cancelSearchRef.current = false;
+            // 等待所有任务完成
+            const checkCompletion = setInterval(() => {
+                if (activeTasks === 0 && currentIndex >= totalFiles) {
+                    clearInterval(checkCompletion);
+                    setSearching(false);
+                    cancelSearchRef.current = false;
+                }
+            }, 100);
         };
 
         // 开始执行搜索
-        executeSearchSequentially();
+        executeSearchConcurrently();
 
         setSearchHistory(prev => {
             const newHistory = [searchQuery, ...prev.filter(item => item !== searchQuery)];
@@ -201,7 +231,7 @@ export const GlobalSearch: React.FC = () => {
                                     size="middle"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    onSearch={handleSearch}
+                                    onSearch={(v,e,i) => handleSearch(v)}
                                     loading={searching}
                                     style={{ width: '70%' }}
                                 />
