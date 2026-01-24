@@ -231,7 +231,7 @@ export const GlobalSearch: React.FC = () => {
                                     size="middle"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    onSearch={(v,e,i) => handleSearch(v)}
+                                    onSearch={(v,e,i) => i?.source === 'input' && handleSearch()}
                                     loading={searching}
                                     style={{ width: '70%' }}
                                 />
