@@ -3,13 +3,9 @@ import {Button, Empty, Skeleton, Typography} from 'antd';
 import {FileTextOutlined} from '@ant-design/icons';
 import {Center} from './Center';
 import {isTextFile} from '../../utils/fileCommonUtil';
+import { SearchMatch } from '../../types';
 
 const {Text} = Typography;
-
-interface SearchMatch {
-    line: number;
-    content: string;
-}
 
 // 样式常量
 const HIGHLIGHT_COLOR = '#fff3cd';

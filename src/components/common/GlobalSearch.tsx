@@ -5,29 +5,17 @@ import { HistoryOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAppContext } from '../../contexts/AppContext';
 import { GlobalSearchPreview } from './GlobalSearchPreview';
 import { GlobalSearchResults } from './GlobalSearchResults';
-import { FileNode } from '../../types';
+import { FileNode, SearchMatch, SearchResult } from '../../types';
 import { extractPathsFromTree } from '../../utils/fileTreeUtils';
 import { isTextFile } from '../../utils/fileCommonUtil';
-
-const { Search } = Input;
-const { Title } = Typography;
-
-interface SearchMatch {
-    line: number;
-    content: string;
-}
-
-interface SearchResult {
-    filePath: string;
-    fileName: string;
-    matches: SearchMatch[];
-}
+import Title from 'antd/es/typography/Title';
+import Search from 'antd/es/input/Search';
 
 export const GlobalSearch: React.FC = () => {
     const { currentFolder } = useAppContext();
 
     // 状态定义
-    const [searching, setSearching] = useState(false);    
+    const [searching, setSearching] = useState(false);
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
     const [directories, setDirectories] = useState<Array<{ label: string, value: string }>>([]);
     // 搜索条件
@@ -42,9 +30,9 @@ export const GlobalSearch: React.FC = () => {
     const [previewLine, setPreviewLine] = useState<number | undefined>(undefined);
     // 文件树
     const [fileTree, setFileTree] = useState<FileNode | undefined>(undefined);
-    
+
     const cancelSearchRef = useRef(false);
-    
+
     // 事件处理函数
     const handleResultClick = (filePath: string, fileName: string, line?: number) => {
         setPreviewFilePath(filePath);
@@ -59,8 +47,8 @@ export const GlobalSearch: React.FC = () => {
         }
 
         setSearching(true);
-        cancelSearchRef.current = false;
         setSearchResults([]);
+        cancelSearchRef.current = false;
 
         // 生成待搜索文件列表
         const allFiles = extractPathsFromTree(fileTree);
@@ -93,7 +81,7 @@ export const GlobalSearch: React.FC = () => {
                 }
 
                 const file = searchFiles[i];
-                
+
                 console.log(`搜索文件: ${file}`);
                 try {
                     const result = await window.electronAPI.threadPoolExecute('searchFileContent', [file, searchQuery, searchMode]);
@@ -133,7 +121,7 @@ export const GlobalSearch: React.FC = () => {
         setSearchPath(currentFolder);
         setSearchQuery('');
         setSearchResults([]);
-        
+
         setPreviewFilePath('');
         setPreviewFileName('');
         setPreviewLine(undefined);

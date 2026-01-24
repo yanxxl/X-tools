@@ -26,3 +26,17 @@ export interface FileInfo {
     ext: string;
     childrenCount?: number;
 }
+
+// 全局搜索相关类型
+export interface SearchMatch {
+    line: number;
+    content: string;
+}
+
+export interface SearchResult {
+    filePath: string;
+    fileName: string;
+    matches: SearchMatch[];
+    lastModified?: number;
+    searchTime?: number;
+}

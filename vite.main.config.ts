@@ -9,7 +9,7 @@ export default defineConfig({
                 main: resolve(__dirname, 'src/main.ts'),
                 preload: resolve(__dirname, 'src/preload.ts'),
                 searchWorker: resolve(__dirname, 'src/utils/searchWorker.ts'),
-                myWorker: resolve(__dirname, 'src/utils/myWorker.ts'),
+                poolWorker: resolve(__dirname, 'src/utils/poolWorker.ts'),
             },
             output: {
                 entryFileNames: '[name].js',

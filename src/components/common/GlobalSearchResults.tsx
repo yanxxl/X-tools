@@ -1,20 +1,10 @@
 import React, {useMemo, useState} from 'react';
 import {Button, Collapse, Space, Statistic, Typography} from 'antd';
 import {DownOutlined, FolderOutlined, UpOutlined} from '@ant-design/icons';
+import { SearchMatch, SearchResult } from '../../types';
 
 const {Text} = Typography;
 const {Panel} = Collapse;
-
-interface SearchMatch {
-    line: number;
-    content: string;
-}
-
-interface SearchResult {
-    filePath: string;
-    fileName: string;
-    matches: SearchMatch[];
-}
 
 interface GlobalSearchResultsProps {
     searchResults: SearchResult[];
