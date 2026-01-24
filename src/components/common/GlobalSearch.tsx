@@ -182,80 +182,78 @@ export const GlobalSearch: React.FC = () => {
     }, [fileTree]);
 
 
-    return (<div style={{ height: '100%' }}>
-        <Splitter style={{ height: '100%' }}>
+    return (
+        <Splitter style={{ height: '100%',overflow: 'hidden' }}>
             {/* 左侧面板 - 搜索 */}
-            <Splitter.Panel defaultSize="40%" min="30%" max="60%">
-                <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ padding: 16, height: '100%', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                <Title level={4} style={{ margin: 0 }}>
-                                    搜索
-                                </Title>
-                                <Radio.Group
-                                    value={searchMode}
-                                    onChange={(e) => setSearchMode(e.target.value)}
-                                    size="small"
-                                >
-                                    <Radio.Button value="content">全文搜索</Radio.Button>
-                                    <Radio.Button value="filename">文件名搜索</Radio.Button>
-                                </Radio.Group>
-                            </div>
-                            {searching && (<Button
-                                type="primary"
-                                danger
+            <Splitter.Panel defaultSize="40%" min="30%" max="60%" style={{ overflow: 'hidden' }}>
+                <div style={{ padding: 16, height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                            <Title level={4} style={{ margin: 0 }}>
+                                搜索
+                            </Title>
+                            <Radio.Group
+                                value={searchMode}
+                                onChange={(e) => setSearchMode(e.target.value)}
                                 size="small"
-                                onClick={handleCancelSearch}
                             >
-                                取消搜索
-                            </Button>)}
+                                <Radio.Button value="content">全文搜索</Radio.Button>
+                                <Radio.Button value="filename">文件名搜索</Radio.Button>
+                            </Radio.Group>
                         </div>
+                        {searching && (<Button
+                            type="primary"
+                            danger
+                            size="small"
+                            onClick={handleCancelSearch}
+                        >
+                            取消
+                        </Button>)}
+                    </div>
 
-                        {/* 搜索框和路径选择器组合（保持在一行） */}
-                        <div style={{ marginBottom: 16 }}>
-                            <Space.Compact style={{ width: '100%' }}>
-                                <Select
-                                    value={searchPath}
-                                    onChange={setSearchPath}
-                                    style={{ width: '30%' }}
-                                    options={directories}
-                                    showSearch
-                                />
-                                <Search
-                                    placeholder={searchMode === 'content' ? '输入搜索关键词' : '输入文件名关键词'}
-                                    allowClear
-                                    enterButton={<SearchOutlined />}
-                                    size="middle"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onSearch={(v,e,i) => i?.source === 'input' && handleSearch()}
-                                    loading={searching}
-                                    style={{ width: '70%' }}
-                                />
-                            </Space.Compact>
-                        </div>
+                    {/* 搜索框和路径选择器组合（保持在一行） */}
+                    <div style={{ marginBottom: 16 }}>
+                        <Space.Compact style={{ width: '100%' }}>
+                            <Select
+                                value={searchPath}
+                                onChange={setSearchPath}
+                                style={{ width: '30%' }}
+                                options={directories}
+                                showSearch
+                            />
+                            <Search
+                                placeholder={searchMode === 'content' ? '输入搜索关键词' : '输入文件名关键词'}
+                                allowClear
+                                enterButton={<SearchOutlined />}
+                                size="middle"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onSearch={(v, e, i) => i?.source === 'input' && handleSearch()}
+                                loading={searching}
+                                style={{ width: '70%' }}
+                            />
+                        </Space.Compact>
+                    </div>
 
-                        {/* 搜索历史 */}
-                        {searchHistory.length > 0 && !searching && searchResults.length === 0 && (
-                            <Card size="small" title="搜索历史" style={{ marginBottom: 16 }}>
-                                {searchHistory.map((item, index) => (
-                                    <Button
-                                        key={index}
-                                        type="link"
-                                        onClick={() => setSearchQuery(item)}
-                                        style={{ padding: '4px 8px', height: 'auto' }}
-                                    >
-                                        <HistoryOutlined style={{ marginRight: 8 }} />
-                                        {item}
-                                    </Button>
-                                ))}
-                            </Card>
-                        )}
+                    {/* 搜索历史 */}
+                    {searchHistory.length > 0 && !searching && searchResults.length === 0 && (
+                        <Card size="small" title="搜索历史" style={{ marginBottom: 16 }}>
+                            {searchHistory.map((item, index) => (
+                                <Button
+                                    key={index}
+                                    type="link"
+                                    onClick={() => setSearchQuery(item)}
+                                    style={{ padding: '4px 8px', height: 'auto' }}
+                                >
+                                    <HistoryOutlined style={{ marginRight: 8 }} />
+                                    {item}
+                                </Button>
+                            ))}
+                        </Card>
+                    )}
 
-                        {/* 搜索结果展示 */}
+                    {/* 搜索结果展示 */}
+                    <div style={{ flex: 1 }}>
                         <GlobalSearchResults
                             searchResults={searchResults}
                             searchQuery={searchQuery}
@@ -277,5 +275,5 @@ export const GlobalSearch: React.FC = () => {
                 />
             </Splitter.Panel>
         </Splitter>
-    </div>);
+    );
 };
