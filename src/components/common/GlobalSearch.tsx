@@ -253,7 +253,7 @@ export const GlobalSearch: React.FC = () => {
                     )}
 
                     {/* 搜索结果展示 */}
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
                         <GlobalSearchResults
                             searchResults={searchResults}
                             searchQuery={searchQuery}
