@@ -1,15 +1,15 @@
 import { FileNode } from '../types';
 
 /**
- * 从文件树中提取所有文件并构建路径到修改时间的映射
+ * 从文件树中提取所有文件和文件夹的路径列表
  * @param fileTree 文件树根节点
- * @returns 映射对象，键为文件路径，值为最后修改时间（毫秒）
+ * @returns 路径列表，包含所有文件和文件夹的路径
  */
-export function extractFilesFromTree(fileTree: FileNode | undefined): Map<string, number> {
-    const fileMap = new Map<string, number>();
+export function extractPathsFromTree(fileTree: FileNode | undefined): string[] {
+    const paths: string[] = [];
     
     if (!fileTree) {
-        return fileMap;
+        return paths;
     }
     
     /**
@@ -17,14 +17,11 @@ export function extractFilesFromTree(fileTree: FileNode | undefined): Map<string
      * @param node 当前节点
      */
     function traverse(node: FileNode) {
-        // 如果是文件，添加到映射中
-        if (!node.isDirectory) {
-            fileMap.set(node.path, node.mtimeMs);
-            return;
-        }
+        // 添加当前节点的路径
+        paths.push(node.path);
         
         // 如果是目录，递归遍历所有子节点
-        if (node.children && node.children.length > 0) {
+        if (node.isDirectory && node.children && node.children.length > 0) {
             for (const child of node.children) {
                 traverse(child);
             }
@@ -34,28 +31,5 @@ export function extractFilesFromTree(fileTree: FileNode | undefined): Map<string
     // 从根节点开始遍历
     traverse(fileTree);
     
-    return fileMap;
-}
-
-/**
- * 从文件树中提取所有文件路径
- * @param fileTree 文件树根节点
- * @returns 文件路径数组
- */
-export function extractFilePathsFromTree(fileTree: FileNode | undefined): string[] {
-    const fileMap = extractFilesFromTree(fileTree);
-    return Array.from(fileMap.keys());
-}
-
-/**
- * 从文件树中提取所有文件信息
- * @param fileTree 文件树根节点
- * @returns 文件信息数组
- */
-export function extractFileInfosFromTree(fileTree: FileNode | undefined): Array<{ path: string; mtimeMs: number }> {
-    const fileMap = extractFilesFromTree(fileTree);
-    return Array.from(fileMap.entries()).map(([path, mtimeMs]) => ({
-        path,
-        mtimeMs
-    }));
+    return paths;
 }

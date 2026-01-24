@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button, Card, Input, message, Radio, Select, Space, Splitter, Typography } from 'antd';
 import { storage } from '../../utils/storage';
 import { HistoryOutlined, SearchOutlined } from '@ant-design/icons';
@@ -6,6 +6,8 @@ import { useAppContext } from '../../contexts/AppContext';
 import { GlobalSearchPreview } from './GlobalSearchPreview';
 import { GlobalSearchResults } from './GlobalSearchResults';
 import { FileNode } from '../../types';
+import { extractPathsFromTree } from '../../utils/fileTreeUtils';
+import { isTextFile } from '../../utils/fileCommonUtil';
 
 const { Search } = Input;
 const { Title } = Typography;
@@ -22,22 +24,27 @@ interface SearchResult {
 }
 
 export const GlobalSearch: React.FC = () => {
-    const { currentFolder, setCurrentFile } = useAppContext();
-    
+    const { currentFolder } = useAppContext();
+
     // 状态定义
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [isSearching, setIsSearching] = useState(false);
+    const [searching, setSearching] = useState(false);    
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
-    const [searchPath, setSearchPath] = useState<string>('');
     const [directories, setDirectories] = useState<Array<{ label: string, value: string }>>([]);
+    // 搜索条件
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchPath, setSearchPath] = useState<string>('');
     const [searchMode, setSearchMode] = useState<'content' | 'filename'>('content');
+    // 搜索结果
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    // 预览状态
     const [previewFilePath, setPreviewFilePath] = useState<string>('');
     const [previewFileName, setPreviewFileName] = useState<string>('');
     const [previewLine, setPreviewLine] = useState<number | undefined>(undefined);
+    // 文件树
     const [fileTree, setFileTree] = useState<FileNode | undefined>(undefined);
-
+    
+    const cancelSearchRef = useRef(false);
+    
     // 事件处理函数
     const handleResultClick = (filePath: string, fileName: string, line?: number) => {
         setPreviewFilePath(filePath);
@@ -45,43 +52,88 @@ export const GlobalSearch: React.FC = () => {
         setPreviewLine(line);
     };
 
-    const handleOpenFile = (filePath: string) => {
-        setCurrentFile(filePath);
-    };
-
-    const handleSearch = (value: string) => {
-        if (!value.trim()) {
+    const handleSearch = () => {
+        if (!searchQuery.trim()) {
             message.warning('请输入搜索关键词');
             return;
         }
 
-        setSearchQuery(value);
-        setLoading(true);
-        setIsSearching(true);
+        setSearching(true);
+        cancelSearchRef.current = false;
+        setSearchResults([]);
+
+        // 生成待搜索文件列表
+        const allFiles = extractPathsFromTree(fileTree);
+
+        // 过滤出待搜索文件
+        const searchFiles = allFiles.filter(file => {
+            if (!isTextFile(file)) {
+                return false;
+            }
+
+            // 如果选择了路径，只搜索该路径下的文件
+            if (searchPath !== currentFolder) {
+                return file.startsWith(searchPath);
+            }
+            // 否则搜索所有文件
+            return true;
+        });
+
+        console.log(`待搜索文件数: ${searchFiles.length}`);
+
+        // 顺序执行搜索
+        const executeSearchSequentially = async () => {
+            const totalFiles = searchFiles.length;
+
+            for (let i = 0; i < totalFiles; i++) {
+                // 检查是否需要取消搜索
+                if (cancelSearchRef.current) {
+                    console.log('搜索已取消');
+                    break;
+                }
+
+                const file = searchFiles[i];
+                
+                console.log(`搜索文件: ${file}`);
+                try {
+                    const result = await window.electronAPI.threadPoolExecute('searchFileContent', [file, searchQuery, searchMode]);
+                    if (result.success && result.result && !cancelSearchRef.current) {
+                        console.log(`搜索到匹配项: ${file} , ${result.result.matches.length} 个匹配`);
+                        setSearchResults(prev => [...prev, result.result]);
+                    }
+                } catch (error) {
+                    console.error(`搜索文件失败: ${file}`, error);
+                }
+            }
+
+            setSearching(false);
+            cancelSearchRef.current = false;
+        };
+
+        // 开始执行搜索
+        executeSearchSequentially();
 
         setSearchHistory(prev => {
-            const newHistory = [value, ...prev.filter(item => item !== value)];
+            const newHistory = [searchQuery, ...prev.filter(item => item !== searchQuery)];
+            storage.set('search-history', newHistory);
             return newHistory.slice(0, 10);
         });
     };
 
     const handleCancelSearch = () => {
-        setIsSearching(false);
-        setLoading(false);
-        setSearchResults([]);
-    };
-
-    const handleHistoryItemClick = (item: string) => {
-        setSearchQuery(item);
-        handleSearch(item);
+        cancelSearchRef.current = true;
+        setSearching(false);
     };
 
     // Effect hooks - 初始化
     useEffect(() => {
         setSearchHistory(storage.get('search-history', []));
         setSearchMode(storage.get('search-mode', 'content'));
-        setSearchResults([]);
+
+        setSearchPath(currentFolder);
         setSearchQuery('');
+        setSearchResults([]);
+        
         setPreviewFilePath('');
         setPreviewFileName('');
         setPreviewLine(undefined);
@@ -134,7 +186,7 @@ export const GlobalSearch: React.FC = () => {
                                     <Radio.Button value="filename">文件名搜索</Radio.Button>
                                 </Radio.Group>
                             </div>
-                            {isSearching && (<Button
+                            {searching && (<Button
                                 type="primary"
                                 danger
                                 size="small"
@@ -153,7 +205,6 @@ export const GlobalSearch: React.FC = () => {
                                     style={{ width: '30%' }}
                                     options={directories}
                                     showSearch
-                                    optionFilterProp="label"
                                 />
                                 <Search
                                     placeholder={searchMode === 'content' ? '输入搜索关键词' : '输入文件名关键词'}
@@ -163,20 +214,20 @@ export const GlobalSearch: React.FC = () => {
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onSearch={handleSearch}
-                                    loading={loading}
+                                    loading={searching}
                                     style={{ width: '70%' }}
                                 />
                             </Space.Compact>
                         </div>
 
                         {/* 搜索历史 */}
-                        {searchHistory.length > 0 && !isSearching && searchResults.length === 0 && (
+                        {searchHistory.length > 0 && !searching && searchResults.length === 0 && (
                             <Card size="small" title="搜索历史" style={{ marginBottom: 16 }}>
                                 {searchHistory.map((item, index) => (
                                     <Button
                                         key={index}
                                         type="link"
-                                        onClick={() => handleHistoryItemClick(item)}
+                                        onClick={() => setSearchQuery(item)}
                                         style={{ padding: '4px 8px', height: 'auto' }}
                                     >
                                         <HistoryOutlined style={{ marginRight: 8 }} />
@@ -205,7 +256,6 @@ export const GlobalSearch: React.FC = () => {
                     fileName={previewFileName}
                     line={previewLine}
                     searchQuery={searchQuery}
-                    onOpenFile={handleOpenFile}
                 />
             </Splitter.Panel>
         </Splitter>
