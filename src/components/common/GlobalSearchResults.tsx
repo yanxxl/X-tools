@@ -1,10 +1,9 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Collapse, Space, Statistic, Typography, Switch, Select } from 'antd';
 import { DownOutlined, FolderOutlined, UpOutlined } from '@ant-design/icons';
+import { SearchResult } from '../../types';
 
 const { Option } = Select;
-import { SearchMatch, SearchResult } from '../../types';
-
 const { Text } = Typography;
 
 interface GlobalSearchResultsProps {
@@ -46,6 +45,20 @@ const highlightText = (text: string, query: string) => {
     return parts.map((part, idx) => part.toLowerCase() === query.toLowerCase() ? <Text strong key={idx} style={{ backgroundColor: '#fff3cd' }}>{part}</Text> : part);
 };
 
+// 获取默认排序顺序
+const getDefaultSortOrder = (sortBy: string): 'ascend' | 'descend' => {
+    switch (sortBy) {
+        case 'name':
+        case 'default':
+            return 'ascend';
+        case 'matches':
+        case 'mtime':
+            return 'descend';
+        default:
+            return 'ascend';
+    }
+};
+
 export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
     searchResults,
     searchQuery,
@@ -63,24 +76,16 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
     const [totalMatches, setTotalMatches] = useState<number>(0);
     const [expanded, setExpanded] = useState<boolean>(false);
 
-    // 当搜索结果变化时，直接设置为默认排序
-    useEffect(() => {
-        setSortedResults([...searchResults]);
-        const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
-        setTotalMatches(matches);
-    }, [searchResults]);
-
-    // 当排序条件变化时，重新排序
-    useEffect(() => {
-        // 如果是默认排序，直接使用原始搜索结果的顺序
+    // 排序函数
+    const sortResults = (): SearchResult[] => {
+        // 如果是默认排序，根据排序顺序返回原始顺序或反转顺序
         if (sortBy === 'default') {
-            setSortedResults([...searchResults]);
-            return;
+            return sortOrder === 'ascend' ? [...searchResults] : [...searchResults].reverse();
         }
 
-        const results = [...searchResults];
+        const sorted = [...searchResults];
 
-        results.sort((a, b) => {
+        sorted.sort((a, b) => {
             let comparison = 0;
 
             switch (sortBy) {
@@ -101,8 +106,33 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
             return sortOrder === 'ascend' ? comparison : -comparison;
         });
 
+        return sorted;
+    };
+
+    // 当搜索结果变化时，直接设置为默认排序
+    useEffect(() => {
+        setSortedResults([...searchResults]);
+        const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
+        setTotalMatches(matches);
+    }, [searchResults]);
+
+    // 当设置排序条件时，自动设置默认排序顺序
+    useEffect(() => {
+        const defaultSortOrder = getDefaultSortOrder(sortBy);
+        if (defaultSortOrder !== sortOrder) {
+            setSortOrder(defaultSortOrder);
+        } else {
+            const results = sortResults();
+            setSortedResults(results);
+        }
+    }, [sortBy]);
+
+
+    // 当排序条件变化时，重新排序
+    useEffect(() => {
+        const results = sortResults();
         setSortedResults(results);
-    }, [sortBy, sortOrder]);
+    }, [ sortOrder]);
 
     // 按文件夹分组并排序的结果
     useEffect(() => {
@@ -122,7 +152,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
         });
 
         setSortedGroupedResults(folderGroups);
-    }, [groupByFolder]);
+    }, [groupByFolder, sortedResults]);
 
 
     if (searchResults.length === 0) {
@@ -286,8 +316,8 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             }))}
                         />
                     ) : (
-                        <Collapse 
-                            size="small" 
+                        <Collapse
+                            size="small"
                             style={{ padding: '0 8px' }}
                             activeKey={expanded ? sortedResults.map((_, idx) => idx.toString()) : []}
                             items={
