@@ -75,6 +75,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
     const [sortedGroupedResults, setSortedGroupedResults] = useState<{ [folder: string]: SearchResult[] }>({});
     const [totalMatches, setTotalMatches] = useState<number>(0);
     const [expanded, setExpanded] = useState<boolean>(false);
+    const [activeKeys, setActiveKeys] = useState<string[]>([]);
 
     // 防抖引用
     const debounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -179,6 +180,15 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
         setSortedGroupedResults(folderGroups);
     }, [groupByFolder, sortedResults]);
 
+    const folderKeys = Object.keys(sortedGroupedResults);
+
+    useEffect(() => {
+        if (!expanded) {
+            setActiveKeys([]);
+        } else {
+            setActiveKeys(sortedResults.map((_, idx) => idx.toString()));
+        }
+    }, [expanded]);
 
     if (searchResults.length === 0) {
         return (
@@ -187,8 +197,6 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
             </div>
         );
     }
-
-    const folderKeys = Object.keys(sortedGroupedResults);
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -260,7 +268,8 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                     {groupByFolder ? (
                         <Collapse
                             size="small"
-                            activeKey={expanded ? folderKeys.map((_, idx) => idx.toString()) : []}
+                            activeKey={activeKeys}
+                            onChange={setActiveKeys}
                             items={folderKeys.map((folder, folderIdx) => ({
                                 key: folderIdx.toString(),
                                 label: (
@@ -289,7 +298,6 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                                         {sortedGroupedResults[folder].map((result, resultIdx) => (
                                             <div key={resultIdx}>
                                                 <div
-                                                    onClick={() => onResultClick(result.filePath, result.fileName, 1)}
                                                     style={{
                                                         cursor: 'pointer',
                                                         padding: '8px 0',
@@ -344,13 +352,13 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                         <Collapse
                             size="small"
                             style={{ padding: '0 8px' }}
-                            activeKey={expanded ? sortedResults.map((_, idx) => idx.toString()) : []}
+                            activeKey={activeKeys}
+                            onChange={setActiveKeys}
                             items={
                                 sortedResults.map((result, resultIdx) => ({
                                     key: resultIdx.toString(),
                                     label: (
                                         <div
-                                            onClick={() => onResultClick(result.filePath, result.fileName, 1)}
                                             style={{
                                                 cursor: 'pointer',
                                                 padding: '4px 0',
