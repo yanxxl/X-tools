@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Collapse, Space, Statistic, Typography, Switch, Select } from 'antd';
 import { DownOutlined, FolderOutlined, UpOutlined } from '@ant-design/icons';
 import { SearchResult } from '../../types';
@@ -76,6 +76,9 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
     const [totalMatches, setTotalMatches] = useState<number>(0);
     const [expanded, setExpanded] = useState<boolean>(false);
 
+    // 防抖引用
+    const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
     // 排序函数
     const sortResults = (): SearchResult[] => {
         // 如果是默认排序，根据排序顺序返回原始顺序或反转顺序
@@ -109,11 +112,27 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
         return sorted;
     };
 
-    // 当搜索结果变化时，直接设置为默认排序
+    // 当搜索结果变化时，使用防抖机制更新结果，减少渲染次数
     useEffect(() => {
-        setSortedResults([...searchResults]);
+        // 清除之前的防抖定时器
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
         const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
         setTotalMatches(matches);
+
+        // 设置新的防抖定时器，1000ms 后更新结果，这个时间是比较安全的，条目多的时候，仍是有一下子显示出来要等几秒的情况
+        debounceRef.current = setTimeout(() => {
+            setSortedResults([...searchResults]);
+        }, 1000);
+
+        // 清理函数
+        return () => {
+            if (debounceRef.current) {
+                clearTimeout(debounceRef.current);
+            }
+        };
     }, [searchResults]);
 
     // 当设置排序条件时，自动设置默认排序顺序
@@ -132,7 +151,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
     useEffect(() => {
         const results = sortResults();
         setSortedResults(results);
-    }, [ sortOrder]);
+    }, [sortOrder]);
 
     // 按文件夹分组并排序的结果
     useEffect(() => {

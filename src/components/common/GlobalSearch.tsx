@@ -24,6 +24,9 @@ export const GlobalSearch: React.FC = () => {
     const [searchMode, setSearchMode] = useState<'content' | 'filename'>('content');
     // 搜索结果
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    // 搜索进度
+    const [totalFiles, setTotalFiles] = useState<number>(0);
+    const [completedFiles, setCompletedFiles] = useState<number>(0);
     // 预览状态
     const [previewFilePath, setPreviewFilePath] = useState<string>('');
     const [previewFileName, setPreviewFileName] = useState<string>('');
@@ -67,7 +70,12 @@ export const GlobalSearch: React.FC = () => {
             return true;
         });
 
-        console.log(`待搜索文件数: ${searchFiles.length}`);
+        // 初始化搜索进度
+        const total = searchFiles.length;
+        setTotalFiles(total);
+        setCompletedFiles(0);
+
+        console.log(`待搜索文件数: ${total}`);
 
         // 并发执行搜索，最多 6 个并发
         const executeSearchConcurrently = async () => {
@@ -105,6 +113,8 @@ export const GlobalSearch: React.FC = () => {
                 } catch (error) {
                     console.error(`搜索文件失败: ${file}`, error);
                 } finally {
+                    // 更新已完成文件数
+                    setCompletedFiles(prev => prev + 1);
                     // 减少活跃任务计数
                     activeTasks--;
                     // 继续处理下一个文件
@@ -125,6 +135,9 @@ export const GlobalSearch: React.FC = () => {
                     clearInterval(checkCompletion);
                     setSearching(false);
                     cancelSearchRef.current = false;
+                    // 重置进度状态
+                    setTotalFiles(0);
+                    setCompletedFiles(0);
                 }
             }, 100);
         };
@@ -142,6 +155,9 @@ export const GlobalSearch: React.FC = () => {
     const handleCancelSearch = () => {
         cancelSearchRef.current = true;
         setSearching(false);
+        // 重置进度状态
+        setTotalFiles(0);
+        setCompletedFiles(0);
     };
 
     // Effect hooks - 初始化
@@ -182,9 +198,24 @@ export const GlobalSearch: React.FC = () => {
         }
     }, [fileTree]);
 
+    useEffect(() => {
+        if (searchQuery.trim().length == 0) {
+            setSearchHistory(storage.get('search-history', []));
+            setSearchMode(storage.get('search-mode', 'content'));
+
+            setSearchPath(currentFolder);
+            setSearchQuery('');
+            setSearchResults([]);
+
+            setPreviewFilePath('');
+            setPreviewFileName('');
+            setPreviewLine(undefined);
+        }
+    }, [searchQuery]);
+
 
     return (
-        <Splitter style={{ height: '100%',overflow: 'hidden' }}>
+        <Splitter style={{ height: '100%', overflow: 'hidden' }}>
             {/* 左侧面板 - 搜索 */}
             <Splitter.Panel defaultSize="40%" min="30%" max="60%" style={{ overflow: 'hidden' }}>
                 <div style={{ padding: 16, height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -202,14 +233,21 @@ export const GlobalSearch: React.FC = () => {
                                 <Radio.Button value="filename">文件名搜索</Radio.Button>
                             </Radio.Group>
                         </div>
-                        {searching && (<Button
-                            type="primary"
-                            danger
-                            size="small"
-                            onClick={handleCancelSearch}
-                        >
-                            取消
-                        </Button>)}
+                        {searching && (
+                            <Space>
+                                <Typography.Text style={{ fontSize: '14px' }}>
+                                    已搜索 {completedFiles}/{totalFiles} 文件
+                                </Typography.Text>
+                                <Button
+                                    type="primary"
+                                    danger
+                                    size="small"
+                                    onClick={handleCancelSearch}
+                                >
+                                    取消
+                                </Button>
+                            </Space>
+                        )}
                     </div>
 
                     {/* 搜索框和路径选择器组合（保持在一行） */}
@@ -261,7 +299,7 @@ export const GlobalSearch: React.FC = () => {
                             searchMode={searchMode}
                             searchPath={searchPath}
                             searching={searching}
-                            onResultClick={handleResultClick}   
+                            onResultClick={handleResultClick}
                         />
                     </div>
                 </div>
