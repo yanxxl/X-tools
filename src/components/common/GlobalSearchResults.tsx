@@ -61,6 +61,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
     const [sortedResults, setSortedResults] = useState<SearchResult[]>([]);
     const [sortedGroupedResults, setSortedGroupedResults] = useState<{ [folder: string]: SearchResult[] }>({});
     const [totalMatches, setTotalMatches] = useState<number>(0);
+    const [expanded, setExpanded] = useState<boolean>(false);
 
     // 当搜索结果变化时，直接设置为默认排序
     useEffect(() => {
@@ -154,8 +155,17 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                         />
                     )}
                 </Space>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                    <Space size="small">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Text type="secondary">展开:</Text>
+                        <Switch
+                            checked={expanded}
+                            onChange={setExpanded}
+                            size="small"
+                            disabled={searching}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Text type="secondary">分组:</Text>
                         <Switch
                             checked={groupByFolder}
@@ -163,8 +173,8 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             size="small"
                             disabled={searching}
                         />
-                    </Space>
-                    <Space size="small">
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Text type="secondary">排序:</Text>
                         <Select
                             value={sortBy}
@@ -185,8 +195,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             icon={sortOrder === 'ascend' ? <UpOutlined /> : <DownOutlined />}
                             disabled={searching}
                         />
-                    </Space>
-
+                    </div>
                 </div>
             </div>
 
@@ -196,6 +205,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                     {groupByFolder ? (
                         <Collapse
                             size="small"
+                            activeKey={expanded ? folderKeys.map((_, idx) => idx.toString()) : []}
                             items={folderKeys.map((folder, folderIdx) => ({
                                 key: folderIdx.toString(),
                                 label: (
@@ -276,61 +286,66 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             }))}
                         />
                     ) : (
-                        <Collapse size="small" style={{ padding: '0 8px' }} items={
-                            sortedResults.map((result, resultIdx) => ({
-                                key: resultIdx.toString(),
-                                label: (
-                                    <div
-                                        onClick={() => onResultClick(result.filePath, result.fileName, 1)}
-                                        style={{
-                                            cursor: 'pointer',
-                                            padding: '4px 0',
-                                            fontSize: 14,
-                                            color: '#1890ff',
-                                            fontWeight: 'bold'
-                                        }}
-                                    >
-                                        {highlightText(result.fileName, searchQuery)}
-                                        {searchMode === 'content' && result.matches.length > 0 && (
-                                            <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
-                                                ({result.matches.length} 条匹配)
-                                            </Text>
-                                        )}
-                                    </div>
-                                ),
-                                children: (
-                                    searchMode === 'content' && result.matches.length > 0 && (
-                                        <div style={{ paddingLeft: 16, marginTop: 8 }}>
-                                            {result.matches.map((match, matchIdx) => (
-                                                <div key={matchIdx} style={{ marginBottom: 8 }}>
-                                                    <div
-                                                        onClick={() => onResultClick(result.filePath, result.fileName, match.line)}
-                                                        style={{
-                                                            cursor: 'pointer',
-                                                            padding: '4px 8px',
-                                                            background: '#f5f5f5',
-                                                            borderRadius: '4px',
-                                                            fontSize: 14,
-                                                            wordBreak: 'break-word',
-                                                            transition: 'background 0.2s'
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = '#e6f7ff'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
-                                                    >
-                                                        {match.line > 0 ? (
-                                                            <Text type="secondary" style={{ fontSize: 12, marginRight: 8 }}>
-                                                                第 {match.line} 行:
-                                                            </Text>
-                                                        ) : null}
-                                                        {highlightText(match.content, searchQuery)}
-                                                    </div>
-                                                </div>
-                                            ))}
+                        <Collapse 
+                            size="small" 
+                            style={{ padding: '0 8px' }}
+                            activeKey={expanded ? sortedResults.map((_, idx) => idx.toString()) : []}
+                            items={
+                                sortedResults.map((result, resultIdx) => ({
+                                    key: resultIdx.toString(),
+                                    label: (
+                                        <div
+                                            onClick={() => onResultClick(result.filePath, result.fileName, 1)}
+                                            style={{
+                                                cursor: 'pointer',
+                                                padding: '4px 0',
+                                                fontSize: 14,
+                                                color: '#1890ff',
+                                                fontWeight: 'bold'
+                                            }}
+                                        >
+                                            {highlightText(result.fileName, searchQuery)}
+                                            {searchMode === 'content' && result.matches.length > 0 && (
+                                                <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+                                                    ({result.matches.length} 条匹配)
+                                                </Text>
+                                            )}
                                         </div>
+                                    ),
+                                    children: (
+                                        searchMode === 'content' && result.matches.length > 0 && (
+                                            <div style={{ paddingLeft: 16, marginTop: 8 }}>
+                                                {result.matches.map((match, matchIdx) => (
+                                                    <div key={matchIdx} style={{ marginBottom: 8 }}>
+                                                        <div
+                                                            onClick={() => onResultClick(result.filePath, result.fileName, match.line)}
+                                                            style={{
+                                                                cursor: 'pointer',
+                                                                padding: '4px 8px',
+                                                                background: '#f5f5f5',
+                                                                borderRadius: '4px',
+                                                                fontSize: 14,
+                                                                wordBreak: 'break-word',
+                                                                transition: 'background 0.2s'
+                                                            }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.background = '#e6f7ff'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                                                        >
+                                                            {match.line > 0 ? (
+                                                                <Text type="secondary" style={{ fontSize: 12, marginRight: 8 }}>
+                                                                    第 {match.line} 行:
+                                                                </Text>
+                                                            ) : null}
+                                                            {highlightText(match.content, searchQuery)}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )
                                     )
-                                )
-                            }))
-                        } />
+                                }))
+                            }
+                        />
                     )}
                 </div>
             </div>
