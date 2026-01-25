@@ -80,6 +80,7 @@
     "remark-math": "^6.0.0",
     "remark-rehype": "^11.1.2",
     "sharp": "^0.34.5",
+    "sqlite3": "^5.1.7",
     "tesseract.js": "^6.0.1",
     "unist-util-visit": "^5.0.0",
     "workerpool": "^10.0.1",
