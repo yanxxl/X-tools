@@ -217,17 +217,16 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             suffix="条匹配"
                         />
                     )}
+                    <Button
+                        type="text"
+                        size="small"
+                        onClick={() => setExpanded(!expanded)}
+                        disabled={searching}
+                    >
+                        <Text type="secondary">{expanded ? '折叠' : '展开'}</Text>
+                    </Button>
                 </Space>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Text type="secondary">展开:</Text>
-                        <Switch
-                            checked={expanded}
-                            onChange={setExpanded}
-                            size="small"
-                            disabled={searching}
-                        />
-                    </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>                    
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Text type="secondary">分组:</Text>
                         <Switch
