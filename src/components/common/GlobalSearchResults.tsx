@@ -122,7 +122,13 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
         const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
         setTotalMatches(matches);
 
-        // 设置新的防抖定时器，1000ms 后更新结果，这个时间是比较安全的，条目多的时候，仍是有一下子显示出来要等几秒的情况
+        // 少的时候，直接展示
+        if (searchResults.length <= 20) {
+            setSortedResults([...searchResults]);
+            return;
+        }
+
+        // 多的时候，设置新的防抖定时器，1000ms 后更新结果
         debounceRef.current = setTimeout(() => {
             setSortedResults([...searchResults]);
         }, 1000);
