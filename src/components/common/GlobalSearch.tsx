@@ -260,7 +260,8 @@ export const GlobalSearch: React.FC = () => {
                             searchQuery={searchQuery}
                             searchMode={searchMode}
                             searchPath={searchPath}
-                            onResultClick={handleResultClick}
+                            searching={searching}
+                            onResultClick={handleResultClick}   
                         />
                     </div>
                 </div>

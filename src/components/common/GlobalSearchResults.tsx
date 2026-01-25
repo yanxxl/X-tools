@@ -12,6 +12,7 @@ interface GlobalSearchResultsProps {
     searchQuery: string;
     searchMode: 'content' | 'filename';
     searchPath: string;
+    searching: boolean;
     onResultClick: (filePath: string, fileName: string, line?: number) => void;
 }
 
@@ -50,7 +51,8 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
     searchQuery,
     searchMode,
     searchPath,
-    onResultClick
+    searching,
+    onResultClick,
 }) => {
     // 状态
     const [groupByFolder, setGroupByFolder] = useState<boolean>(false);
@@ -159,6 +161,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             checked={groupByFolder}
                             onChange={setGroupByFolder}
                             size="small"
+                            disabled={searching}
                         />
                     </Space>
                     <Space size="small">
@@ -168,6 +171,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             onChange={setSortBy}
                             size="small"
                             style={{ width: 120 }}
+                            disabled={searching}
                         >
                             <Option value="default">默认</Option>
                             <Option value="name">文件名称</Option>
@@ -179,6 +183,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             size="small"
                             onClick={() => setSortOrder(sortOrder === 'ascend' ? 'descend' : 'ascend')}
                             icon={sortOrder === 'ascend' ? <UpOutlined /> : <DownOutlined />}
+                            disabled={searching}
                         />
                     </Space>
 
