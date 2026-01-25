@@ -80,6 +80,7 @@ export const GlobalSearch: React.FC = () => {
                 // 检查是否需要取消搜索
                 if (cancelSearchRef.current) {
                     console.log('搜索已取消');
+                    setSearching(false);
                     return;
                 }
 
