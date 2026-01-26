@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {OfficeParser} from "../src/office/OfficeParser";
-import {astToText, astToJson} from "../src/utils/office";
+import {astToText, astToJson, defaultToText} from "../src/utils/office";
 
 async function testOfficeParser() {
     console.log('测试 officeparser 库的能力...\n');
@@ -19,7 +19,7 @@ async function testOfficeParser() {
         const ext = path.extname(file).toLowerCase();
 
         // 只测试Excel文档格式
-        if (['.docx'].includes(ext)) {
+        if (['.docx', '.xlsx', '.pptx', '.pdf'].includes(ext)) {
             console.log(`正在解析文件: ${file}`);
             console.log('='.repeat(40));
 
@@ -38,19 +38,26 @@ async function testOfficeParser() {
                 
                 resultContent += `纯文本内容--------------------:\n${textContent}\n\n`;
 
-                // 获取JSON内容
-                console.log(`JSON内容:`);
-                const jsonContent = JSON.stringify(astToJson(contentAST), null, 2);
-                console.log(jsonContent);
+                // 获取默认文本内容
+                console.log(`默认文本内容:`);
+                const defaultTextContent = defaultToText(contentAST);
+                console.log(defaultTextContent);
                 
-                resultContent += `JSON内容----------------------:\n${jsonContent}\n\n`;
+                resultContent += `默认文本内容----------------------:\n${defaultTextContent}\n\n`;
 
-                // 获取AST内容
-                console.log(`AST内容:`);
-                const astContent = JSON.stringify(contentAST, null, 2);
-                console.log(astContent);
+                // // 获取JSON内容
+                // console.log(`JSON内容:`);
+                // const jsonContent = JSON.stringify(astToJson(contentAST), null, 2);
+                // console.log(jsonContent);
                 
-                resultContent += `AST内容----------------------:\n${astContent}\n\n`;
+                // resultContent += `JSON内容----------------------:\n${jsonContent}\n\n`;
+
+                // // 获取AST内容
+                // console.log(`AST内容:`);
+                // const astContent = JSON.stringify(contentAST, null, 2);
+                // console.log(astContent);
+                
+                // resultContent += `AST内容----------------------:\n${astContent}\n\n`;
 
                 resultContent += '='.repeat(40) + '\n\n';
             } catch (error) {

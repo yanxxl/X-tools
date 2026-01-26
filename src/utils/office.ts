@@ -5,7 +5,39 @@
  * Each document type has its own specialized text conversion function for better control.
  */
 
+import { OfficeParser } from '../office/OfficeParser';
 import { OfficeParserAST, OfficeContentNode, OfficeParserConfig } from '../office/types';
+
+/**
+ * Parse an office document and return the AST (Abstract Syntax Tree)
+ * This is a convenience wrapper around OfficeParser.parseOffice with simplified interface
+ * 
+ * @param file - File path (string), Buffer, or ArrayBuffer containing the document
+ * @param config - Optional configuration object for parsing
+ * @returns A promise resolving to the parsed OfficeParserAST
+ * 
+ * @example
+ * ```typescript
+ * // Parse from file path
+ * const ast = await parseOfficeDocument('document.docx');
+ * 
+ * // Parse from Buffer with configuration
+ * const buffer = fs.readFileSync('document.pdf');
+ * const ast = await parseOfficeDocument(buffer, {
+ *   extractAttachments: true,
+ *   ocr: true
+ * });
+ * 
+ * // Convert to Markdown
+ * const markdown = wordToMarkdown(ast);
+ * ```
+ */
+const parseOfficeDocument = async (
+    file: string | Buffer | ArrayBuffer,
+    config?: OfficeParserConfig
+): Promise<OfficeParserAST> => {
+    return OfficeParser.parseOffice(file, config);
+};
 
 /**
  * Excel-specific JSON conversion with simplified human-readable structure
@@ -20,10 +52,10 @@ const excelToJson = (ast: OfficeParserAST): any => {
 
     ast.content.forEach((sheetNode, sheetIndex) => {
         if (sheetNode.type === 'sheet' && sheetNode.children) {
-            const sheetName = (sheetNode.metadata && 'sheetName' in sheetNode.metadata) 
-                ? (sheetNode.metadata as any).sheetName 
+            const sheetName = (sheetNode.metadata && 'sheetName' in sheetNode.metadata)
+                ? (sheetNode.metadata as any).sheetName
                 : `Sheet${sheetIndex + 1}`;
-            
+
             // 从 rawContent 中提取工作表的总列数
             let totalCols = 0;
             if (sheetNode.rawContent) {
@@ -33,14 +65,14 @@ const excelToJson = (ast: OfficeParserAST): any => {
                     totalCols = endCol.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
                 }
             }
-            
+
             const sheetData = {
                 name: sheetName,
                 metadata: sheetNode.metadata,
                 rows: [] as string[][],
                 totalColumns: totalCols
             };
-            
+
             // 处理工作表的每一行
             sheetNode.children.forEach((rowNode, rowIndex) => {
                 if (rowNode.type === 'row' && rowNode.children) {
@@ -52,10 +84,10 @@ const excelToJson = (ast: OfficeParserAST): any => {
                             rowTotalCols = parseInt(spansMatch[2]);
                         }
                     }
-                    
+
                     // 创建固定长度的数组来保存所有列的内容
                     const rowData: string[] = Array(rowTotalCols).fill('');
-                    
+
                     // 填充有内容的单元格
                     rowNode.children.forEach(cellNode => {
                         if (cellNode.type === 'cell' && cellNode.metadata && 'col' in cellNode.metadata) {
@@ -73,7 +105,7 @@ const excelToJson = (ast: OfficeParserAST): any => {
                                     }
                                     return node.text || '';
                                 };
-                                
+
                                 // 内联格式化Excel日期值
                                 const formatExcelDate = (text: string, rawContent?: string): string => {
                                     const numValue = parseFloat(text);
@@ -90,39 +122,39 @@ const excelToJson = (ast: OfficeParserAST): any => {
                                                 hasDateStyle = dateStyleIndices.includes(styleIndex);
                                             }
                                         }
-                                        
+
                                         // 只有当单元格有日期样式时才进行日期转换
                                         if (hasDateStyle) {
                                             // Excel epoch: December 30, 1899 (Windows)
                                             const excelEpoch = new Date(Date.UTC(1899, 11, 30));
                                             // 转换Excel序列号为JavaScript Date
                                             const date = new Date(excelEpoch.getTime() + numValue * 24 * 60 * 60 * 1000);
-                                            
+
                                             // 确保日期有效
                                             if (!isNaN(date.getTime())) {
                                                 // 格式化为 YYYY-MM-DD，确保日和月为两位数
                                                 const year = date.getFullYear();
                                                 const month = String(date.getMonth() + 1).padStart(2, '0');
                                                 const day = String(date.getDate()).padStart(2, '0');
-                                                
+
                                                 return `${year}-${month}-${day}`;
                                             }
                                         }
                                     }
                                     return text;
                                 };
-                                
+
                                 const cellText = extractCellText(cellNode);
                                 const formattedText = formatExcelDate(cellText, cellNode.rawContent);
                                 rowData[colIndex] = formattedText;
                             }
                         }
                     });
-                    
+
                     sheetData.rows.push(rowData);
                 }
             });
-            
+
             result.sheets.push(sheetData);
         }
     });
@@ -136,21 +168,21 @@ const excelToJson = (ast: OfficeParserAST): any => {
 const excelToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
     const jsonData = excelToJson(ast);
     let text = '';
-    
+
     jsonData.sheets.forEach((sheet: any, sheetIndex: number) => {
         text += `## ${sheet.name}${delimiter}`;
-        
+
         sheet.rows.forEach((row: string[], rowIndex: number) => {
             text += `### 行 ${rowIndex + 1}${delimiter}`;
-            
+
             // 将单元格内容转换为列表格式
             const rowContent = row.map(cell => cell || '');
             text += `[${rowContent.join(', ')}]${delimiter}`;
         });
-        
+
         text += delimiter; // 工作表后添加空行
     });
-    
+
     return text;
 };
 
@@ -183,11 +215,11 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
                     metadata: node.metadata || {}
                 });
             }
-            
+
             // 处理表格
             if (node.type === 'table' && node.children) {
                 const tableData: string[][] = [];
-                
+
                 node.children.forEach((row) => {
                     if (row.type === 'row' && row.children) {
                         const rowData: string[] = [];
@@ -200,7 +232,7 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
                         tableData.push(rowData);
                     }
                 });
-                
+
                 slideData.elements.push({
                     type: 'table',
                     content: tableData,
@@ -208,7 +240,7 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
                 });
                 return;
             }
-            
+
             // 处理段落
             if (node.type === 'paragraph') {
                 const paragraphText = extractTextFromNode(node);
@@ -220,7 +252,7 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
                 }
                 return;
             }
-            
+
             // 处理列表
             if (node.type === 'list') {
                 const listItems = extractListItems(node);
@@ -233,7 +265,7 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
                 }
                 return;
             }
-            
+
             // 处理图片
             if (node.type === 'image') {
                 slideData.elements.push({
@@ -243,7 +275,7 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
                 });
                 return;
             }
-            
+
             // 处理其他节点类型
             if (node.children) {
                 node.children.forEach(processNode);
@@ -263,7 +295,7 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
 
         const extractListItems = (node: OfficeContentNode): string[] => {
             const items: string[] = [];
-            
+
             if (node.children) {
                 node.children.forEach(child => {
                     if (child.type === 'paragraph') {
@@ -274,7 +306,7 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
                     }
                 });
             }
-            
+
             return items;
         };
 
@@ -295,21 +327,21 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
  */
 const powerpointToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
     let slideCounter = 0;
-    
+
     const getText = (node: OfficeContentNode): string => {
         let text = '';
-        
+
         // 幻灯片标题
-         if (node.type === 'heading' && node.metadata && 'level' in node.metadata && node.metadata.level === 1) {
-             slideCounter++;
-             text += `## 幻灯片 ${slideCounter}: ${node.text}${delimiter}`;
-             return text;
-         }
-        
+        if (node.type === 'heading' && node.metadata && 'level' in node.metadata && node.metadata.level === 1) {
+            slideCounter++;
+            text += `## 幻灯片 ${slideCounter}: ${node.text}${delimiter}`;
+            return text;
+        }
+
         // 处理表格
         if (node.type === 'table' && node.children) {
             text += `### 表格${delimiter}`;
-            
+
             node.children.forEach((row, rowIndex) => {
                 if (row.type === 'row' && row.children) {
                     const rowContent: string[] = [];
@@ -322,11 +354,11 @@ const powerpointToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string =>
                     text += `行 ${rowIndex + 1}: [${rowContent.join(', ')}]${delimiter}`;
                 }
             });
-            
+
             text += delimiter;
             return text;
         }
-        
+
         // 处理其他节点类型
         if (node.children) {
             text += node.children
@@ -364,7 +396,7 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
             case 'page':
                 pageCounter++;
                 content += `${indent}## 第 ${pageCounter} 页${delimiter}${delimiter}`;
-                
+
                 if (node.children) {
                     node.children.forEach(child => {
                         content += processNode(child, indentLevel + 1);
@@ -379,7 +411,7 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                 const headingLevel = Math.min(Math.max(level, 1) + 1, 6); // 确保至少H3，最大H6
                 const headingMark = '#'.repeat(headingLevel);
                 content += `${indent}${headingMark} ${node.text || ''}${delimiter}${delimiter}`;
-                
+
                 // 标题的子节点通常只包含标题文本的格式化信息，不需要重复处理
                 // 避免标题文本在正文中重复出现
                 break;
@@ -391,7 +423,7 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                         .map(child => processNode(child, 0))
                         .join('')
                         .trim();
-                    
+
                     if (paragraphText) {
                         content += `${indent}${paragraphText}${delimiter}${delimiter}`;
                     }
@@ -403,7 +435,7 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
 
             case 'text': {
                 let textContent = node.text || '';
-                
+
                 // Apply text formatting
                 if (node.formatting) {
                     if (node.formatting.bold) {
@@ -413,7 +445,7 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                         textContent = `*${textContent}*`;
                     }
                 }
-                
+
                 // Handle links
                 if (node.metadata && 'link' in node.metadata) {
                     const linkMetadata = node.metadata as any;
@@ -421,7 +453,7 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                         textContent = `[${textContent}](${linkMetadata.link})`;
                     }
                 }
-                
+
                 content += textContent;
                 break;
             }
@@ -430,9 +462,9 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                 const imageText = node.text || '图片';
                 const imageMetadata = node.metadata as any;
                 const attachmentName = imageMetadata?.attachmentName || 'image';
-                
+
                 content += `${indent}![${imageText}](${attachmentName})${delimiter}`;
-                
+
                 if (node.text && node.text.trim()) {
                     content += `${indent}*${node.text.trim()}*${delimiter}`;
                 }
@@ -463,7 +495,7 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
     // Add metadata section at the beginning
     if (ast.metadata) {
         let metadataSection = `# ${ast.metadata.title || 'PDF文档'}${delimiter}${delimiter}`;
-        
+
         if (ast.metadata.author) {
             metadataSection += `**作者:** ${ast.metadata.author}${delimiter}`;
         }
@@ -482,7 +514,7 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
         if (ast.metadata.pages) {
             metadataSection += `**页数:** ${ast.metadata.pages}${delimiter}`;
         }
-        
+
         if (metadataSection.length > 20) { // If we have any metadata
             metadataSection += delimiter;
             markdown = metadataSection + markdown;
@@ -492,14 +524,14 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
     // Add attachments section at the end
     if (ast.attachments && ast.attachments.length > 0) {
         markdown += `${delimiter}# 附件${delimiter}${delimiter}`;
-        
+
         ast.attachments.forEach((attachment, index) => {
             markdown += `${index + 1}. **${attachment.name}**`;
             if (attachment.mimeType) {
                 markdown += ` (${attachment.mimeType})`;
             }
             markdown += delimiter;
-            
+
             if (attachment.ocrText) {
                 markdown += `   *OCR文本: ${attachment.ocrText}*${delimiter}`;
             }
@@ -527,10 +559,10 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                 const level = node.metadata && 'level' in node.metadata ? (node.metadata as any).level : 1;
                 const headingLevel = Math.min(Math.max(level, 1), 6); // Ensure H1-H6
                 const headingMark = '#'.repeat(headingLevel);
-                
+
                 // Reset list state when encountering a heading
                 currentListLevel = -1;
-                
+
                 content += `${indent}${headingMark} ${node.text || ''}${delimiter}${delimiter}`;
                 break;
             }
@@ -538,13 +570,13 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
             case 'paragraph': {
                 // Reset list state when encountering a regular paragraph
                 currentListLevel = -1;
-                
+
                 if (node.children) {
                     const paragraphText = node.children
                         .map(child => processNode(child, 0))
                         .join('')
                         .trim();
-                    
+
                     if (paragraphText) {
                         content += `${indent}${paragraphText}${delimiter}${delimiter}`;
                     }
@@ -559,7 +591,7 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                 const listType = listMetadata?.listType || 'unordered';
                 const listLevel = listMetadata?.indentation || 0;
                 const itemIndex = listMetadata?.itemIndex || 0;
-                
+
                 // Handle list indentation and type changes
                 if (listLevel !== currentListLevel || listType !== currentListType) {
                     // Start a new list or change list type/level
@@ -569,14 +601,14 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                     currentListLevel = listLevel;
                     currentListType = listType;
                 }
-                
+
                 // Process list item content
                 const listPrefix = listType === 'ordered' ? `${itemIndex + 1}.` : '-';
                 const itemIndent = '  '.repeat(listLevel);
                 const itemText = node.children
                     ? node.children.map(child => processNode(child, 0)).join('').trim()
                     : node.text || '';
-                
+
                 if (itemText) {
                     content += `${itemIndent}${listPrefix} ${itemText}${delimiter}`;
                 }
@@ -586,7 +618,7 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
             case 'table': {
                 if (node.children) {
                     const tableData: string[][] = [];
-                    
+
                     // Extract table data
                     node.children.forEach(row => {
                         if (row.type === 'row' && row.children) {
@@ -603,15 +635,15 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                             tableData.push(rowData);
                         }
                     });
-                    
+
                     if (tableData.length > 0) {
                         // Create Markdown table
                         const header = tableData[0];
                         const separator = header.map(() => '---').join(' | ');
-                        
+
                         content += `${indent}| ${header.join(' | ')} |${delimiter}`;
                         content += `${indent}| ${separator} |${delimiter}`;
-                        
+
                         for (let i = 1; i < tableData.length; i++) {
                             content += `${indent}| ${tableData[i].join(' | ')} |${delimiter}`;
                         }
@@ -623,7 +655,7 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
 
             case 'text': {
                 let textContent = node.text || '';
-                
+
                 // Apply text formatting
                 if (node.formatting) {
                     if (node.formatting.bold) {
@@ -639,7 +671,7 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                         textContent = `~~${textContent}~~`;
                     }
                 }
-                
+
                 // Handle links
                 if (node.metadata && 'link' in node.metadata) {
                     const linkMetadata = node.metadata as any;
@@ -647,7 +679,7 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                         textContent = `[${textContent}](${linkMetadata.link})`;
                     }
                 }
-                
+
                 content += textContent;
                 break;
             }
@@ -656,9 +688,9 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                 const imageText = node.text || '图片';
                 const imageMetadata = node.metadata as any;
                 const attachmentName = imageMetadata?.attachmentName || 'image';
-                
+
                 content += `${indent}![${imageText}](${attachmentName})${delimiter}`;
-                
+
                 if (node.text && node.text.trim()) {
                     content += `${indent}*${node.text.trim()}*${delimiter}`;
                 }
@@ -689,7 +721,7 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
     // Add metadata section at the beginning
     if (ast.metadata) {
         let metadataSection = `# ${ast.metadata.title || 'Word文档'}${delimiter}${delimiter}`;
-        
+
         if (ast.metadata.author) {
             metadataSection += `**作者:** ${ast.metadata.author}${delimiter}`;
         }
@@ -705,7 +737,7 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
         if (ast.metadata.modified) {
             metadataSection += `**修改时间:** ${ast.metadata.modified.toLocaleDateString()}${delimiter}`;
         }
-        
+
         if (metadataSection.length > 20) { // If we have any metadata
             metadataSection += delimiter;
             markdown = metadataSection + markdown;
@@ -715,14 +747,14 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
     // Add attachments section at the end
     if (ast.attachments && ast.attachments.length > 0) {
         markdown += `${delimiter}# 附件${delimiter}${delimiter}`;
-        
+
         ast.attachments.forEach((attachment, index) => {
             markdown += `${index + 1}. **${attachment.name}**`;
             if (attachment.mimeType) {
                 markdown += ` (${attachment.mimeType})`;
             }
             markdown += delimiter;
-            
+
             if (attachment.ocrText) {
                 markdown += `   *OCR文本: ${attachment.ocrText}*${delimiter}`;
             }
@@ -730,6 +762,28 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
     }
 
     return markdown.trim();
+};
+
+/**
+ * Extract plain text from AST nodes recursively
+ * Used as fallback for document types without specific converters
+ */
+const extractTextFromAST = (node: OfficeContentNode, delimiter = '\n'): string => {
+    if (node.children) {
+        return node.children.map(child => extractTextFromAST(child, delimiter)).join(delimiter);
+    }
+    return node.text || '';
+};
+
+/**
+ * Convert AST to plain text for unsupported document types
+ * This serves as the default fallback converter
+ */
+const defaultToText = (ast: OfficeParserAST, delimiter = '\n'): string => {
+    return ast.content
+        .map(node => extractTextFromAST(node, delimiter))
+        .filter(t => t !== '')
+        .join(delimiter);
 };
 
 /**
@@ -742,25 +796,13 @@ const astToText = (ast: OfficeParserAST, delimiter = '\n'): string => {
             return excelToMarkdown(ast, delimiter);
         case 'pptx':
             return powerpointToMarkdown(ast, delimiter);
-        case 'pdf': {
+        case 'pdf':
             return pdfToMarkdown(ast, delimiter);
-        }
-        case 'docx': {
+        case 'docx':
             return wordToMarkdown(ast, delimiter);
-        }
         default: {
             // Fallback for other document types
-            const extractText = (node: OfficeContentNode): string => {
-                if (node.children) {
-                    return node.children.map(extractText).join(delimiter);
-                }
-                return node.text || '';
-            };
-            
-            return ast.content
-                .map(extractText)
-                .filter(t => t !== '')
-                .join(delimiter);
+            return defaultToText(ast, delimiter);
         }
     }
 };
@@ -775,38 +817,21 @@ const astToJson = (ast: OfficeParserAST): any => {
             return excelToJson(ast);
         case 'pptx':
             return powerpointToJson(ast);
-        case 'pdf': {
-            // For PDF, return a simplified JSON structure
-            return {
-                type: ast.type,
-                metadata: ast.metadata,
-                pages: ast.content.map((page, index) => ({
-                    pageNumber: index + 1,
-                    content: page.text || '',
-                    metadata: page.metadata
-                })),
-                attachments: ast.attachments || []
-            };
-        }
         default:
-            // Fallback for other document types
-            return {
-                type: ast.type,
-                metadata: ast.metadata,
-                content: ast.content,
-                attachments: ast.attachments || []
-            };
+            return ast;
     }
 };
 
 // Export the functions
 export {
+    parseOfficeDocument,
     excelToJson,
     excelToMarkdown,
     powerpointToJson,
     powerpointToMarkdown,
     pdfToMarkdown,
     wordToMarkdown,
+    defaultToText,
     astToText,
     astToJson
 };
