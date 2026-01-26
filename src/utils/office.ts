@@ -510,6 +510,229 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
 };
 
 /**
+ * Word-specific Markdown conversion
+ * Converts Word document AST to well-formatted Markdown with proper structure
+ */
+const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
+    let markdown = '';
+    let currentListLevel = -1;
+    let currentListType: 'ordered' | 'unordered' = 'unordered';
+
+    const processNode = (node: OfficeContentNode, indentLevel = 0): string => {
+        let content = '';
+        const indent = '  '.repeat(indentLevel);
+
+        switch (node.type) {
+            case 'heading': {
+                const level = node.metadata && 'level' in node.metadata ? (node.metadata as any).level : 1;
+                const headingLevel = Math.min(Math.max(level, 1), 6); // Ensure H1-H6
+                const headingMark = '#'.repeat(headingLevel);
+                
+                // Reset list state when encountering a heading
+                currentListLevel = -1;
+                
+                content += `${indent}${headingMark} ${node.text || ''}${delimiter}${delimiter}`;
+                break;
+            }
+
+            case 'paragraph': {
+                // Reset list state when encountering a regular paragraph
+                currentListLevel = -1;
+                
+                if (node.children) {
+                    const paragraphText = node.children
+                        .map(child => processNode(child, 0))
+                        .join('')
+                        .trim();
+                    
+                    if (paragraphText) {
+                        content += `${indent}${paragraphText}${delimiter}${delimiter}`;
+                    }
+                } else if (node.text && node.text.trim()) {
+                    content += `${indent}${node.text.trim()}${delimiter}${delimiter}`;
+                }
+                break;
+            }
+
+            case 'list': {
+                const listMetadata = node.metadata as any;
+                const listType = listMetadata?.listType || 'unordered';
+                const listLevel = listMetadata?.indentation || 0;
+                const itemIndex = listMetadata?.itemIndex || 0;
+                
+                // Handle list indentation and type changes
+                if (listLevel !== currentListLevel || listType !== currentListType) {
+                    // Start a new list or change list type/level
+                    if (currentListLevel >= 0) {
+                        content += delimiter; // Add space between different lists
+                    }
+                    currentListLevel = listLevel;
+                    currentListType = listType;
+                }
+                
+                // Process list item content
+                const listPrefix = listType === 'ordered' ? `${itemIndex + 1}.` : '-';
+                const itemIndent = '  '.repeat(listLevel);
+                const itemText = node.children
+                    ? node.children.map(child => processNode(child, 0)).join('').trim()
+                    : node.text || '';
+                
+                if (itemText) {
+                    content += `${itemIndent}${listPrefix} ${itemText}${delimiter}`;
+                }
+                break;
+            }
+
+            case 'table': {
+                if (node.children) {
+                    const tableData: string[][] = [];
+                    
+                    // Extract table data
+                    node.children.forEach(row => {
+                        if (row.type === 'row' && row.children) {
+                            const rowData: string[] = [];
+                            row.children.forEach(cell => {
+                                if (cell.type === 'cell' && cell.children) {
+                                    const cellText = cell.children
+                                        .map(child => processNode(child, 0))
+                                        .join('')
+                                        .trim();
+                                    rowData.push(cellText || '');
+                                }
+                            });
+                            tableData.push(rowData);
+                        }
+                    });
+                    
+                    if (tableData.length > 0) {
+                        // Create Markdown table
+                        const header = tableData[0];
+                        const separator = header.map(() => '---').join(' | ');
+                        
+                        content += `${indent}| ${header.join(' | ')} |${delimiter}`;
+                        content += `${indent}| ${separator} |${delimiter}`;
+                        
+                        for (let i = 1; i < tableData.length; i++) {
+                            content += `${indent}| ${tableData[i].join(' | ')} |${delimiter}`;
+                        }
+                        content += delimiter;
+                    }
+                }
+                break;
+            }
+
+            case 'text': {
+                let textContent = node.text || '';
+                
+                // Apply text formatting
+                if (node.formatting) {
+                    if (node.formatting.bold) {
+                        textContent = `**${textContent}**`;
+                    }
+                    if (node.formatting.italic) {
+                        textContent = `*${textContent}*`;
+                    }
+                    if (node.formatting.underline) {
+                        textContent = `<u>${textContent}</u>`;
+                    }
+                    if (node.formatting.strikethrough) {
+                        textContent = `~~${textContent}~~`;
+                    }
+                }
+                
+                // Handle links
+                if (node.metadata && 'link' in node.metadata) {
+                    const linkMetadata = node.metadata as any;
+                    if (linkMetadata.link) {
+                        textContent = `[${textContent}](${linkMetadata.link})`;
+                    }
+                }
+                
+                content += textContent;
+                break;
+            }
+
+            case 'image': {
+                const imageText = node.text || '图片';
+                const imageMetadata = node.metadata as any;
+                const attachmentName = imageMetadata?.attachmentName || 'image';
+                
+                content += `${indent}![${imageText}](${attachmentName})${delimiter}`;
+                
+                if (node.text && node.text.trim()) {
+                    content += `${indent}*${node.text.trim()}*${delimiter}`;
+                }
+                content += delimiter;
+                break;
+            }
+
+            default:
+                // Handle other node types recursively
+                if (node.children) {
+                    node.children.forEach(child => {
+                        content += processNode(child, indentLevel);
+                    });
+                } else if (node.text && node.text.trim()) {
+                    content += `${indent}${node.text.trim()}${delimiter}`;
+                }
+                break;
+        }
+
+        return content;
+    };
+
+    // Process all content nodes
+    ast.content.forEach(node => {
+        markdown += processNode(node);
+    });
+
+    // Add metadata section at the beginning
+    if (ast.metadata) {
+        let metadataSection = `# ${ast.metadata.title || 'Word文档'}${delimiter}${delimiter}`;
+        
+        if (ast.metadata.author) {
+            metadataSection += `**作者:** ${ast.metadata.author}${delimiter}`;
+        }
+        if (ast.metadata.subject) {
+            metadataSection += `**主题:** ${ast.metadata.subject}${delimiter}`;
+        }
+        if (ast.metadata.description) {
+            metadataSection += `**描述:** ${ast.metadata.description}${delimiter}`;
+        }
+        if (ast.metadata.created) {
+            metadataSection += `**创建时间:** ${ast.metadata.created.toLocaleDateString()}${delimiter}`;
+        }
+        if (ast.metadata.modified) {
+            metadataSection += `**修改时间:** ${ast.metadata.modified.toLocaleDateString()}${delimiter}`;
+        }
+        
+        if (metadataSection.length > 20) { // If we have any metadata
+            metadataSection += delimiter;
+            markdown = metadataSection + markdown;
+        }
+    }
+
+    // Add attachments section at the end
+    if (ast.attachments && ast.attachments.length > 0) {
+        markdown += `${delimiter}# 附件${delimiter}${delimiter}`;
+        
+        ast.attachments.forEach((attachment, index) => {
+            markdown += `${index + 1}. **${attachment.name}**`;
+            if (attachment.mimeType) {
+                markdown += ` (${attachment.mimeType})`;
+            }
+            markdown += delimiter;
+            
+            if (attachment.ocrText) {
+                markdown += `   *OCR文本: ${attachment.ocrText}*${delimiter}`;
+            }
+        });
+    }
+
+    return markdown.trim();
+};
+
+/**
  * Universal text conversion function that routes to the appropriate converter
  * based on the document type
  */
@@ -521,6 +744,9 @@ const astToText = (ast: OfficeParserAST, delimiter = '\n'): string => {
             return powerpointToMarkdown(ast, delimiter);
         case 'pdf': {
             return pdfToMarkdown(ast, delimiter);
+        }
+        case 'docx': {
+            return wordToMarkdown(ast, delimiter);
         }
         default: {
             // Fallback for other document types
@@ -580,6 +806,7 @@ export {
     powerpointToJson,
     powerpointToMarkdown,
     pdfToMarkdown,
+    wordToMarkdown,
     astToText,
     astToJson
 };
