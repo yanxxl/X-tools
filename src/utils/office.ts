@@ -492,35 +492,6 @@ const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
         markdown += processNode(node);
     });
 
-    // Add metadata section at the beginning
-    if (ast.metadata) {
-        let metadataSection = `# ${ast.metadata.title || 'PDF文档'}${delimiter}${delimiter}`;
-
-        if (ast.metadata.author) {
-            metadataSection += `**作者:** ${ast.metadata.author}${delimiter}`;
-        }
-        if (ast.metadata.subject) {
-            metadataSection += `**主题:** ${ast.metadata.subject}${delimiter}`;
-        }
-        if (ast.metadata.description) {
-            metadataSection += `**描述:** ${ast.metadata.description}${delimiter}`;
-        }
-        if (ast.metadata.created) {
-            metadataSection += `**创建时间:** ${ast.metadata.created.toLocaleDateString()}${delimiter}`;
-        }
-        if (ast.metadata.modified) {
-            metadataSection += `**修改时间:** ${ast.metadata.modified.toLocaleDateString()}${delimiter}`;
-        }
-        if (ast.metadata.pages) {
-            metadataSection += `**页数:** ${ast.metadata.pages}${delimiter}`;
-        }
-
-        if (metadataSection.length > 20) { // If we have any metadata
-            metadataSection += delimiter;
-            markdown = metadataSection + markdown;
-        }
-    }
-
     // Add attachments section at the end
     if (ast.attachments && ast.attachments.length > 0) {
         markdown += `${delimiter}# 附件${delimiter}${delimiter}`;
@@ -571,7 +542,13 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
                 // Reset list state when encountering a regular paragraph
                 currentListLevel = -1;
 
-                if (node.children) {
+                // Check if this paragraph might be a heading based on formatting
+                const isPotentialHeading = checkIfHeadingByFormatting(node);
+                
+                if (isPotentialHeading) {
+                    // Treat as H2 heading if it looks like a heading
+                    content += `${indent}## ${node.text || ''}${delimiter}${delimiter}`;
+                } else if (node.children) {
                     const paragraphText = node.children
                         .map(child => processNode(child, 0))
                         .join('')
@@ -718,32 +695,6 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
         markdown += processNode(node);
     });
 
-    // Add metadata section at the beginning
-    if (ast.metadata) {
-        let metadataSection = `# ${ast.metadata.title || 'Word文档'}${delimiter}${delimiter}`;
-
-        if (ast.metadata.author) {
-            metadataSection += `**作者:** ${ast.metadata.author}${delimiter}`;
-        }
-        if (ast.metadata.subject) {
-            metadataSection += `**主题:** ${ast.metadata.subject}${delimiter}`;
-        }
-        if (ast.metadata.description) {
-            metadataSection += `**描述:** ${ast.metadata.description}${delimiter}`;
-        }
-        if (ast.metadata.created) {
-            metadataSection += `**创建时间:** ${ast.metadata.created.toLocaleDateString()}${delimiter}`;
-        }
-        if (ast.metadata.modified) {
-            metadataSection += `**修改时间:** ${ast.metadata.modified.toLocaleDateString()}${delimiter}`;
-        }
-
-        if (metadataSection.length > 20) { // If we have any metadata
-            metadataSection += delimiter;
-            markdown = metadataSection + markdown;
-        }
-    }
-
     // Add attachments section at the end
     if (ast.attachments && ast.attachments.length > 0) {
         markdown += `${delimiter}# 附件${delimiter}${delimiter}`;
@@ -762,6 +713,83 @@ const wordToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
     }
 
     return markdown.trim();
+};
+
+/**
+ * Check if a node might be a heading based on formatting characteristics
+ * This is a fallback for when Word documents don't use proper heading styles
+ */
+const checkIfHeadingByFormatting = (node: OfficeContentNode): boolean => {
+    // Skip empty nodes
+    const text = node.text || '';
+    if (!text.trim()) {
+        return false;
+    }
+    
+    // Check if this node has a style that indicates it's a heading
+    // Based on the AST analysis, styles '2' and '3' are used for headings
+    const hasHeadingStyle = node.metadata && 
+                           'style' in node.metadata && 
+                           typeof (node.metadata as any).style === 'string' &&
+                           ['2', '3'].includes((node.metadata as any).style);
+    
+    if (hasHeadingStyle) {
+        return true;
+    }
+    
+    // Check if all text is bold AND has larger font size (common for headings)
+    const isAllBold = checkIfAllTextIsBold(node);
+    const hasLargeFont = checkIfHasLargeFont(node);
+    
+    // Only treat as heading if it's bold AND has large font size
+    // This prevents normal bold text from being mistaken for headings
+    if (isAllBold && hasLargeFont) {
+        return true;
+    }
+    
+    // Additional checks for specific heading patterns
+    const isShortText = text.length > 0 && text.length < 20; // More restrictive
+    const containsHeadingKeywords = /^(示例|标题|章节|第[一二三四五六七八九十]+[章节条页]|\d+\.)/.test(text.trim());
+    
+    // Only use keyword matching if it's also bold and short
+    return isShortText && containsHeadingKeywords && isAllBold;
+};
+
+/**
+ * Check if all text in a node is bold
+ */
+const checkIfAllTextIsBold = (node: OfficeContentNode): boolean => {
+    if (node.formatting && node.formatting.bold) {
+        return true;
+    }
+    
+    if (node.children) {
+        return node.children.every(child => checkIfAllTextIsBold(child));
+    }
+    
+    return false;
+};
+
+/**
+ * Check if a node has large font size (indicating it might be a heading)
+ */
+const checkIfHasLargeFont = (node: OfficeContentNode): boolean => {
+    // Check if this node has a large font size
+    if (node.formatting && node.formatting.size) {
+        const sizeMatch = node.formatting.size.match(/(\d+)/);
+        if (sizeMatch) {
+            const size = parseInt(sizeMatch[1]);
+            // Consider 14pt or larger as "large" font (headings are typically larger)
+            return size >= 14;
+        }
+    }
+    
+    // Check children recursively
+    if (node.children) {
+        return node.children.some(child => checkIfHasLargeFont(child));
+    }
+    
+    return false;
 };
 
 /**
