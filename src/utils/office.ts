@@ -207,12 +207,15 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
         };
 
         const processNode = (node: OfficeContentNode): void => {
-            // 幻灯片标题
+            // 幻灯片标题 - 保留层级信息
             if (node.type === 'heading') {
                 slideData.elements.push({
-                    type: 'title',
+                    type: 'heading',
                     content: node.text || '',
-                    metadata: node.metadata || {}
+                    metadata: {
+                        ...(node.metadata || {}),
+                        level: node.metadata && 'level' in node.metadata ? node.metadata.level : 1
+                    }
                 });
             }
 
@@ -323,58 +326,88 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
 };
 
 /**
- * PowerPoint-specific text conversion
+ * PowerPoint-specific text conversion based on JSON data
  */
 const powerpointToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
+    // 首先获取 JSON 数据
+    const jsonData = powerpointToJson(ast);
+    let markdown = '';
     let slideCounter = 0;
 
-    const getText = (node: OfficeContentNode): string => {
-        let text = '';
+    jsonData.slides.forEach((slide, slideIndex) => {
+        slideCounter++;
+        let slideContent = '';
+        let hasTitle = false;
 
-        // 幻灯片标题
-        if (node.type === 'heading' && node.metadata && 'level' in node.metadata && node.metadata.level === 1) {
-            slideCounter++;
-            text += `## 幻灯片 ${slideCounter}: ${node.text}${delimiter}`;
-            return text;
+        // 先添加幻灯片页码标题
+        slideContent += `## 幻灯片 ${slideCounter}${delimiter}${delimiter}`;
+
+        // 处理幻灯片中的元素
+        slide.elements.forEach(element => {
+            switch (element.type) {
+                case 'heading':
+                    // 幻灯片标题（一级标题）
+                    if (element.metadata?.level === 1) {
+                        slideContent += `### ${element.content}${delimiter}${delimiter}`;
+                        hasTitle = true;
+                    } else {
+                        // 其他级别的标题
+                        const level = Math.min(Math.max(element.metadata?.level || 1, 1), 6);
+                        const headingMark = '#'.repeat(level + 2); // 幻灯片标题是H2，内容标题从H3开始，所以其他标题从H4开始
+                        slideContent += `${headingMark} ${element.content}${delimiter}${delimiter}`;
+                    }
+                    break;
+
+                case 'table':
+                    if (Array.isArray(element.content)) {
+                        slideContent += `### 表格${delimiter}`;
+                        (element.content as string[][]).forEach((row, rowIndex) => {
+                            slideContent += `行 ${rowIndex + 1}: [${row.join(', ')}]${delimiter}`;
+                        });
+                        slideContent += delimiter;
+                    }
+                    break;
+
+                case 'paragraph':
+                    if (element.content && element.content.toString().trim()) {
+                        slideContent += `${element.content}${delimiter}${delimiter}`;
+                    }
+                    break;
+
+                case 'list':
+                    if (element.content) {
+                        const listItems = element.content.toString().split('\n');
+                        listItems.forEach(item => {
+                            if (item.trim()) {
+                                slideContent += `- ${item}${delimiter}`;
+                            }
+                        });
+                        slideContent += delimiter;
+                    }
+                    break;
+
+                case 'image':
+                    slideContent += `![${element.content}]${delimiter}${delimiter}`;
+                    break;
+
+                default:
+                    // 处理未知类型
+                    if (element.content) {
+                        slideContent += `${element.content}${delimiter}${delimiter}`;
+                    }
+                    break;
+            }
+        });
+
+        // 如果没有标题，添加默认内容标题
+        if (!hasTitle) {
+            slideContent += `### 无标题${delimiter}${delimiter}`;
         }
 
-        // 处理表格
-        if (node.type === 'table' && node.children) {
-            text += `### 表格${delimiter}`;
+        markdown += slideContent;
+    });
 
-            node.children.forEach((row, rowIndex) => {
-                if (row.type === 'row' && row.children) {
-                    const rowContent: string[] = [];
-                    row.children.forEach(cell => {
-                        if (cell.type === 'cell') {
-                            const cellText = getText(cell);
-                            rowContent.push(cellText || '');
-                        }
-                    });
-                    text += `行 ${rowIndex + 1}: [${rowContent.join(', ')}]${delimiter}`;
-                }
-            });
-
-            text += delimiter;
-            return text;
-        }
-
-        // 处理其他节点类型
-        if (node.children) {
-            text += node.children
-                .map(getText)
-                .filter(t => t !== '')
-                .join(!node.children[0]?.children ? '' : delimiter);
-        } else {
-            text += node.text || '';
-        }
-        return text;
-    };
-
-    return ast.content
-        .map(getText)
-        .filter(t => t !== '')
-        .join(delimiter);
+    return markdown;
 };
 
 /**
