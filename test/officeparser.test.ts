@@ -19,7 +19,7 @@ async function testOfficeParser() {
         const ext = path.extname(file).toLowerCase();
 
         // 只测试Excel文档格式
-        if (['.pptx'].includes(ext)) {
+        if (['.pdf'].includes(ext)) {
             console.log(`正在解析文件: ${file}`);
             console.log('='.repeat(40));
 

@@ -344,3 +344,243 @@ const powerpointToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string =>
         .filter(t => t !== '')
         .join(delimiter);
 };
+
+/**
+ * PDF-specific text conversion to Markdown format
+ * 
+ * PDF AST structure contains pages with headings, paragraphs, text, and images.
+ * This function converts the PDF content to well-formatted Markdown with proper
+ * heading levels, paragraph separation, and image references.
+ */
+const pdfToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
+    let markdown = '';
+    let pageCounter = 0;
+
+    const processNode = (node: OfficeContentNode, indentLevel = 0): string => {
+        let content = '';
+        const indent = '  '.repeat(indentLevel);
+
+        switch (node.type) {
+            case 'page':
+                pageCounter++;
+                content += `${indent}## 第 ${pageCounter} 页${delimiter}${delimiter}`;
+                
+                if (node.children) {
+                    node.children.forEach(child => {
+                        content += processNode(child, indentLevel + 1);
+                    });
+                }
+                content += delimiter; // Add extra space between pages
+                break;
+
+            case 'heading': {
+                const level = node.metadata && 'level' in node.metadata ? (node.metadata as any).level : 1;
+                // 合理调整标题层级：页面是H2，页面内标题从H3开始
+                const headingLevel = Math.min(Math.max(level, 1) + 1, 6); // 确保至少H3，最大H6
+                const headingMark = '#'.repeat(headingLevel);
+                content += `${indent}${headingMark} ${node.text || ''}${delimiter}${delimiter}`;
+                
+                // 标题的子节点通常只包含标题文本的格式化信息，不需要重复处理
+                // 避免标题文本在正文中重复出现
+                break;
+            }
+
+            case 'paragraph': {
+                if (node.children) {
+                    const paragraphText = node.children
+                        .map(child => processNode(child, 0))
+                        .join('')
+                        .trim();
+                    
+                    if (paragraphText) {
+                        content += `${indent}${paragraphText}${delimiter}${delimiter}`;
+                    }
+                } else if (node.text && node.text.trim()) {
+                    content += `${indent}${node.text.trim()}${delimiter}${delimiter}`;
+                }
+                break;
+            }
+
+            case 'text': {
+                let textContent = node.text || '';
+                
+                // Apply text formatting
+                if (node.formatting) {
+                    if (node.formatting.bold) {
+                        textContent = `**${textContent}**`;
+                    }
+                    if (node.formatting.italic) {
+                        textContent = `*${textContent}*`;
+                    }
+                }
+                
+                // Handle links
+                if (node.metadata && 'link' in node.metadata) {
+                    const linkMetadata = node.metadata as any;
+                    if (linkMetadata.link) {
+                        textContent = `[${textContent}](${linkMetadata.link})`;
+                    }
+                }
+                
+                content += textContent;
+                break;
+            }
+
+            case 'image': {
+                const imageText = node.text || '图片';
+                const imageMetadata = node.metadata as any;
+                const attachmentName = imageMetadata?.attachmentName || 'image';
+                
+                content += `${indent}![${imageText}](${attachmentName})${delimiter}`;
+                
+                if (node.text && node.text.trim()) {
+                    content += `${indent}*${node.text.trim()}*${delimiter}`;
+                }
+                content += delimiter;
+                break;
+            }
+
+            default:
+                // Handle other node types recursively
+                if (node.children) {
+                    node.children.forEach(child => {
+                        content += processNode(child, indentLevel);
+                    });
+                } else if (node.text && node.text.trim()) {
+                    content += `${indent}${node.text.trim()}${delimiter}`;
+                }
+                break;
+        }
+
+        return content;
+    };
+
+    // Process all content nodes
+    ast.content.forEach(node => {
+        markdown += processNode(node);
+    });
+
+    // Add metadata section at the beginning
+    if (ast.metadata) {
+        let metadataSection = `# ${ast.metadata.title || 'PDF文档'}${delimiter}${delimiter}`;
+        
+        if (ast.metadata.author) {
+            metadataSection += `**作者:** ${ast.metadata.author}${delimiter}`;
+        }
+        if (ast.metadata.subject) {
+            metadataSection += `**主题:** ${ast.metadata.subject}${delimiter}`;
+        }
+        if (ast.metadata.description) {
+            metadataSection += `**描述:** ${ast.metadata.description}${delimiter}`;
+        }
+        if (ast.metadata.created) {
+            metadataSection += `**创建时间:** ${ast.metadata.created.toLocaleDateString()}${delimiter}`;
+        }
+        if (ast.metadata.modified) {
+            metadataSection += `**修改时间:** ${ast.metadata.modified.toLocaleDateString()}${delimiter}`;
+        }
+        if (ast.metadata.pages) {
+            metadataSection += `**页数:** ${ast.metadata.pages}${delimiter}`;
+        }
+        
+        if (metadataSection.length > 20) { // If we have any metadata
+            metadataSection += delimiter;
+            markdown = metadataSection + markdown;
+        }
+    }
+
+    // Add attachments section at the end
+    if (ast.attachments && ast.attachments.length > 0) {
+        markdown += `${delimiter}# 附件${delimiter}${delimiter}`;
+        
+        ast.attachments.forEach((attachment, index) => {
+            markdown += `${index + 1}. **${attachment.name}**`;
+            if (attachment.mimeType) {
+                markdown += ` (${attachment.mimeType})`;
+            }
+            markdown += delimiter;
+            
+            if (attachment.ocrText) {
+                markdown += `   *OCR文本: ${attachment.ocrText}*${delimiter}`;
+            }
+        });
+    }
+
+    return markdown.trim();
+};
+
+/**
+ * Universal text conversion function that routes to the appropriate converter
+ * based on the document type
+ */
+const astToText = (ast: OfficeParserAST, delimiter = '\n'): string => {
+    switch (ast.type) {
+        case 'xlsx':
+            return excelToMarkdown(ast, delimiter);
+        case 'pptx':
+            return powerpointToMarkdown(ast, delimiter);
+        case 'pdf': {
+            return pdfToMarkdown(ast, delimiter);
+        }
+        default: {
+            // Fallback for other document types
+            const extractText = (node: OfficeContentNode): string => {
+                if (node.children) {
+                    return node.children.map(extractText).join(delimiter);
+                }
+                return node.text || '';
+            };
+            
+            return ast.content
+                .map(extractText)
+                .filter(t => t !== '')
+                .join(delimiter);
+        }
+    }
+};
+
+/**
+ * Universal JSON conversion function that routes to the appropriate converter
+ * based on the document type
+ */
+const astToJson = (ast: OfficeParserAST): any => {
+    switch (ast.type) {
+        case 'xlsx':
+            return excelToJson(ast);
+        case 'pptx':
+            return powerpointToJson(ast);
+        case 'pdf': {
+            // For PDF, return a simplified JSON structure
+            return {
+                type: ast.type,
+                metadata: ast.metadata,
+                pages: ast.content.map((page, index) => ({
+                    pageNumber: index + 1,
+                    content: page.text || '',
+                    metadata: page.metadata
+                })),
+                attachments: ast.attachments || []
+            };
+        }
+        default:
+            // Fallback for other document types
+            return {
+                type: ast.type,
+                metadata: ast.metadata,
+                content: ast.content,
+                attachments: ast.attachments || []
+            };
+    }
+};
+
+// Export the functions
+export {
+    excelToJson,
+    excelToMarkdown,
+    powerpointToJson,
+    powerpointToMarkdown,
+    pdfToMarkdown,
+    astToText,
+    astToJson
+};
+
