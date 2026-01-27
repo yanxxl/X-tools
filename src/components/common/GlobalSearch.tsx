@@ -58,10 +58,6 @@ export const GlobalSearch: React.FC = () => {
 
         // 过滤出待搜索文件
         const searchFiles = allFiles.filter(file => {
-            if (!isTextFile(file)) {
-                return false;
-            }
-
             // 如果选择了路径，只搜索该路径下的文件
             if (searchPath !== currentFolder) {
                 return file.startsWith(searchPath);

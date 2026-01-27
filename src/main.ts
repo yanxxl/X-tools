@@ -643,6 +643,22 @@ app.whenReady().then(() => {
     // 初始化线程池
     initializeThreadPool();
 
+    // 应用初始化完成后，调用线程池执行过期缓存清理
+    setTimeout(async () => {
+        try {
+            console.log('应用初始化完成，开始检查并清理过期缓存...');
+            if (pool) {
+                const result = await pool.exec('checkAndCleanExpiredCache', []);
+                console.log('自动清理缓存结果:');
+                console.log(result);
+            } else {
+                console.log('线程池未初始化，跳过自动清理缓存');
+            }
+        } catch (error) {
+            console.error('自动清理缓存失败:', error);
+        }
+    }, 2000); // 延迟2秒执行，确保线程池完全初始化
+
     createWindow();
     if (isMac) createMenu();
 });
