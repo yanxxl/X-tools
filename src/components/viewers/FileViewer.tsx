@@ -1,7 +1,7 @@
 import React from 'react';
 import {Button, Typography} from 'antd';
 import {FileTextOutlined, FolderOpenOutlined} from '@ant-design/icons';
-import {detectFileType, getExtension, toFileUrl, isElectronSupportedMedia} from '../../utils/fileCommonUtil';
+import {detectFileType, getExtension, toFileUrl, isElectronSupportedMedia, isOfficeParserSupported} from '../../utils/fileCommonUtil';
 import {ImageViewer} from './ImageViewer';
 import {VideoViewer} from './VideoViewer';
 import {PdfViewer} from './PdfViewer';
@@ -54,6 +54,11 @@ export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName, init
 
     // 其他文本文件使用 TextViewer
     if (type === 'text') {
+        return <TextViewer filePath={filePath} fileName={fileName}/>;
+    }
+
+    // officeparser 支持的文件格式使用 TextViewer
+    if (isOfficeParserSupported(fileName)) {
         return <TextViewer filePath={filePath} fileName={fileName}/>;
     }
 

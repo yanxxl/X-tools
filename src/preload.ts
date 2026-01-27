@@ -1,8 +1,9 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer } from 'electron';
-import { FileNode } from './types/index';
+import { FileNode, OfficeJsonData } from './types/index';
 import { Config } from './utils/config';
+import { OfficeParserConfig } from './office/types';
 
 /**
  * 暴露给渲染进程的Electron API接口
@@ -88,7 +89,9 @@ interface ElectronAPI {
     getAppPath: () => Promise<string>;
 
     /** 解析Office文档（通用方法） */
-    parseOffice: (filePath: string, config?: any) => Promise<any>;
+    parseOffice: (filePath: string, config?: OfficeParserConfig) => Promise<OfficeJsonData>;
+    /** 解析Office文档文本内容 */
+    parseOfficeText: (filePath: string, config?: OfficeParserConfig, delimiter?: string) => Promise<string>;
     
     // === 线程池操作 ===
     /** 执行线程池任务 */
@@ -152,7 +155,9 @@ const electronAPI: ElectronAPI = {
     getPlatform: () => ipcRenderer.invoke('getPlatform') as Promise<string>,
 
     // 解析Office文档（通用方法）
-    parseOffice: (filePath: string, config?: any) => ipcRenderer.invoke('parseOffice', filePath, config) as Promise<any>,
+    parseOffice: (filePath: string, config?: OfficeParserConfig) => ipcRenderer.invoke('parseOffice', filePath, config) as Promise<OfficeJsonData>,
+    // 解析Office文档文本内容
+    parseOfficeText: (filePath: string, config?: OfficeParserConfig, delimiter?: string) => ipcRenderer.invoke('parseOfficeText', filePath, config, delimiter) as Promise<string>,
     
     // 线程池操作
     threadPoolExecute: (functionName: string, args?: any[]) => ipcRenderer.invoke('threadPoolExecute', functionName, args || []) as Promise<{ success: boolean; result?: any; error?: string }>,

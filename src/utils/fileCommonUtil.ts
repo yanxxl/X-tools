@@ -31,6 +31,10 @@ const FILE_EXTENSIONS = {
   // XLSX文件扩展名
   XLSX: new Set(['xlsx']),
 
+  // 添加一个 officparser 支持的文件扩展名
+  OFFICE_PARSER_SUPPORTED: new Set([
+    'docx','pptx','xlsx','odt','odp','ods','pdf','rtf'
+  ]),
 
   
   // 音频文件扩展名
@@ -144,6 +148,15 @@ export function isImageFile(name: string): boolean {
  */
 export function isVideoFile(name: string): boolean {
   return detectFileType(name) === 'video';
+}
+
+/**
+ * 判断是否为 officeparser 支持的文件格式
+ * @param name 文件名或路径
+ */
+export function isOfficeParserSupported(name: string): boolean {
+  const ext = getExtension(name).toLowerCase();
+  return FILE_EXTENSIONS.OFFICE_PARSER_SUPPORTED.has(ext);
 }
 
 /**

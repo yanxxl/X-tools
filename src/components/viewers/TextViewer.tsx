@@ -5,6 +5,7 @@ import {Center} from "../common/Center";
 import PageSearch from "../common/PageSearch";
 import Speaker from "../common/Speaker";
 import {FontSizeAdjuster} from "../common/FontSizeAdjuster";
+import {isOfficeParserSupported} from "../../utils/fileCommonUtil";
 
 interface TextViewerProps {
     filePath: string;
@@ -22,8 +23,15 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
             setError(null);
 
             if (window.electronAPI) {
-                const fileContent = await window.electronAPI.readFile(filePath);
-                setContent(fileContent);
+                // 如果是 officeparser 支持的文件格式，使用专门的 API 读取文本内容
+                if (isOfficeParserSupported(fileName)) {
+                    const fileContent = await window.electronAPI.parseOfficeText(filePath);
+                    setContent(fileContent);
+                } else {
+                    // 普通文本文件使用常规读取方式
+                    const fileContent = await window.electronAPI.readFile(filePath);
+                    setContent(fileContent);
+                }
             } else {
                 // 浏览器环境下的模拟
                 const response = await fetch(filePath);
