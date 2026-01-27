@@ -3,13 +3,11 @@ import { promises as fs } from 'fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { getDirectoryChildren, getFileInfo, getFileTree, readFileText, writeFileText } from './utils/fileLocalUtil';
+import { readFileLines } from './utils/fileCacheUtil';
 import { loadConfig, saveConfig } from './utils/configManager';
 import { Config } from "./utils/config";
-import chardet from 'chardet';
 import iconv from 'iconv-lite';
 import { spawnSync } from 'child_process';
-import { Worker } from 'worker_threads';
-import { OfficeParser } from './office/OfficeParser';
 import { OfficeParserConfig } from './office/types';
 import workerpool from 'workerpool';
 import { astToJson, astToText, parseOfficeDocument } from './utils/office';
@@ -260,6 +258,17 @@ function registerIpcHandlers() {
             return buffer;
         } catch (error) {
             console.error('读取二进制文件失败:', error);
+            throw error;
+        }
+    });
+
+    // 读取文件内容行列表
+    ipcMain.handle('readFileLines', async (event, filePath: string) => {
+        try {
+            const lines = await readFileLines(filePath);
+            return lines;
+        } catch (error) {
+            console.error('读取文件行列表失败:', error);
             throw error;
         }
     });

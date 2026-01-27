@@ -35,6 +35,7 @@ interface ElectronAPI {
     showItemInFolder: (filePath: string) => Promise<void>;
     readFile: (filePath: string) => Promise<string>;
     readFileBinary: (filePath: string) => Promise<Buffer>;
+    readFileLines: (filePath: string) => Promise<string[]>; // 这个搜索预览时用
     writeFile: (filePath: string, content: string) => Promise<boolean>;
     openExternal: (url: string) => Promise<void>;
 
@@ -89,6 +90,7 @@ const electronAPI: ElectronAPI = {
     showItemInFolder: (filePath: string) => ipcRenderer.invoke('showItemInFolder', filePath) as Promise<void>,
     readFile: (filePath: string) => ipcRenderer.invoke('readFile', filePath) as Promise<string>,
     readFileBinary: (filePath: string) => ipcRenderer.invoke('readFileBinary', filePath) as Promise<Buffer>,
+    readFileLines: (filePath: string) => ipcRenderer.invoke('readFileLines', filePath) as Promise<string[]>,
     writeFile: (filePath: string, content: string) => ipcRenderer.invoke('writeFile', filePath, content) as Promise<boolean>,
     openExternal: (url: string) => ipcRenderer.invoke('openExternal', url) as Promise<void>,
 

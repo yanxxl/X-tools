@@ -2,10 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {Button, Empty, Skeleton, Typography} from 'antd';
 import {FileTextOutlined} from '@ant-design/icons';
 import {Center} from './Center';
-import {isTextFile} from '../../utils/fileCommonUtil';
-import { SearchMatch } from '../../types';
-
-const {Text} = Typography;
+import {isTextFile, isOfficeParserSupported} from '../../utils/fileCommonUtil';
 
 // 样式常量
 const HIGHLIGHT_COLOR = '#fff3cd';
@@ -80,7 +77,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     searchQuery,
     onOpenFile
 }) => {
-    const [content, setContent] = useState<string>('');
+    const [lines, setLines] = useState<string[]>([]);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState<string | null>(null);
 
@@ -90,16 +87,16 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             setPreviewLoading(true);
             setPreviewError(null);
 
-            // 检查是否为文本文件
-            if (!isTextFile(path)) {
-                setPreviewError('该文件不是文本文件，无法预览内容');
-                setContent('');
+            // 检查是否为文本文件或办公文档
+            if (!isTextFile(path) && !isOfficeParserSupported(path)) {
+                setPreviewError('该文件不是文本文件或支持的办公文档，无法预览内容');
+                setLines([]);
                 return;
             }
 
             if (window.electronAPI) {
-                const fileContent = await window.electronAPI.readFile(path);
-                setContent(fileContent);
+                const fileLines = await window.electronAPI.readFileLines(path);
+                setLines(fileLines);
             } else {
                 setPreviewError('无法读取文件：需要在 Electron 环境中运行');
             }
@@ -116,7 +113,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
         if (filePath) {
             loadFileContent(filePath);
         } else {
-            setContent('');
+            setLines([]);
             setPreviewError(null);
         }
     }, [filePath]);
@@ -178,7 +175,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                 </Center>) : (<div style={{
                     backgroundColor: '#fff', border: '1px solid #e8e8e8', borderRadius: '4px', padding: '16px'
                 }}>
-                    {content.split('\n').map((line, index) => (<CodeLine
+                    {lines.map((line, index) => (<CodeLine
                         key={index + 1}
                         lineNumber={index + 1}
                         content={line}
