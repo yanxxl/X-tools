@@ -1,14 +1,31 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Button, message } from 'antd';
 import { ArrowLeftOutlined, ArrowRightOutlined, ZoomInOutlined, ZoomOutOutlined, ReloadOutlined } from '@ant-design/icons';
-import { OfficeParserAST, OfficeContentNode, OfficeAttachment } from '../../office/types';
+import { OfficeAttachment } from '../../office/types';
 
 interface PptxViewerProps {
     path: string;
 }
 
+interface SlideElement {
+    type: string;
+    content: string | string[][];
+    metadata?: Record<string, unknown>;
+}
+
+interface SlideData {
+    elements: SlideElement[];
+}
+
+interface PowerPointJsonData {
+    type: string;
+    metadata: Record<string, unknown>;
+    slides: SlideData[];
+    attachments: OfficeAttachment[];
+}
+
 export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
-    const [presentationData, setPresentationData] = useState<OfficeParserAST | null>(null);
+    const [presentationData, setPresentationData] = useState<PowerPointJsonData | null>(null);
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [zoomLevel, setZoomLevel] = useState(100);
     const [loading, setLoading] = useState(true);
@@ -21,7 +38,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
 
     const handleNextSlide = () => {
         if (presentationData) {
-            setCurrentSlideIndex(prev => Math.min(presentationData.content.length - 1, prev + 1));
+            setCurrentSlideIndex(prev => Math.min(presentationData.slides.length - 1, prev + 1));
         }
     };
 
@@ -54,223 +71,167 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
         }
     };
 
-    // 获取当前幻灯片的图片
-    const getSlideImages = (slide: OfficeContentNode): OfficeAttachment[] => {
-        if (!presentationData) return [];
-        
-        const images: OfficeAttachment[] = [];
-        
-        // 递归查找幻灯片中的图片节点
-        const findImages = (node: OfficeContentNode) => {
-            if (node.type === 'image' && (node.metadata as any)?.attachmentName) {
-                const image = presentationData.attachments.find(att => att.name === (node.metadata as any)?.attachmentName);
-                if (image) {
-                    images.push(image);
-                }
-            }
-            if (node.children) {
-                node.children.forEach(findImages);
-            }
-        };
-        
-        findImages(slide);
-        return images;
-    };
+
 
     // 渲染幻灯片内容
-    const renderSlideContent = (slide: OfficeContentNode) => {
-        const renderNode = (node: OfficeContentNode) => {
-            switch (node.type) {
-                case 'slide':
-                    return (
-                        <div className="slide-content">
-                            {node.children?.map((child, index) => (
-                                <div key={index} className="slide-element">
-                                    {renderNode(child)}
-                                </div>
-                            ))}
-                        </div>
-                    );
-                case 'text':
-                    return (
-                        <span 
-                            style={{
-                                fontWeight: node.formatting?.bold ? 'bold' : 'normal',
-                                fontStyle: node.formatting?.italic ? 'italic' : 'normal',
-                                textDecoration: node.formatting?.underline ? 'underline' : 'none',
-                                color: node.formatting?.color || 'inherit',
-                                fontSize: node.formatting?.size || '16px',
-                                textAlign: node.formatting?.alignment || 'left'
-                            }}
-                        >
-                            {node.text}
-                        </span>
-                    );
-                case 'paragraph':
-                    return (
-                        <p style={{ textAlign: (node.metadata as any)?.alignment || 'left' }}>
-                            {node.children?.map((child, index) => (
-                                <span key={index}>{renderNode(child)}</span>
-                            ))}
-                        </p>
-                    );
-                case 'heading': {
-                    const level = (node.metadata as any)?.level || 1;
-                    const headingProps = {
-                        style: { textAlign: (node.metadata as any)?.alignment || 'left' },
-                        children: node.children?.map((child, index) => (
-                            <span key={index}>{renderNode(child)}</span>
-                        ))
-                    };
-                    
-                    switch (Math.min(level, 6)) {
-                        case 1:
-                            return <h1 {...headingProps} />;
-                        case 2:
-                            return <h2 {...headingProps} />;
-                        case 3:
-                            return <h3 {...headingProps} />;
-                        case 4:
-                            return <h4 {...headingProps} />;
-                        case 5:
-                            return <h5 {...headingProps} />;
-                        default:
-                            return <h6 {...headingProps} />;
-                    }
-                }
-                case 'list': {
-                    const ListTag = (node.metadata as any)?.listType === 'ordered' ? 'ol' : 'ul';
-                    const indentation = (node.metadata as any)?.indentation || 0;
-                    return (
-                        <ListTag style={{ marginLeft: `${indentation * 20}px` }}>
-                            {node.children?.map((child, index) => (
-                                <li key={index}>{renderNode(child)}</li>
-                            ))}
-                        </ListTag>
-                    );
-                }
-                case 'image':
-                    // 图片会在单独的区域渲染
-                    return null;
-                case 'table':
-                    // 渲染表格
-                    return (
-                        <table style={{
-                            borderCollapse: 'collapse',
-                            width: '100%',
-                            marginBottom: '16px'
-                        }}>
-                            <tbody>
-                                {node.children?.map((row, rowIndex) => (
-                                    <React.Fragment key={rowIndex}>{renderNode(row)}</React.Fragment>
-                                ))}
-                            </tbody>
-                        </table>
-                    );
-                case 'row':
-                    // 渲染表格行
-                    return (
-                        <tr>
-                            {node.children?.map((cell, cellIndex) => (
-                                <React.Fragment key={cellIndex}>{renderNode(cell)}</React.Fragment>
-                            ))}
-                        </tr>
-                    );
-                case 'cell':
-                    // 渲染表格单元格
-                    return (
-                        <td style={{
-                            padding: '8px 12px',
-                            border: '1px solid #d9d9d9',
-                            textAlign: 'left',
-                            verticalAlign: 'top'
-                        }}>
-                            {node.children?.map((child, index) => (
-                                <div key={index}>{renderNode(child)}</div>
-                            ))}
-                        </td>
-                    );
-                case 'chart':
-                    // 渲染图表占位符
-                    return (
-                        <div style={{
-                            padding: '20px',
-                            backgroundColor: '#f5f5f5',
-                            borderRadius: '4px',
-                            textAlign: 'center',
-                            marginBottom: '16px'
-                        }}>
-                            [图表] - {node.text || '未命名图表'}
-                        </div>
-                    );
-                case 'drawing':
-                    // 渲染绘图占位符
-                    return (
-                        <div style={{
-                            padding: '20px',
-                            backgroundColor: '#f5f5f5',
-                            borderRadius: '4px',
-                            textAlign: 'center',
-                            marginBottom: '16px'
-                        }}>
-                            [绘图] - {node.text || '未命名绘图'}
-                        </div>
-                    );
-                case 'note':
-                    // 渲染备注
-                    return (
-                        <div style={{
-                            padding: '12px',
-                            backgroundColor: '#fff3cd',
-                            borderRadius: '4px',
-                            border: '1px solid #ffeaa7',
-                            marginBottom: '16px'
-                        }}>
-                            <strong>备注:</strong> {renderNode({ ...node, type: 'paragraph' })}
-                        </div>
-                    );
-                default:
-                    // 处理其他未识别的节点类型
-                    return (
-                        <div style={{ marginBottom: '8px' }}>
-                            {node.children?.map((child, index) => (
-                                <div key={index}>{renderNode(child)}</div>
-                            ))}
-                        </div>
-                    );
-            }
-        };
-
-        return renderNode(slide);
-    };
-
-    // 渲染幻灯片图片
-    const renderSlideImages = (slide: OfficeContentNode) => {
-        const images = getSlideImages(slide);
+    const renderSlideContent = (slideData: SlideData) => {
         return (
-            <div className="slide-images">
-                {images.map((image, index) => (
-                    <img 
-                        key={index}
-                        src={`data:${image.mimeType};base64,${image.data}`} 
-                        alt={image.altText || image.name} 
-                        className="slide-image"
-                    />
-                ))}
+            <div className="slide-content">
+                {slideData.elements.map((element, index) => {
+                    switch (element.type) {
+                        case 'heading': {
+                            const level = (element.metadata?.level as number) || 1;
+                            const alignment = (element.metadata?.alignment as string) || 'left';
+                            const headingStyle = {
+                                textAlign: alignment as 'left' | 'center' | 'right' | 'justify',
+                                marginBottom: '12px'
+                            };
+
+                            switch (Math.min(level, 6)) {
+                                case 1:
+                                    return <h1 key={index} style={headingStyle}>{element.content as string}</h1>;
+                                case 2:
+                                    return <h2 key={index} style={headingStyle}>{element.content as string}</h2>;
+                                case 3:
+                                    return <h3 key={index} style={headingStyle}>{element.content as string}</h3>;
+                                case 4:
+                                    return <h4 key={index} style={headingStyle}>{element.content as string}</h4>;
+                                case 5:
+                                    return <h5 key={index} style={headingStyle}>{element.content as string}</h5>;
+                                default:
+                                    return <h6 key={index} style={headingStyle}>{element.content as string}</h6>;
+                            }
+                        }
+                        case 'paragraph': {
+                            const paragraphAlignment = (element.metadata?.alignment as string) || 'left';
+                            return (
+                                <p key={index} style={{
+                                    textAlign: paragraphAlignment as 'left' | 'center' | 'right' | 'justify',
+                                    marginBottom: '12px',
+                                    lineHeight: '1.5'
+                                }}>
+                                    {element.content as string}
+                                </p>
+                            );
+                        }
+                        case 'table':
+                            if (Array.isArray(element.content)) {
+                                return (
+                                    <table key={index} style={{
+                                        borderCollapse: 'collapse',
+                                        width: '100%',
+                                        marginBottom: '16px'
+                                    }}>
+                                        <tbody>
+                                            {(element.content as string[][]).map((row, rowIndex) => (
+                                                <tr key={rowIndex}>
+                                                    {row.map((cell, cellIndex) => (
+                                                        <td key={cellIndex} style={{
+                                                            padding: '8px 12px',
+                                                            border: '1px solid #d9d9d9',
+                                                            textAlign: 'left',
+                                                            verticalAlign: 'top'
+                                                        }}>
+                                                            {cell || ''}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                );
+                            }
+                            return null;
+                        case 'list':
+                            return (
+                                <div key={index} style={{ marginBottom: '12px' }}>
+                                    {(element.content as string).split('\n').map((item, itemIndex) => (
+                                        <div key={itemIndex} style={{
+                                            marginLeft: '20px',
+                                            marginBottom: '4px'
+                                        }}>
+                                            • {item}
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        case 'image': {
+                            // 在幻灯片内容中直接渲染图片
+                            const imageAttachment = presentationData?.attachments.find(att =>
+                                att.name === (element.metadata?.attachmentName as string)
+                            );
+
+                            if (imageAttachment) {
+                                return (
+                                    <div key={index} style={{
+                                        textAlign: 'center',
+                                        marginBottom: '16px',
+                                        padding: '8px'
+                                    }}>
+                                        <img
+                                            src={`data:${imageAttachment.mimeType};base64,${imageAttachment.data}`}
+                                            alt={imageAttachment.altText || imageAttachment.name}
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '300px',
+                                                height: 'auto',
+                                                borderRadius: '4px',
+                                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                                                objectFit: 'contain'
+                                            }}
+                                        />
+                                        {imageAttachment.altText && (
+                                            <div style={{
+                                                marginTop: '8px',
+                                                fontSize: '14px',
+                                                color: '#666',
+                                                fontStyle: 'italic'
+                                            }}>
+                                                {imageAttachment.altText}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            }
+
+                            // 如果没有找到对应的附件，显示占位符
+                            return (
+                                <div key={index} style={{
+                                    padding: '20px',
+                                    backgroundColor: '#f5f5f5',
+                                    borderRadius: '4px',
+                                    textAlign: 'center',
+                                    marginBottom: '16px',
+                                    border: '1px dashed #d9d9d9'
+                                }}>
+                                    [图片] - {element.content as string}
+                                </div>
+                            );
+                        }
+                        default:
+                            return (
+                                <div key={index} style={{ marginBottom: '8px' }}>
+                                    {element.content as string}
+                                </div>
+                            );
+                    }
+                })}
             </div>
         );
     };
+
+
 
     // 解析 PPTX 文件
     useEffect(() => {
         const parsePptx = async () => {
             setLoading(true);
             try {
-                const contentAST = await window.electronAPI.parseOffice(path, {
+                const contentJSON = await window.electronAPI.parseOffice(path, {
                     extractAttachments: true,
                     includeRawContent: true
                 });
-                setPresentationData(contentAST);
+                setPresentationData(contentJSON);
                 setCurrentSlideIndex(0);
                 setLoading(false);
             } catch (error) {
@@ -305,7 +266,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
         );
     }
 
-    if (!presentationData || presentationData.content.length === 0) {
+    if (!presentationData || presentationData.slides.length === 0) {
         return (
             <div style={{
                 height: '100%',
@@ -319,8 +280,8 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
         );
     }
 
-    const currentSlide = presentationData.content[currentSlideIndex];
-    const totalSlides = presentationData.content.length;
+    const currentSlide = presentationData.slides[currentSlideIndex];
+    const totalSlides = presentationData.slides.length;
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -342,9 +303,9 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                     >
                         上一张
                     </Button>
-                    
+
                     <span>幻灯片 {currentSlideIndex + 1} / {totalSlides}</span>
-                    
+
                     <Button
                         type="primary"
                         icon={<ArrowRightOutlined />}
@@ -354,7 +315,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                         下一张
                     </Button>
                 </div>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Button
                         type="text"
@@ -386,33 +347,37 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                 flex: 1,
                 overflow: 'auto',
                 padding: '20px',
-                backgroundColor: '#f0f2f5'
+                backgroundColor: '#f0f2f5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
             }}>
-                {/* 确保容器与内容区域大小一致，避免缩放影响滚动 */}
+                {/* 16:9 宽高比的幻灯片容器 */}
                 <div style={{
-                    width: '100%',
-                    minHeight: '100%',
+                    width: '80%',
+                    maxWidth: '1200px',
+                    aspectRatio: '16 / 9',
                     display: 'flex',
-                    justifyContent: 'center' // 仅水平居中，不垂直居中
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 }}>
                     <div
                         ref={slideContainerRef}
                         style={{
                             transform: `scale(${zoomLevel / 100})`,
-                            transformOrigin: 'top center', // 调整缩放原点到顶部中心
+                            transformOrigin: 'center', // 从中心缩放
                             backgroundColor: 'white',
                             borderRadius: '8px',
                             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                            padding: '20px',
-                            width: 'auto', // 让宽度完全由内容决定
-                            minWidth: '800px', // 保持合理的最小宽度
-                            maxWidth: '100%', // 确保不超过容器宽度
-                            overflow: 'visible'
+                            padding: '40px',
+                            width: '100%',
+                            height: '100%',
+                            boxSizing: 'border-box',
+                            overflow: 'auto'
                         }}
                     >
                         <div className="slide">
                             {renderSlideContent(currentSlide)}
-                            {renderSlideImages(currentSlide)}
                         </div>
                     </div>
                 </div>

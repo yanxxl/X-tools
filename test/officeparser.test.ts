@@ -19,7 +19,7 @@ async function testOfficeParser() {
         const ext = path.extname(file).toLowerCase();
 
         // 只测试Excel文档格式
-        if (['.docx', '.xlsx', '.pptx', '.pdf'].includes(ext)) {
+        if (['.pptx'].includes(ext)) {
             console.log(`正在解析文件: ${file}`);
             console.log('='.repeat(40));
 
@@ -45,12 +45,12 @@ async function testOfficeParser() {
                 
                 resultContent += `默认文本内容----------------------:\n${defaultTextContent}\n\n`;
 
-                // // 获取JSON内容
-                // console.log(`JSON内容:`);
-                // const jsonContent = JSON.stringify(astToJson(contentAST), null, 2);
-                // console.log(jsonContent);
+                // 获取JSON内容
+                console.log(`JSON内容:`);
+                const jsonContent = JSON.stringify(astToJson(contentAST), null, 2);
+                console.log(jsonContent);
                 
-                // resultContent += `JSON内容----------------------:\n${jsonContent}\n\n`;
+                resultContent += `JSON内容----------------------:\n${jsonContent}\n\n`;
 
                 // // 获取AST内容
                 // console.log(`AST内容:`);

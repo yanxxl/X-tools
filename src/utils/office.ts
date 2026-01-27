@@ -43,12 +43,8 @@ const parseOfficeDocument = async (
  * Excel-specific JSON conversion with simplified human-readable structure
  */
 const excelToJson = (ast: OfficeParserAST): any => {
-    const result = {
-        type: ast.type,
-        metadata: ast.metadata,
-        sheets: [] as any[],
-        attachments: ast.attachments || []
-    };
+    const usedAttachmentNames = new Set<string>();
+    const sheets: any[] = [];
 
     ast.content.forEach((sheetNode, sheetIndex) => {
         if (sheetNode.type === 'sheet' && sheetNode.children) {
@@ -99,6 +95,10 @@ const excelToJson = (ast: OfficeParserAST): any => {
                                         return node.children.map(child => {
                                             if (child.type === 'text') {
                                                 return child.text || '';
+                                            }
+                                            // 检查图片节点并记录使用的附件
+                                            if (child.type === 'image' && child.metadata && 'attachmentName' in child.metadata) {
+                                                usedAttachmentNames.add((child.metadata as any).attachmentName);
                                             }
                                             return extractCellText(child);
                                         }).join('');
@@ -155,11 +155,21 @@ const excelToJson = (ast: OfficeParserAST): any => {
                 }
             });
 
-            result.sheets.push(sheetData);
+            sheets.push(sheetData);
         }
     });
 
-    return result;
+    // 只保留在正文中出现过的附件
+    const usedAttachments = ast.attachments?.filter(attachment => 
+        usedAttachmentNames.has(attachment.name)
+    ) || [];
+
+    return {
+        type: ast.type,
+        metadata: ast.metadata,
+        sheets,
+        attachments: usedAttachments
+    };
 };
 
 /**
@@ -190,12 +200,8 @@ const excelToMarkdown = (ast: OfficeParserAST, delimiter = '\n'): string => {
  * PowerPoint-specific JSON conversion with simplified human-readable structure
  */
 const powerpointToJson = (ast: OfficeParserAST): any => {
-    const result = {
-        type: ast.type,
-        metadata: ast.metadata,
-        slides: [] as any[],
-        attachments: ast.attachments || []
-    };
+    const usedAttachmentNames = new Set<string>();
+    const slides: any[] = [];
 
     const extractSlideData = (node: OfficeContentNode): any => {
         const slideData = {
@@ -271,6 +277,11 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
 
             // 处理图片
             if (node.type === 'image') {
+                // 记录使用的附件名称
+                if (node.metadata && 'attachmentName' in node.metadata) {
+                    usedAttachmentNames.add((node.metadata as any).attachmentName);
+                }
+                
                 slideData.elements.push({
                     type: 'image',
                     content: node.text || '图片',
@@ -319,10 +330,20 @@ const powerpointToJson = (ast: OfficeParserAST): any => {
 
     ast.content.forEach((node) => {
         const slideData = extractSlideData(node);
-        result.slides.push(slideData);
+        slides.push(slideData);
     });
 
-    return result;
+    // 只保留在正文中出现过的附件
+    const usedAttachments = ast.attachments?.filter(attachment => 
+        usedAttachmentNames.has(attachment.name)
+    ) || [];
+
+    return {
+        type: ast.type,
+        metadata: ast.metadata,
+        slides,
+        attachments: usedAttachments
+    };
 };
 
 /**
