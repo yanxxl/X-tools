@@ -5,6 +5,7 @@ import { HistoryOutlined, SearchOutlined } from '@ant-design/icons';
 import { useAppContext } from '../../contexts/AppContext';
 import { GlobalSearchPreview } from './GlobalSearchPreview';
 import { GlobalSearchResults } from './GlobalSearchResults';
+import { DangerText } from './DangerText';
 import { FileNode, SearchMatch, SearchResult } from '../../types';
 import { extractPathsFromTree } from '../../utils/fileTreeUtils';
 import { isTextFile } from '../../utils/fileCommonUtil';
@@ -272,15 +273,33 @@ export const GlobalSearch: React.FC = () => {
 
                     {/* 搜索历史 */}
                     {searchHistory.length > 0 && !searching && searchResults.length === 0 && (
-                        <Card size="small" title="搜索历史" style={{ marginBottom: 16 }}>
+                        <Card 
+                            size="small" 
+                            title={
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span>搜索历史</span>
+                                    <DangerText 
+                                        onClick={() => {
+                                            setSearchHistory([]);
+                                            storage.set('search-history', []);
+                                            message.success('搜索历史已清空');
+                                        }}
+                                        title="清空搜索历史"
+                                        style={{ padding: 0 }}
+                                    >
+                                        清空
+                                    </DangerText>
+                                </div>
+                            }
+                            style={{ marginBottom: 16 }}
+                        >
                             {searchHistory.map((item, index) => (
                                 <Button
                                     key={index}
                                     type="link"
                                     onClick={() => setSearchQuery(item)}
                                     style={{ padding: '4px 8px', height: 'auto' }}
-                                >
-                                    <HistoryOutlined style={{ marginRight: 8 }} />
+                                >                
                                     {item}
                                 </Button>
                             ))}
