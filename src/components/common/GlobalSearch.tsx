@@ -52,6 +52,9 @@ export const GlobalSearch: React.FC = () => {
 
         setSearching(true);
         setSearchResults([]);
+        setPreviewFilePath('');
+        setPreviewFileName('');
+        setPreviewLine(undefined);
         cancelSearchRef.current = false;
 
         // 生成待搜索文件列表
@@ -80,6 +83,7 @@ export const GlobalSearch: React.FC = () => {
             const maxConcurrent = 12;
             let activeTasks = 0;
             let currentIndex = 0;
+            let completedCount = 0;
 
             const processNextFile = async () => {
                 // 检查是否需要取消搜索
@@ -110,8 +114,8 @@ export const GlobalSearch: React.FC = () => {
                 } catch (error) {
                     console.error(`搜索文件失败: ${file}`, error);
                 } finally {
-                    // 更新已完成文件数
-                    setCompletedFiles(prev => prev + 1);
+                    // 批量更新已完成文件数
+                    completedCount++;
                     // 减少活跃任务计数
                     activeTasks--;
                     // 继续处理下一个文件
@@ -125,6 +129,13 @@ export const GlobalSearch: React.FC = () => {
             for (let i = 0; i < Math.min(maxConcurrent, totalFiles); i++) {
                 processNextFile();
             }
+
+            const countInterval = setInterval(() => {
+                setCompletedFiles(completedCount);
+                if (completedCount === totalFiles) {
+                    clearInterval(countInterval);
+                }
+            }, 25);
 
             // 等待所有任务完成
             const checkCompletion = setInterval(() => {
@@ -273,12 +284,12 @@ export const GlobalSearch: React.FC = () => {
 
                     {/* 搜索历史 */}
                     {searchHistory.length > 0 && !searching && searchResults.length === 0 && (
-                        <Card 
-                            size="small" 
+                        <Card
+                            size="small"
                             title={
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span>搜索历史</span>
-                                    <DangerText 
+                                    <DangerText
                                         onClick={() => {
                                             setSearchHistory([]);
                                             storage.set('search-history', []);
@@ -299,7 +310,7 @@ export const GlobalSearch: React.FC = () => {
                                     type="link"
                                     onClick={() => setSearchQuery(item)}
                                     style={{ padding: '4px 8px', height: 'auto' }}
-                                >                
+                                >
                                     {item}
                                 </Button>
                             ))}
@@ -308,14 +319,21 @@ export const GlobalSearch: React.FC = () => {
 
                     {/* 搜索结果展示 */}
                     <div style={{ flex: 1, overflow: 'hidden' }}>
-                        <GlobalSearchResults
-                            searchResults={searchResults}
-                            searchQuery={searchQuery}
-                            searchMode={searchMode}
-                            searchPath={searchPath}
-                            searching={searching}
-                            onResultClick={handleResultClick}
-                        />
+                        {searching ? (
+                            <Typography.Text style={{ fontSize: '14px' }}>
+                                已找到 {searchResults.length} 个结果
+                            </Typography.Text>
+                        ) : (
+                            <GlobalSearchResults
+                                searchResults={searchResults}
+                                searchQuery={searchQuery}
+                                searchMode={searchMode}
+                                searchPath={searchPath}
+                                searching={searching}
+                                onResultClick={handleResultClick}
+                            />
+                        )
+                        }
                     </div>
                 </div>
             </Splitter.Panel>

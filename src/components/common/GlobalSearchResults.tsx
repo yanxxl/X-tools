@@ -109,31 +109,12 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
 
         return sorted;
     };
-
-    // 开始搜索时，重置状态，搜索完成时，设置结果
+    
+    // 前端已改成一次性给结果，否则性能问题，卡顿异常
     useEffect(() => {
-        if (searching) {
-            setSortedResults([]);
-            setSortedGroupedResults({});
-            setTotalMatches(0);
-            setExpanded(false);
-            setActiveKeys([]);
-        } else {
-            const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
-            setTotalMatches(matches);
-            setSortedResults([...searchResults]);
-        }
-    }, [searching]);
-
-    // 当搜索结果变化时，少更新，多等搜索完成再更新
-    useEffect(() => {
-        // 少的时候，直接展示。多了就搜索完再展示
-        if (searchResults.length <= 30) {
-            const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
-            setTotalMatches(matches);
-            setSortedResults([...searchResults]);
-            return;
-        }
+        const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
+        setTotalMatches(matches);
+        setSortedResults([...searchResults]);
     }, [searchResults]);
 
     // 当设置排序条件时，自动设置默认排序顺序
