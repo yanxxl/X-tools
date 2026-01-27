@@ -8,7 +8,6 @@ export default defineConfig({
             input: {
                 main: resolve(__dirname, 'src/main.ts'),
                 preload: resolve(__dirname, 'src/preload.ts'),
-                searchWorker: resolve(__dirname, 'src/utils/searchWorker.ts'),
                 poolWorker: resolve(__dirname, 'src/utils/poolWorker.ts'),
             },
             output: {

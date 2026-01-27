@@ -71,9 +71,6 @@ if (started) {
     app.quit();
 }
 
-// 用于存储当前活动的搜索Worker线程
-const activeSearchWorkers = new Map<string, any>();
-
 // 存储窗口与文件夹的映射关系
 const windowFolderMap = new Map<Electron.BrowserWindow, string | undefined>();
 
@@ -372,84 +369,7 @@ function registerIpcHandlers() {
         return false;
     });
 
-    // 搜索文件内容 - 使用Worker线程
-    ipcMain.handle('searchFilesContent', async (event, dirPath: string, query: string, searchId: string, searchMode: 'content' | 'filename' = 'content') => {
-        // Worker和path、app已经在文件顶部导入
 
-        return new Promise((resolve, reject) => {
-            // 创建Worker线程 - 根据是否打包使用不同的路径
-            let workerPath;
-            if (__dirname.includes('.vite/build')) {
-                // 开发模式下，Worker文件直接在.vite/build目录下
-                workerPath = path.join(__dirname, 'searchWorker.js');
-            } else if (app.isPackaged) {
-                // 打包后，Worker文件在ASAR归档中，使用app.getAppPath()获取路径
-                workerPath = path.join(app.getAppPath(), '.vite/build/searchWorker.js');
-            } else {
-                // 其他情况，使用源码路径
-                workerPath = path.join(app.getAppPath(), 'src', 'utils', 'searchWorker.ts');
-            }
-
-            const worker = new Worker(workerPath, {
-                workerData: { dirPath, query, searchId, searchMode }
-            });
-
-            // 存储Worker引用以便后续取消
-            activeSearchWorkers.set(searchId, worker);
-
-            const results: any[] = [];
-
-            // 监听Worker线程消息
-            worker.on('message', (message: any) => {
-                if (message.type === 'progress') {
-                    // 转发进度更新到渲染进程
-                    event.sender.send('searchProgress', message.data);
-                } else if (message.type === 'fileResult') {
-                    // 接收到单个文件的搜索结果
-                    if (message.data === null) {
-                        // 搜索完成
-                        event.sender.send('searchFileResult', { searchId, data: null }); // 发送结束信号到前端
-                        activeSearchWorkers.delete(searchId); // 清除活动Worker引用
-                        resolve(results);
-                    } else {
-                        // 添加到结果列表并发送到前端
-                        results.push(message.data);
-                        event.sender.send('searchFileResult', { searchId, data: message.data });
-                    }
-                } else if (message.type === 'error') {
-                    // 搜索出错
-                    activeSearchWorkers.delete(searchId); // 清除活动Worker引用
-                    reject(new Error(message.data));
-                }
-            });
-
-            // 监听Worker线程错误
-            worker.on('error', (error: Error) => {
-                console.error('Worker线程错误:', error);
-                activeSearchWorkers.delete(searchId); // 清除活动Worker引用
-                reject(error);
-            });
-
-            // 监听Worker线程退出
-            worker.on('exit', (code: number) => {
-                if (code !== 0) {
-                    console.error(`Worker线程退出，退出码: ${code}`);
-                }
-                activeSearchWorkers.delete(searchId); // 确保清除活动Worker引用
-            });
-        });
-    });
-
-    // 取消搜索
-    ipcMain.handle('cancelSearch', async (event, searchId: string) => {
-        const worker = activeSearchWorkers.get(searchId);
-        if (worker) {
-            worker.terminate(); // 终止Worker线程
-            activeSearchWorkers.delete(searchId); // 清除引用
-            return true;
-        }
-        return false;
-    });
 
     // 创建新窗口
     ipcMain.handle('createNewWindow', async (event, folderPath?: string) => {
