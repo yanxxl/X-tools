@@ -77,7 +77,7 @@ export const GlobalSearch: React.FC = () => {
         // 并发执行搜索，最多 6 个并发
         const executeSearchConcurrently = async () => {
             const totalFiles = searchFiles.length;
-            const maxConcurrent = 6;
+            const maxConcurrent = 12;
             let activeTasks = 0;
             let currentIndex = 0;
 

@@ -77,9 +77,6 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
     const [expanded, setExpanded] = useState<boolean>(false);
     const [activeKeys, setActiveKeys] = useState<string[]>([]);
 
-    // 防抖引用
-    const debounceRef = useRef<NodeJS.Timeout | null>(null);
-
     // 排序函数
     const sortResults = (): SearchResult[] => {
         // 如果是默认排序，根据排序顺序返回原始顺序或反转顺序
@@ -113,33 +110,30 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
         return sorted;
     };
 
-    // 当搜索结果变化时，使用防抖机制更新结果，减少渲染次数
+    // 开始搜索时，重置状态，搜索完成时，设置结果
     useEffect(() => {
-        // 清除之前的防抖定时器
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
+        if (searching) {
+            setSortedResults([]);
+            setSortedGroupedResults({});
+            setTotalMatches(0);
+            setExpanded(false);
+            setActiveKeys([]);
+        } else {
+            const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
+            setTotalMatches(matches);
+            setSortedResults([...searchResults]);
         }
+    }, [searching]);
 
-        const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
-        setTotalMatches(matches);
-
-        // 少的时候，直接展示
-        if (searchResults.length <= 20) {
+    // 当搜索结果变化时，少更新，多等搜索完成再更新
+    useEffect(() => {
+        // 少的时候，直接展示。多了就搜索完再展示
+        if (searchResults.length <= 30) {
+            const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
+            setTotalMatches(matches);
             setSortedResults([...searchResults]);
             return;
         }
-
-        // 多的时候，设置新的防抖定时器，1000ms 后更新结果
-        debounceRef.current = setTimeout(() => {
-            setSortedResults([...searchResults]);
-        }, 1000);
-
-        // 清理函数
-        return () => {
-            if (debounceRef.current) {
-                clearTimeout(debounceRef.current);
-            }
-        };
     }, [searchResults]);
 
     // 当设置排序条件时，自动设置默认排序顺序
@@ -226,7 +220,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                         <Text type="secondary">{expanded ? '折叠' : '展开'}</Text>
                     </Button>
                 </Space>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>                    
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Text type="secondary">分组:</Text>
                         <Switch
