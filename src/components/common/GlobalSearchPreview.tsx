@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
-import {Button, Empty, Skeleton, Typography} from 'antd';
+import {Button, Empty, Skeleton} from 'antd';
 import {FileTextOutlined} from '@ant-design/icons';
 import {Center} from './Center';
 import {isTextFile, isOfficeParserSupported} from '../../utils/fileCommonUtil';
+import {useAppContext} from '../../contexts/AppContext';
 
 // 样式常量
 const HIGHLIGHT_COLOR = '#fff3cd';
@@ -67,16 +68,15 @@ interface GlobalSearchPreviewProps {
     fileName?: string;
     line?: number;
     searchQuery?: string;
-    onOpenFile?: (filePath: string, fileName: string) => void;
 }
 
 export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     filePath,
     fileName,
     line,
-    searchQuery,
-    onOpenFile
+    searchQuery
 }) => {
+    const { setCurrentFile, setSearchPanelOpen } = useAppContext();
     const [lines, setLines] = useState<string[]>([]);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState<string | null>(null);
@@ -134,6 +134,16 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
         }
     }, [line]);
 
+    // 处理打开文件
+    const handleOpenFile = () => {
+        if (filePath) {
+            // 设置当前文件
+            setCurrentFile(filePath);
+            // 关闭搜索窗口
+            setSearchPanelOpen(false);
+        }
+    };
+
     return (<div style={{height: '100%', display: 'flex', flexDirection: 'column', padding: 16}}>
         {filePath ? (<div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
             {/* 预览标题栏 */}
@@ -153,7 +163,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                     <Button
                         type="primary"
                         size="small"
-                        onClick={() => onOpenFile?.(filePath, fileName || '')}
+                        onClick={handleOpenFile}
                         title="在主视图中打开文件"
                     >
                         打开文件
