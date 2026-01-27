@@ -1,9 +1,9 @@
-import React, {useEffect, useState} from 'react';
-import {Button, Empty, Skeleton} from 'antd';
-import {FileTextOutlined} from '@ant-design/icons';
-import {Center} from './Center';
-import {isTextFile, isOfficeParserSupported} from '../../utils/fileCommonUtil';
-import {useAppContext} from '../../contexts/AppContext';
+import React, { useEffect, useState } from 'react';
+import { Button, Empty, Skeleton } from 'antd';
+import { FileTextOutlined } from '@ant-design/icons';
+import { Center } from './Center';
+import { isTextFile, isOfficeParserSupported } from '../../utils/fileCommonUtil';
+import { useAppContext } from '../../contexts/AppContext';
 
 // 样式常量
 const HIGHLIGHT_COLOR = '#fff3cd';
@@ -14,7 +14,7 @@ const SCROLL_DELAY = 300;
 // 代码行组件
 const CodeLine: React.FC<{
     lineNumber: number; content: string; searchQuery?: string;
-}> = ({lineNumber, content, searchQuery}) => {
+}> = ({ lineNumber, content, searchQuery }) => {
     const highlightContent = (text: string, query?: string) => {
         if (!query || !text) {
             return text || '\u00A0';
@@ -32,8 +32,8 @@ const CodeLine: React.FC<{
                             backgroundColor: SEARCH_HIGHLIGHT_COLOR, fontWeight: 'bold', padding: '0 2px', borderRadius: '2px'
                         }}
                     >
-                            {part}
-                        </span>);
+                        {part}
+                    </span>);
                 }
                 return part;
             });
@@ -121,16 +121,17 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     // 处理行号跳转
     useEffect(() => {
         if (line) {
-            setTimeout(() => {
+            const interval = setInterval(() => {
                 const targetElement = document.getElementById(`search-preview-line-${line}`);
                 if (targetElement) {
-                    targetElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     targetElement.style.backgroundColor = HIGHLIGHT_COLOR;
                     setTimeout(() => {
                         targetElement.style.backgroundColor = '';
-                    }, HIGHLIGHT_DURATION);
+                    }, 1500);
+                    clearInterval(interval);
                 }
-            }, SCROLL_DELAY);
+            }, 100);
         }
     }, [line]);
 
@@ -144,22 +145,22 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
         }
     };
 
-    return (<div style={{height: '100%', display: 'flex', flexDirection: 'column', padding: 16}}>
-        {filePath ? (<div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+    return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 16 }}>
+        {filePath ? (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* 预览标题栏 */}
             <div style={{
                 padding: '8px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa',
             }}>
-                <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                    <FileTextOutlined/>
-                    <h2 style={{margin: 0, fontSize: '16px', fontWeight: 500}}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined />
+                    <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 500 }}>
                         {fileName}
-                        {line && (<span style={{color: '#999', fontSize: '14px', marginLeft: '8px'}}>
-                                    (行 {line})
-                                </span>)}
+                        {line && (<span style={{ color: '#999', fontSize: '14px', marginLeft: '8px' }}>
+                            (行 {line})
+                        </span>)}
                     </h2>
                 </div>
-                <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <Button
                         type="primary"
                         size="small"
@@ -172,10 +173,10 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             </div>
 
             {/* 预览内容 */}
-            <div style={{flex: 1, overflow: 'auto', backgroundColor: '#fafafa', padding: '16px', borderRadius: '4px'}}>
+            <div style={{ flex: 1, overflow: 'auto', backgroundColor: '#fafafa', padding: '16px', borderRadius: '4px' }}>
                 {previewLoading ? (
-                    <div style={{padding: 24}}>
-                        <Skeleton active paragraph={{rows: 3}}/>
+                    <div style={{ padding: 24 }}>
+                        <Skeleton active paragraph={{ rows: 3 }} />
                     </div>
                 ) : previewError ? (<Center>
                     <Empty
