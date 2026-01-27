@@ -12,6 +12,7 @@ import { Worker } from 'worker_threads';
 import { OfficeParser } from './office/OfficeParser';
 import { OfficeParserConfig } from './office/types';
 import workerpool from 'workerpool';
+import { astToJson, parseOfficeDocument } from './utils/office';
 
 // 添加环境变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -271,7 +272,7 @@ function registerIpcHandlers() {
     // 解析Office文档（通用方法）
     ipcMain.handle('parseOffice', async (event, filePath: string, config?: OfficeParserConfig) => {
         try {
-            const result = await OfficeParser.parseOffice(filePath, config);
+            const result = astToJson(await parseOfficeDocument(filePath, config));
             return result;
         } catch (error) {
             console.error('解析Office文件失败:', error);
