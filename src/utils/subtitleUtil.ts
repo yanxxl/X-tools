@@ -3,7 +3,7 @@
 // =======================================
 
 import { FileNode } from '../types';
-import { getExtension, dirname, nameWithoutExtension, join } from './fileCommonUtil';
+import { getExtension, dirname, nameWithoutExtension, join, isVideoFile, isAudioFile } from './fileCommonUtil';
 
 // =======================================
 // 字幕文件相关功能
@@ -15,6 +15,12 @@ import { getExtension, dirname, nameWithoutExtension, join } from './fileCommonU
 const SUBTITLE_EXTENSIONS = new Set([
   'srt', 'ass', 'ssa', 'sub', 'vtt'
 ]);
+
+/**
+ * 字幕时间行正则表达式
+ * 匹配格式：时间 --> 时间（如 "00:01:30,000 --> 00:01:35,000"）
+ */
+const SUBTITLE_TIME_LINE_REGEX = /^(.*?) --> (.*?)$/;
 
 /**
  * 判断是否为字幕文件
@@ -64,6 +70,44 @@ export async function findSubtitleFiles(videoPath: string): Promise<string[]> {
   }
 }
 
+/**
+ * 根据字幕文件名查找对应的视频或音频文件
+ * @param subtitlePath 字幕文件路径
+ * @returns 视频或音频文件路径数组
+ */
+export async function findVideoFiles(subtitlePath: string): Promise<string[]> {
+  try {
+    const subtitleDir = dirname(subtitlePath);
+    const subtitleName = nameWithoutExtension(subtitlePath);
+    
+    // 项目仅在 Electron 环境下运行，直接使用 electronAPI
+    const children = await window.electronAPI.getDirectoryChildren(subtitleDir);
+    return children
+      .filter((child: FileNode) => {
+        // 只处理文件，不处理目录
+        if (child.isDirectory) return false;
+        
+        const fileName = child.name;
+        
+        // 检查是否为视频或音频文件
+        if (!isVideoFile(fileName) && !isAudioFile(fileName)) return false;
+        
+        const videoBaseName = nameWithoutExtension(fileName);
+        
+        // 情况1：完全匹配（video.mp4 对应 video.srt）
+        if (videoBaseName === subtitleName) return true;
+        
+        // 情况2：字幕文件带有语言扩展（video.en.srt 对应 video.mp4）
+        // 检查字幕文件名是否以视频文件名开头
+        return subtitleName.startsWith(`${videoBaseName}.`);
+      })
+      .map((child: FileNode) => join(subtitleDir, child.name));
+  } catch (error) {
+    console.error('查找视频文件失败:', error);
+    return [];
+  }
+}
+
 // =======================================
 // 字幕解析功能
 // =======================================
@@ -88,7 +132,7 @@ export interface SubtitleItem {
  * @param timeStr 时间格式字符串
  * @returns 转换后的秒数
  */
-function timeToSeconds(timeStr: string): number {
+export function timeToSeconds(timeStr: string): number {
   // 替换逗号为点号，统一处理
   let normalizedTime = timeStr.replace(',', '.');
   
@@ -148,6 +192,32 @@ function timeToSeconds(timeStr: string): number {
 }
 
 /**
+ * 判断是否为字幕时间行
+ * @param line 行内容
+ * @returns 如果是字幕时间行返回 true，否则返回 false
+ */
+export function isSubtitleTimeLine(line: string): boolean {
+  return SUBTITLE_TIME_LINE_REGEX.test(line);
+}
+
+/**
+ * 从字幕行中提取时间范围
+ * @param timeLine 时间行内容（如 "00:01:30,000 --> 00:01:35,000"）
+ * @returns 包含开始时间和结束时间的对象，如果格式不匹配则返回 null
+ */
+export function extractTimeRange(timeLine: string): { startTime: number; endTime: number } | null {
+  if (!isSubtitleTimeLine(timeLine)) return null;
+  
+  const timeMatch = timeLine.match(SUBTITLE_TIME_LINE_REGEX);
+  if (!timeMatch) return null;
+  
+  const startTime = timeToSeconds(timeMatch[1]);
+  const endTime = timeToSeconds(timeMatch[2]);
+  
+  return { startTime, endTime };
+}
+
+/**
  * 解析SRT格式的字幕文件
  * @param content 字幕文件内容
  * @returns 解析后的字幕数组
@@ -167,19 +237,16 @@ export function parseSrtSubtitle(content: string): SubtitleItem[] {
     if (isNaN(index)) return;
     
     // 解析时间范围
-    const timeMatch = lines[1].match(/^(.*?) --> (.*?)$/);
-    if (!timeMatch) return;
-    
-    const startTime = timeToSeconds(timeMatch[1]);
-    const endTime = timeToSeconds(timeMatch[2]);
+    const timeRange = extractTimeRange(lines[1]);
+    if (!timeRange) return;
     
     // 解析文本内容（可能多行）
     const text = lines.slice(2).join('\n').trim();
     
     subtitles.push({
       index,
-      startTime,
-      endTime,
+      startTime: timeRange.startTime,
+      endTime: timeRange.endTime,
       text
     });
   });
