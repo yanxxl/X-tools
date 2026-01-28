@@ -207,7 +207,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 500 }}>
                         {fileName}
                         {line && (<span style={{ color: '#999', fontSize: '14px', marginLeft: '8px' }}>
-                            (行 {line})
+                            (行 {line}/{lines.length})
                         </span>)}
                     </h2>
                 </div>
