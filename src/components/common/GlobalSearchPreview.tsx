@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Empty, Skeleton, Select, Space } from 'antd';
-import { FileTextOutlined } from '@ant-design/icons';
 import { Center } from './Center';
+import { FileIcon } from './FileIcon';
 import { isTextFile, isOfficeParserSupported } from '../../utils/fileCommonUtil';
 import { isSubtitleFile, findVideoFiles, timeToSeconds, isSubtitleTimeLine, extractTimeRange } from '../../utils/subtitleUtil';
 import { MediaPlayer } from '../viewers/MediaPlayer';
@@ -88,10 +88,68 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     const [previewLoading, setPreviewLoading] = useState(false);
     const [previewError, setPreviewError] = useState<string | null>(null);
 
+    // 分页相关状态
+    const [displayedLines, setDisplayedLines] = useState<string[]>([]);
+    const [currentStartLine, setCurrentStartLine] = useState<number>(1);
+    const [hasMoreLines, setHasMoreLines] = useState<boolean>(false);
+    const [totalLines, setTotalLines] = useState<number>(0);
+
     // 媒体相关状态
     const [mediaFiles, setMediaFiles] = useState<string[]>([]);
     const [selectedMediaIndex, setSelectedMediaIndex] = useState<number>(0);
     const [currentTime, setCurrentTime] = useState<number>(0);
+
+    // 更新显示的行内容
+    const updateDisplayedLines = (allLines: string[], targetLine?: number) => {
+        setTotalLines(allLines.length);
+        
+        // 如果总行数不超过300行，显示所有行
+        if (allLines.length <= 300) {
+            setDisplayedLines(allLines);
+            setHasMoreLines(false);
+            setCurrentStartLine(1);
+            return;
+        }
+        
+        // 如果有目标行，以目标行为中心显示300行
+        if (targetLine && targetLine > 0) {
+            const startLine = Math.max(1, targetLine - 150);
+            const endLine = Math.min(allLines.length, startLine + 299);
+            const actualStartLine = Math.max(1, endLine - 299);
+            
+            setDisplayedLines(allLines.slice(actualStartLine - 1, endLine));
+            setCurrentStartLine(actualStartLine);
+            setHasMoreLines(endLine < allLines.length || actualStartLine > 1);
+        } else {
+            // 没有目标行，显示前300行
+            setDisplayedLines(allLines.slice(0, 300));
+            setCurrentStartLine(1);
+            setHasMoreLines(allLines.length > 300);
+        }
+    };
+
+    // 加载更多行
+    const loadMoreLines = (direction: 'up' | 'down') => {
+        if (lines.length === 0) return;
+        
+        const chunkSize = 300;
+        let newStartLine = currentStartLine;
+        
+        if (direction === 'down') {
+            // 向下加载更多行
+            newStartLine = currentStartLine + chunkSize;
+            const endLine = Math.min(lines.length, newStartLine + chunkSize - 1);
+            setDisplayedLines(lines.slice(newStartLine - 1, endLine));
+        } else {
+            // 向上加载更多行
+            newStartLine = Math.max(1, currentStartLine - chunkSize);
+            const endLine = Math.min(lines.length, newStartLine + chunkSize - 1);
+            setDisplayedLines(lines.slice(newStartLine - 1, endLine));
+        }
+        
+        setCurrentStartLine(newStartLine);
+        setHasMoreLines(newStartLine > 1 || newStartLine + displayedLines.length - 1 < lines.length);
+    };
 
     const loadFileContent = async (path: string) => {
         try {
@@ -101,18 +159,24 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             if (!isTextFile(path) && !isOfficeParserSupported(path)) {
                 setPreviewError('该文件不是文本文件或支持的办公文档，无法预览内容');
                 setLines([]);
+                setDisplayedLines([]);
                 return;
             }
 
             if (window.electronAPI) {
                 const fileLines = await window.electronAPI.readFileLines(path);
                 setLines(fileLines);
+                updateDisplayedLines(fileLines, line);
             } else {
                 setPreviewError('无法读取文件：需要在 Electron 环境中运行');
+                setLines([]);
+                setDisplayedLines([]);
             }
         } catch (err) {
             console.error('读取文件失败:', err);
             setPreviewError('读取文件失败：' + (err instanceof Error ? err.message : String(err)));
+            setLines([]);
+            setDisplayedLines([]);
         } finally {
             setPreviewLoading(false);
         }
@@ -167,13 +231,19 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             }
         } else {
             setLines([]);
+            setDisplayedLines([]);
             setPreviewError(null);
             setMediaFiles([]);
+            setTotalLines(0);
+            setHasMoreLines(false);
+            setCurrentStartLine(1);
         }
     }, [filePath]);
 
     useEffect(() => {
-        if (line) {
+        if (line && lines.length > 0) {
+            updateDisplayedLines(lines, line);
+            
             const interval = setInterval(() => {
                 const targetElement = document.getElementById(`search-preview-line-${line}`);
                 if (targetElement) {
@@ -203,12 +273,17 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                 padding: '8px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa',
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <FileTextOutlined />
+                    <FileIcon fileName={fileName || ''} />
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 500 }}>
                         {fileName}
                         {line && (<span style={{ color: '#999', fontSize: '14px', marginLeft: '8px' }}>
-                            (行 {line}/{lines.length})
+                            (行 {line}/{totalLines})
                         </span>)}
+                        {totalLines > 300 && (
+                            <span style={{ color: '#666', fontSize: '12px', marginLeft: '8px' }}>
+                                [显示 {currentStartLine}-{Math.min(totalLines, currentStartLine + displayedLines.length - 1)} 行]
+                            </span>
+                        )}
                     </h2>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -272,52 +347,95 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
                 </Center>) : (<div style={{
-                    backgroundColor: '#fff', border: '1px solid #e8e8e8', borderRadius: '4px', padding: '16px'
+                    backgroundColor: '#fff', border: '1px solid #e8e8e8', borderRadius: '4px'
                 }}>
-                    {lines.map((lineContent, index) => {
-                        const lineNumber = index + 1;
-                        const isSubtitle = isSubtitleFile(filePath || '');
-                        
-                        return (
-                            <div
-                                key={lineNumber}
-                                id={`search-preview-line-${lineNumber}`}
-                                style={{
-                                    display: 'flex', 
-                                    padding: '2px 0', 
-                                    borderBottom: '1px solid #f0f0f0', 
-                                    transition: 'background-color 0.3s',
-                                    cursor: isSubtitle ? 'pointer' : 'default'
-                                }}
-                                onClick={isSubtitle ? () => {
-                                    const time = extractTimeFromContext(lineNumber, lineContent, lines);
-                                    handleLineClick(lineNumber, time);
-                                } : undefined}
+                    {/* 加载更多按钮 - 顶部 */}
+                    {currentStartLine > 1 && (
+                        <div style={{
+                            padding: '8px 16px',
+                            borderBottom: '1px solid #f0f0f0',
+                            textAlign: 'center',
+                            backgroundColor: '#f8f9fa'
+                        }}>
+                            <Button 
+                                type="link" 
+                                size="small"
+                                onClick={() => loadMoreLines('up')}
+                                style={{ color: '#1890ff' }}
                             >
-                                <div style={{
-                                    minWidth: '50px', 
-                                    textAlign: 'right', 
-                                    paddingRight: '12px', 
-                                    color: '#999', 
-                                    fontSize: '14px', 
-                                    userSelect: 'none', 
-                                    fontFamily: 'monospace'
-                                }}>
-                                    {lineNumber}
-                                </div>
-                                <div style={{
-                                    flex: 1, 
-                                    whiteSpace: 'pre-wrap', 
-                                    wordBreak: 'break-word', 
-                                    fontFamily: 'monospace', 
-                                    fontSize: '16px', 
-                                    lineHeight: '1.6'
-                                }}>
-                                    {highlightContent(lineContent, searchQuery)}
-                                </div>
-                            </div>
-                        );
-                    })}
+                                ↑ 加载前面 {Math.min(300, Math.max(0, currentStartLine - 1))} 行
+                            </Button>
+                        </div>
+                    )}
+                    
+                    {/* 文件内容 */}
+                    <div style={{ padding: '16px' }}>
+                        {(() => {
+                            const isSubtitle = isSubtitleFile(filePath || '');
+                            return displayedLines.map((lineContent, index) => {
+                                const actualLineNumber = currentStartLine + index;
+                                
+                                return (
+                                    <div
+                                        key={actualLineNumber}
+                                        id={`search-preview-line-${actualLineNumber}`}
+                                        style={{
+                                            display: 'flex', 
+                                            padding: '2px 0', 
+                                            borderBottom: '1px solid #f0f0f0', 
+                                            transition: 'background-color 0.3s',
+                                            cursor: isSubtitle ? 'pointer' : 'default'
+                                        }}
+                                        onClick={isSubtitle ? () => {
+                                            const time = extractTimeFromContext(actualLineNumber, lineContent, lines);
+                                            handleLineClick(actualLineNumber, time);
+                                        } : undefined}
+                                    >
+                                        <div style={{
+                                            minWidth: '50px', 
+                                            textAlign: 'right', 
+                                            paddingRight: '12px', 
+                                            color: '#999', 
+                                            fontSize: '14px', 
+                                            userSelect: 'none', 
+                                            fontFamily: 'monospace'
+                                        }}>
+                                            {actualLineNumber}
+                                        </div>
+                                        <div style={{
+                                            flex: 1, 
+                                            whiteSpace: 'pre-wrap', 
+                                            wordBreak: 'break-word', 
+                                            fontFamily: 'monospace', 
+                                            fontSize: '16px', 
+                                            lineHeight: '1.6'
+                                        }}>
+                                            {highlightContent(lineContent, searchQuery)}
+                                        </div>
+                                    </div>
+                                );
+                            });
+                        })()}
+                    </div>
+                    
+                    {/* 加载更多按钮 - 底部 */}
+                    {currentStartLine + displayedLines.length - 1 < totalLines && (
+                        <div style={{
+                            padding: '8px 16px',
+                            borderTop: '1px solid #f0f0f0',
+                            textAlign: 'center',
+                            backgroundColor: '#f8f9fa'
+                        }}>
+                            <Button 
+                                type="link" 
+                                size="small"
+                                onClick={() => loadMoreLines('down')}
+                                style={{ color: '#1890ff' }}
+                            >
+                                ↓ 加载后面 {Math.min(300, Math.max(0, totalLines - (currentStartLine + displayedLines.length - 1)))} 行
+                            </Button>
+                        </div>
+                    )}
                 </div>)}
             </div>
         </div>) : (<Center>
