@@ -6,8 +6,7 @@ import { getDirectoryChildren, getFileInfo, getFileTree, readFileText, writeFile
 import { readFileLines } from './utils/fileCacheUtil';
 import { loadConfig, saveConfig } from './utils/configManager';
 import { Config } from "./utils/config";
-import iconv from 'iconv-lite';
-import { spawnSync } from 'child_process';
+import { fixWindowsConsoleEncoding } from './utils/fixConsoleEncoding';
 import { OfficeParserConfig } from './office/types';
 import workerpool from 'workerpool';
 import { astToJson, astToText, parseOfficeDocument } from './utils/office';
@@ -17,52 +16,7 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 // 修复Windows控制台中文乱码问题
-if (process.platform === 'win32') {
-    // 设置Windows控制台为UTF-8编码
-    try {
-        spawnSync('chcp', ['65001'], { stdio: 'inherit' });
-    } catch (error) {
-        console.error('设置控制台编码失败:', error);
-    }
-
-    // 重写console.log和console.error方法，确保输出正确编码
-    const originalLog = console.log;
-    const originalError = console.error;
-
-    console.log = function (...args: any[]) {
-        if (process.platform === 'win32') {
-            // 转换为字符串
-            const message = args.map(arg => {
-                if (typeof arg === 'object') {
-                    return JSON.stringify(arg, null, 2);
-                }
-                return String(arg);
-            }).join(' ');
-
-            // 使用iconv-lite转换为GBK编码输出到stdout
-            process.stdout.write(iconv.encode(message + '\n', 'gbk'));
-        } else {
-            originalLog.apply(console, args);
-        }
-    };
-
-    console.error = function (...args: any[]) {
-        if (process.platform === 'win32') {
-            // 转换为字符串
-            const message = args.map(arg => {
-                if (typeof arg === 'object') {
-                    return JSON.stringify(arg, null, 2);
-                }
-                return String(arg);
-            }).join(' ');
-
-            // 使用iconv-lite转换为GBK编码输出到stderr
-            process.stderr.write(iconv.encode(message + '\n', 'gbk'));
-        } else {
-            originalError.apply(console, args);
-        }
-    };
-}
+fixWindowsConsoleEncoding();
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
