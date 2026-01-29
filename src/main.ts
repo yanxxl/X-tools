@@ -81,19 +81,23 @@ let pool: workerpool.Pool | null = null;
 // 初始化线程池
 function initializeThreadPool() {
     try {
-        // 根据是否打包使用不同的路径
         let workerPath: string;
 
-        if (__dirname.includes('.vite/build')) {
-            // 开发模式下，Worker文件直接在.vite/build目录下
-            workerPath = path.join(__dirname, 'poolWorker.js');
-        } else if (app.isPackaged) {
-            // 打包后，Worker文件在ASAR归档中，使用app.getAppPath()获取路径
+        if (app.isPackaged) {
             workerPath = path.join(app.getAppPath(), '.vite/build', 'poolWorker.js');
         } else {
-            // 其他情况，使用源码路径
-            workerPath = path.join(app.getAppPath(), 'src', 'utils', 'poolWorker.ts');
+            const buildPath = path.join(__dirname, '..', '.vite', 'build', 'poolWorker.js');
+            const fs = require('fs');
+
+            if (fs.existsSync(buildPath)) {
+                workerPath = buildPath;
+            } else {
+                workerPath = path.join(__dirname, 'poolWorker.js');
+            }
         }
+
+        workerPath = path.resolve(workerPath);
+        const workerDir = path.dirname(workerPath);
 
         pool = workerpool.pool(workerPath);
 
