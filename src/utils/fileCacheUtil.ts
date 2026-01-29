@@ -7,6 +7,9 @@ import { parseOfficeDocument, astToText } from './office';
 // 缓存目录路径 - 直接使用用户主目录下的 .x-tools/search-cache
 const CACHE_DIR = path.join(process.env.HOME || '', '.x-tools', 'search-cache');
 
+// 缓存版本，当解析逻辑或格式发生变化时更新此版本号
+const CACHE_VERSION = '1.0';
+
 /**
  * 确保缓存目录存在
  */
@@ -31,7 +34,7 @@ export async function readFileLines(filePath: string): Promise<string[]> {
         const mtimeMs = stats.mtimeMs;
         
         // 生成缓存键
-        const cacheKey = crypto.createHash('md5').update(`${filePath}|${fileSize}|${mtimeMs}`).digest('hex');
+        const cacheKey = crypto.createHash('md5').update(`${CACHE_VERSION}|${filePath}|${fileSize}|${mtimeMs}`).digest('hex');
         const cacheFilePath = path.join(CACHE_DIR, `${cacheKey}.json`);
         
         // 尝试从缓存读取
