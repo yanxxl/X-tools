@@ -220,6 +220,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                     try {
                         const files = await findVideoFiles(filePath);
                         setMediaFiles(files);
+                        setSelectedMediaIndex(0);
                     } catch (error) {
                         console.error('查找媒体文件失败:', error);
                         setMediaFiles([]);
@@ -234,6 +235,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             setDisplayedLines([]);
             setPreviewError(null);
             setMediaFiles([]);
+            setSelectedMediaIndex(0);
             setTotalLines(0);
             setHasMoreLines(false);
             setCurrentStartLine(1);
