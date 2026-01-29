@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {OfficeParser} from "../src/office/OfficeParser";
-import {astToText, astToJson, defaultToText} from "../src/utils/office";
+import {astToText, astToJson, defaultToText, parseOfficeDocument} from "../src/utils/office";
 
 async function testOfficeParser() {
     console.log('测试 officeparser 库的能力...\n');
@@ -19,7 +19,7 @@ async function testOfficeParser() {
         const ext = path.extname(file).toLowerCase();
 
         // 只测试Excel文档格式
-        if (['.pptx'].includes(ext)) {
+        if (['.xlsx'].includes(ext)) {
             console.log(`正在解析文件: ${file}`);
             console.log('='.repeat(40));
 
@@ -29,8 +29,9 @@ async function testOfficeParser() {
 
             try {
                 // 使用 OfficeParser 解析
-                const contentAST = await OfficeParser.parseOffice(filePath, {extractAttachments: true, includeRawContent: true});               
-
+                // const contentAST = await parseOfficeDocument(filePath);               
+                const contentAST = await parseOfficeDocument(filePath, {extractAttachments: true, includeRawContent: true});               
+                
                 // 获取纯文本
                 console.log(`纯文本内容:`);
                 const textContent = astToText(contentAST);
