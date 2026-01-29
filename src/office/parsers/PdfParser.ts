@@ -392,7 +392,11 @@ export const parsePdf = async (buffer: Buffer, config: OfficeParserConfig): Prom
                 // We use require.resolve to find the exact path of the installed package.
                 // @ts-ignore - 'require' is available in Node.js/CommonJS environment
                 const workerPath = require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs');
-                pdfjs.GlobalWorkerOptions.workerSrc = workerPath;
+                // Convert to file:// URL for Windows compatibility
+                // @ts-ignore - 'url' is available in Node.js
+                const { pathToFileURL } = require('url');
+                pdfjs.GlobalWorkerOptions.workerSrc = pathToFileURL(workerPath).href;
+                // pdfjs.GlobalWorkerOptions.workerSrc = workerPath;
             } catch (e) {
                 if (config.outputErrorToConsole) console.warn("[PdfParser] Could not auto-resolve local worker path:", e);
             }
