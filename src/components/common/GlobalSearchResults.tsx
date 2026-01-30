@@ -109,7 +109,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
 
         return sorted;
     };
-    
+
     // 前端已改成一次性给结果，否则性能问题，卡顿异常
     useEffect(() => {
         const matches = searchResults.reduce((sum: number, r: SearchResult) => sum + r.matches.length, 0);
@@ -279,6 +279,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                                                         color: '#1890ff',
                                                         fontWeight: 'bold'
                                                     }}
+                                                    onClick={() => onResultClick(result.filePath, result.fileName, 1)}
                                                 >
                                                     {highlightText(result.fileName, searchQuery)}
                                                     {searchMode === 'content' && result.matches.length > 0 && (
@@ -331,6 +332,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                             items={
                                 sortedResults.map((result, resultIdx) => ({
                                     key: resultIdx.toString(),
+                                    collapsible: searchMode === 'content' ? undefined : 'disabled',
                                     label: (
                                         <div
                                             style={{
@@ -340,6 +342,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                                                 color: '#1890ff',
                                                 fontWeight: 'bold'
                                             }}
+                                            onClick={() => onResultClick(result.filePath, result.fileName, 0)}
                                         >
                                             {highlightText(result.fileName, searchQuery)}
                                             {searchMode === 'content' && result.matches.length > 0 && (

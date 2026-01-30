@@ -278,7 +278,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                     <FileIcon fileName={fileName || ''} />
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 500 }}>
                         {fileName}
-                        {line && (<span style={{ color: '#999', fontSize: '14px', marginLeft: '8px' }}>
+                        {!line ? '' : (<span style={{ color: '#999', fontSize: '14px', marginLeft: '8px' }}>
                             (行 {line}/{totalLines})
                         </span>)}
                         {totalLines > 300 && (
