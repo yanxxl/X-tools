@@ -136,6 +136,8 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             newStartLine = currentStartLine + chunkSize;
             const endLine = Math.min(lines.length, newStartLine + chunkSize - 1);
             setDisplayedLines(lines.slice(newStartLine - 1, endLine));
+
+            gotoLine(newStartLine);
         } else {
             // 向上加载更多行
             newStartLine = Math.max(1, currentStartLine - chunkSize);
@@ -184,6 +186,29 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
         }
     };
 
+    // 滚动到指定行
+    const gotoLine = (lineNumber: number) => {
+        const interval = setInterval(() => {
+            const targetElement = document.getElementById(`search-preview-line-${lineNumber}`);
+            if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetElement.style.backgroundColor = HIGHLIGHT_COLOR;
+                setTimeout(() => {
+                    targetElement.style.backgroundColor = '';
+                }, HIGHLIGHT_DURATION);
+
+                if (isSubtitleFile(filePath || '')) {
+                    const time = extractTimeFromContext(lineNumber, lines[lineNumber - 1] || '', lines);
+                    if (time !== null) {
+                        setCurrentTime(time);
+                    }
+                }
+
+                clearInterval(interval);
+            }
+        }, SCROLL_DELAY);
+    };
+
     const handleLineClick = (lineNumber: number, time?: number) => {
         if (line) {
             const previousElement = document.getElementById(`search-preview-line-${line}`);
@@ -192,14 +217,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             }
         }
 
-        const targetElement = document.getElementById(`search-preview-line-${lineNumber}`);
-        if (targetElement) {
-            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            targetElement.style.backgroundColor = HIGHLIGHT_COLOR;
-            setTimeout(() => {
-                targetElement.style.backgroundColor = '';
-            }, HIGHLIGHT_DURATION);
-        }
+        gotoLine(lineNumber);
 
         if (isSubtitleFile(filePath || '') && time !== undefined && time !== null) {
             setCurrentTime(time + Math.random() * 0.001);
@@ -239,30 +257,11 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     useEffect(() => {
         if (line && lines.length > 0) {
             updateDisplayedLines(lines, line);
-
-            const interval = setInterval(() => {
-                const targetElement = document.getElementById(`search-preview-line-${line}`);
-                if (targetElement) {
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    targetElement.style.backgroundColor = HIGHLIGHT_COLOR;
-                    setTimeout(() => {
-                        targetElement.style.backgroundColor = '';
-                    }, 1500);
-
-                    if (isSubtitleFile(filePath || '')) {
-                        const time = extractTimeFromContext(line, lines[line - 1] || '', lines);
-                        if (time !== null) {
-                            setCurrentTime(time);
-                        }
-                    }
-
-                    clearInterval(interval);
-                }
-            }, SCROLL_DELAY);
+            gotoLine(line);
         }
     }, [line, filePath, lines]);
 
-    
+
     return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 16 }}>
         {filePath ? (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* 预览标题栏 */}
