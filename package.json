@@ -1,7 +1,7 @@
 {
   "name": "x-tools",
   "productName": "X-tools",
-  "version": "1.5.2-dev",
+  "version": "1.5.2",
   "description": "一个本地资料库浏览工具。",
   "main": ".vite/build/main.js",
   "scripts": {
