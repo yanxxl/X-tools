@@ -49,7 +49,7 @@ export async function readFileLines(filePath: string): Promise<string[]> {
         // 读取文件内容
         let lines: string[];
         if (isOfficeParserSupported(filePath)) {
-            const ast = await parseOfficeDocument(filePath, {extractAttachments: true, includeRawContent: true});
+            const ast = await parseOfficeDocument(filePath, {extractAttachments: false, includeRawContent: true});
             const textContent = astToText(ast);
             lines = textContent.split('\n');
         } else {
