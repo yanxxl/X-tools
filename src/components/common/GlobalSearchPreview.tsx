@@ -11,7 +11,7 @@ import { useAppContext } from '../../contexts/AppContext';
 const HIGHLIGHT_COLOR = '#fff3cd';
 const SEARCH_HIGHLIGHT_COLOR = '#ffeb3b';
 const HIGHLIGHT_DURATION = 1500;
-const SCROLL_DELAY = 300;
+const SCROLL_DELAY = 100;
 
 // 高亮文本内容
 const highlightContent = (text: string, query?: string) => {
@@ -52,7 +52,7 @@ const extractTimeFromContext = (lineNumber: number, content: string, allLines: s
     if (currentTime !== null) {
         return currentTime;
     }
-    
+
     // 如果当前行没有时间戳，向上寻找更多行（最多10行）
     if (allLines && lineNumber > 1) {
         const searchLimit = Math.max(1, lineNumber - 10); // 扩大搜索范围
@@ -64,7 +64,7 @@ const extractTimeFromContext = (lineNumber: number, content: string, allLines: s
             }
         }
     }
-    
+
     return null;
 };
 
@@ -91,7 +91,6 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     // 分页相关状态
     const [displayedLines, setDisplayedLines] = useState<string[]>([]);
     const [currentStartLine, setCurrentStartLine] = useState<number>(1);
-    const [hasMoreLines, setHasMoreLines] = useState<boolean>(false);
     const [totalLines, setTotalLines] = useState<number>(0);
 
     // 媒体相关状态
@@ -102,39 +101,36 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     // 更新显示的行内容
     const updateDisplayedLines = (allLines: string[], targetLine?: number) => {
         setTotalLines(allLines.length);
-        
+
         // 如果总行数不超过300行，显示所有行
         if (allLines.length <= 300) {
             setDisplayedLines(allLines);
-            setHasMoreLines(false);
             setCurrentStartLine(1);
             return;
         }
-        
+
         // 如果有目标行，以目标行为中心显示300行
         if (targetLine && targetLine > 0) {
             const startLine = Math.max(1, targetLine - 150);
             const endLine = Math.min(allLines.length, startLine + 299);
             const actualStartLine = Math.max(1, endLine - 299);
-            
+
             setDisplayedLines(allLines.slice(actualStartLine - 1, endLine));
             setCurrentStartLine(actualStartLine);
-            setHasMoreLines(endLine < allLines.length || actualStartLine > 1);
         } else {
             // 没有目标行，显示前300行
             setDisplayedLines(allLines.slice(0, 300));
             setCurrentStartLine(1);
-            setHasMoreLines(allLines.length > 300);
         }
     };
 
     // 加载更多行
     const loadMoreLines = (direction: 'up' | 'down') => {
         if (lines.length === 0) return;
-        
+
         const chunkSize = 300;
         let newStartLine = currentStartLine;
-        
+
         if (direction === 'down') {
             // 向下加载更多行
             newStartLine = currentStartLine + chunkSize;
@@ -146,9 +142,8 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             const endLine = Math.min(lines.length, newStartLine + chunkSize - 1);
             setDisplayedLines(lines.slice(newStartLine - 1, endLine));
         }
-        
+
         setCurrentStartLine(newStartLine);
-        setHasMoreLines(newStartLine > 1 || newStartLine + displayedLines.length - 1 < lines.length);
     };
 
     const loadFileContent = async (path: string) => {
@@ -180,7 +175,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
         } finally {
             setPreviewLoading(false);
         }
-   };
+    };
 
     const handleOpenFile = () => {
         if (filePath) {
@@ -196,7 +191,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                 previousElement.style.backgroundColor = '';
             }
         }
-        
+
         const targetElement = document.getElementById(`search-preview-line-${lineNumber}`);
         if (targetElement) {
             targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -205,7 +200,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                 targetElement.style.backgroundColor = '';
             }, HIGHLIGHT_DURATION);
         }
-        
+
         if (isSubtitleFile(filePath || '') && time !== undefined && time !== null) {
             setCurrentTime(time + Math.random() * 0.001);
         }
@@ -237,7 +232,6 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             setMediaFiles([]);
             setSelectedMediaIndex(0);
             setTotalLines(0);
-            setHasMoreLines(false);
             setCurrentStartLine(1);
         }
     }, [filePath]);
@@ -245,7 +239,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     useEffect(() => {
         if (line && lines.length > 0) {
             updateDisplayedLines(lines, line);
-            
+
             const interval = setInterval(() => {
                 const targetElement = document.getElementById(`search-preview-line-${line}`);
                 if (targetElement) {
@@ -264,10 +258,11 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
 
                     clearInterval(interval);
                 }
-            }, 100);
+            }, SCROLL_DELAY);
         }
     }, [line, filePath, lines]);
 
+    
     return (<div style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: 16 }}>
         {filePath ? (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* 预览标题栏 */}
@@ -322,8 +317,8 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                         </div>
                     )}
                     <div style={{ flex: 1, padding: '8px', overflow: 'hidden', minHeight: 0 }}>
-                        <MediaPlayer 
-                            file={mediaFiles[selectedMediaIndex] || ''} 
+                        <MediaPlayer
+                            file={mediaFiles[selectedMediaIndex] || ''}
                             currentTime={currentTime}
                         />
                     </div>
@@ -359,8 +354,8 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                             textAlign: 'center',
                             backgroundColor: '#f8f9fa'
                         }}>
-                            <Button 
-                                type="link" 
+                            <Button
+                                type="link"
                                 size="small"
                                 onClick={() => loadMoreLines('up')}
                                 style={{ color: '#1890ff' }}
@@ -369,22 +364,22 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                             </Button>
                         </div>
                     )}
-                    
+
                     {/* 文件内容 */}
                     <div style={{ padding: '16px' }}>
                         {(() => {
                             const isSubtitle = isSubtitleFile(filePath || '');
                             return displayedLines.map((lineContent, index) => {
                                 const actualLineNumber = currentStartLine + index;
-                                
+
                                 return (
                                     <div
                                         key={actualLineNumber}
                                         id={`search-preview-line-${actualLineNumber}`}
                                         style={{
-                                            display: 'flex', 
-                                            padding: '2px 0', 
-                                            borderBottom: '1px solid #f0f0f0', 
+                                            display: 'flex',
+                                            padding: '2px 0',
+                                            borderBottom: '1px solid #f0f0f0',
                                             transition: 'background-color 0.3s',
                                             cursor: isSubtitle ? 'pointer' : 'default'
                                         }}
@@ -394,22 +389,22 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                                         } : undefined}
                                     >
                                         <div style={{
-                                            minWidth: '50px', 
-                                            textAlign: 'right', 
-                                            paddingRight: '12px', 
-                                            color: '#999', 
-                                            fontSize: '14px', 
-                                            userSelect: 'none', 
+                                            minWidth: '50px',
+                                            textAlign: 'right',
+                                            paddingRight: '12px',
+                                            color: '#999',
+                                            fontSize: '14px',
+                                            userSelect: 'none',
                                             fontFamily: 'monospace'
                                         }}>
                                             {actualLineNumber}
                                         </div>
                                         <div style={{
-                                            flex: 1, 
-                                            whiteSpace: 'pre-wrap', 
-                                            wordBreak: 'break-word', 
-                                            fontFamily: 'monospace', 
-                                            fontSize: '16px', 
+                                            flex: 1,
+                                            whiteSpace: 'pre-wrap',
+                                            wordBreak: 'break-word',
+                                            fontFamily: 'monospace',
+                                            fontSize: '16px',
                                             lineHeight: '1.6'
                                         }}>
                                             {highlightContent(lineContent, searchQuery)}
@@ -419,7 +414,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                             });
                         })()}
                     </div>
-                    
+
                     {/* 加载更多按钮 - 底部 */}
                     {currentStartLine + displayedLines.length - 1 < totalLines && (
                         <div style={{
@@ -428,8 +423,8 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                             textAlign: 'center',
                             backgroundColor: '#f8f9fa'
                         }}>
-                            <Button 
-                                type="link" 
+                            <Button
+                                type="link"
                                 size="small"
                                 onClick={() => loadMoreLines('down')}
                                 style={{ color: '#1890ff' }}
