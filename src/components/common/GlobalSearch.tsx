@@ -171,7 +171,6 @@ export const GlobalSearch: React.FC = () => {
     // Effect hooks - 初始化
     useEffect(() => {
         setSearchHistory(storage.get('search-history', []));
-        setSearchMode(storage.get('search-mode', 'content'));
 
         setSearchPath(currentFolder);
         setSearchQuery('');
@@ -209,7 +208,6 @@ export const GlobalSearch: React.FC = () => {
     useEffect(() => {
         if (searchQuery.trim().length == 0) {
             setSearchHistory(storage.get('search-history', []));
-            setSearchMode(storage.get('search-mode', 'content'));
 
             setSearchPath(currentFolder);
             setSearchQuery('');
@@ -220,6 +218,13 @@ export const GlobalSearch: React.FC = () => {
             setPreviewLine(undefined);
         }
     }, [searchQuery]);
+
+    useEffect(() => {
+        setSearchResults([]);
+        setPreviewFilePath('');
+        setPreviewFileName('');
+        setPreviewLine(undefined);
+    }, [searchMode]);
 
 
     return (

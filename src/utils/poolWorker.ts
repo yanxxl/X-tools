@@ -1,9 +1,9 @@
 // myWorker.ts - 线程池工作器脚本
 import workerpool from 'workerpool';
-import { isTextFile, isOfficeParserSupported } from './fileCommonUtil';
+import { isOfficeParserSupported, isTextFile } from './fileCommonUtil';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { readFileLines, clearCache, getCacheStats } from './fileCacheUtil';
+import { clearCache, getCacheStats, readFileLines } from './fileCacheUtil';
 import { truncateTextWithQuery } from './format';
 import { SearchResult } from '../types';
 import { fixWindowsConsoleEncoding } from './fixConsoleEncoding';
@@ -29,10 +29,11 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
       console.error(`获取文件状态出错: ${filePath}`, error);
     }
 
+    const fileName = path.basename(filePath);
+
     // 文件名搜索
     if (searchMode === 'filename') {
-      const fileName = path.basename(filePath);
-      if (filePath.includes(query)) {
+      if (fileName.includes(query)) {
         const searchTime = performance.now() - startTime;
         return {
           filePath,
@@ -58,7 +59,7 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
       }
     });
 
-    if (matches.length > 0 || filePath.includes(query)) {
+    if (matches.length > 0 || fileName.includes(query)) {
       const searchTime = performance.now() - startTime;
       return {
         filePath,
@@ -82,25 +83,25 @@ async function checkAndCleanExpiredCache(maxAgeMs: number = 7 * 24 * 60 * 60 * 1
     // 清理前获取缓存统计
     const statsBefore = await getCacheStats();
     const beforeMessage = `清理前缓存统计: ${statsBefore.totalFiles} 个文件, 总大小: ${statsBefore.totalSize} 字节`;
-    
+
     // 执行清理（默认清理7天前的缓存）
     await clearCache(maxAgeMs);
-    
+
     // 清理后获取缓存统计
     const statsAfter = await getCacheStats();
     const afterMessage = `清理后缓存统计: ${statsAfter.totalFiles} 个文件, 总大小: ${statsAfter.totalSize} 字节`;
-    
+
     const cleanedCount = statsBefore.totalFiles - statsAfter.totalFiles;
     const cleanedSize = statsBefore.totalSize - statsAfter.totalSize;
-    
+
     const days = Math.round(maxAgeMs / (24 * 60 * 60 * 1000));
-    
+
     if (cleanedCount > 0) {
       return `${beforeMessage}\n${afterMessage}\n已清理 ${cleanedCount} 个过期缓存文件（${days}天前），释放 ${cleanedSize} 字节空间`;
     } else {
       return `${beforeMessage}\n${afterMessage}\n没有发现过期缓存文件（${days}天前）`;
     }
-    
+
   } catch (error) {
     console.error('检查并清理缓存失败:', error);
     return `检查并清理缓存失败: ${error}`;
