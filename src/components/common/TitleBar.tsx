@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 
 // 第三方库导入
 import { Button, Divider, Dropdown, Flex, message, Modal } from "antd";
-import { BorderOutlined, CloseOutlined, DownOutlined, FolderOpenOutlined, MinusOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { BorderOutlined, CloseOutlined, DownOutlined, FolderOpenOutlined, MinusOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 
 // 应用内部导入
 import { useAppContext } from '../../contexts/AppContext';
@@ -342,6 +342,13 @@ export const TitleBar: React.FC = () => {
                             icon={<SearchOutlined />}
                             title="打开搜索"
                             onClick={() => setSearchPanelOpen(true)}
+                            style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
+                        />
+                        <Button
+                            type="text"
+                            icon={<ReloadOutlined />}
+                            title="刷新，重新加载页面"
+                            onClick={() => window.location.reload()}
                             style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
                         />
                         <Divider vertical />
