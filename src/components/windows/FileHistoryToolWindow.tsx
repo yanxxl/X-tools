@@ -1,20 +1,21 @@
-import React, {useState, useEffect} from 'react';
-import {Button, Card, Empty, List, Tooltip, Typography} from 'antd';
-import {ClockCircleOutlined, DeleteOutlined, HistoryOutlined} from '@ant-design/icons';
-import {useAppContext} from '../../contexts/AppContext';
-import {fileHistoryManager, FileHistoryRecord} from '../../utils/storage';
-import {formatTime} from '../../utils/uiUtils';
-import {FileIcon} from '../common/FileIcon';
+import React, { useState, useEffect } from 'react';
+import { Button, Card, Empty, List, Tooltip, Typography } from 'antd';
+import { ClockCircleOutlined, DeleteOutlined, HistoryOutlined } from '@ant-design/icons';
+import { useAppContext } from '../../contexts/AppContext';
+import { fileHistoryManager, FileHistoryRecord } from '../../utils/storage';
+import { formatTime } from '../../utils/uiUtils';
+import { FileIcon } from '../common/FileIcon';
 import './FileHistoryToolWindow.css';
 // 创建工具窗口实例
-import {ToolWindow} from './toolWindow';
+import { ToolWindow } from './toolWindow';
 
-const {Text} = Typography;
+const { Text } = Typography;
 
-import {fullname} from '../../utils/fileCommonUtil';
+import { fullname } from '../../utils/fileCommonUtil';
+import { DangerText } from '../common/DangerText';
 
 export const FileHistoryToolWindow: React.FC = () => {
-    const {currentFolder, currentFile, setCurrentFile} = useAppContext();
+    const { currentFolder, currentFile, setCurrentFile } = useAppContext();
     const [fileHistory, setFileHistory] = useState<FileHistoryRecord[]>([]);
 
     // 当当前文件夹或当前文件变化时，更新历史记录
@@ -50,25 +51,15 @@ export const FileHistoryToolWindow: React.FC = () => {
     return (
         <div className="file-history-tool-window">
             <Card
-                style={{ margin: 0, overflow: 'hidden',flex: 1 ,borderRadius: 0 }}
+                style={{ margin: 0, overflow: 'hidden', flex: 1, borderRadius: 0 }}
                 size="small"
-                title={
-                    <div className="history-header">
-                        <HistoryOutlined className="history-icon"/>
-                        <span>文件访问历史</span>
-                        {fileHistory.length > 0 && (
-                            <Button
-                                type="text"
-                                size="small"
-                                icon={<DeleteOutlined/>}
-                                onClick={handleClearHistory}
-                                className="clear-history-btn"
-                                title="清理历史记录"
-                            >
-                                清理
-                            </Button>
-                        )}
-                    </div>
+                title={'文件访问历史'}
+                extra={fileHistory.length > 0 &&
+                    <Tooltip title="清空历史记录">
+                        <DangerText onClick={handleClearHistory}>
+                            清空
+                        </DangerText>
+                    </Tooltip>
                 }
                 className="history-card"
             >
@@ -96,7 +87,7 @@ export const FileHistoryToolWindow: React.FC = () => {
                             >
                                 <div className="history-item-content">
                                     <div className="history-item-main">
-                                        <FileIcon fileName={record.filePath} className="file-icon"/>
+                                        <FileIcon fileName={record.filePath} className="file-icon" />
                                         <Tooltip title={record.filePath}>
                                             <Text strong className="file-name">
                                                 {fullname(record.filePath)}
@@ -104,7 +95,7 @@ export const FileHistoryToolWindow: React.FC = () => {
                                         </Tooltip>
                                     </div>
                                     <div className="history-item-meta">
-                                        <ClockCircleOutlined className="time-icon"/>
+                                        <ClockCircleOutlined className="time-icon" />
                                         <Text type="secondary" className="access-time">
                                             {formatTime(record.lastAccessed)}
                                         </Text>
@@ -124,8 +115,8 @@ export const fileHistoryToolWindow = new ToolWindow({
     name: '文件访问历史',
     description: '显示当前文件夹的文件访问历史记录',
     isVisible: false,
-    view: <FileHistoryToolWindow/>,
-    icon: <HistoryOutlined/>,
+    view: <FileHistoryToolWindow />,
+    icon: <HistoryOutlined />,
     shortcut: 'Ctrl+Shift+H',
     isResizable: true,
     defaultWidth: 300,
