@@ -1,10 +1,10 @@
-import React, {useEffect, useState} from 'react';
-import {ConfigProvider, message, Tree} from "antd";
-import type {DataNode, TreeProps} from 'antd/es/tree';
-import {DownOutlined} from '@ant-design/icons';
-import {FileNode} from '../../types';
-import {useAppContext} from '../../contexts/AppContext';
-import {FileIcon} from './FileIcon';
+import React, { useEffect, useState } from 'react';
+import { ConfigProvider, message, Tree, Dropdown, type MenuProps } from "antd";
+import type { DataNode, TreeProps } from 'antd/es/tree';
+import { DownOutlined, FileOutlined, FolderOpenOutlined, PlusOutlined } from '@ant-design/icons';
+import { FileNode } from '../../types';
+import { useAppContext } from '../../contexts/AppContext';
+import { FileIcon } from './FileIcon';
 
 export type TreeNodeWithMeta = DataNode & {
     meta: FileNode;
@@ -12,7 +12,7 @@ export type TreeNodeWithMeta = DataNode & {
 };
 
 export const FileTree: React.FC = () => {
-    const {currentFolder, currentFile, setCurrentFile} = useAppContext();
+    const { currentFolder, currentFile, setCurrentFile } = useAppContext();
     const [fileList, setFileList] = useState<FileNode[]>([]);
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
@@ -27,7 +27,7 @@ export const FileTree: React.FC = () => {
         }
     };
 
-    const handleTreeExpand: TreeProps<TreeNodeWithMeta>['onExpand'] = async (expandedKeysValue, info) => {
+    const handleTreeExpand: TreeProps<TreeNodeWithMeta>['onExpand'] = async (expandedKeysValue) => {
         setExpandedKeys(expandedKeysValue as string[]);
     };
 
@@ -69,18 +69,23 @@ export const FileTree: React.FC = () => {
     const transformToTreeData = (node: FileNode): TreeNodeWithMeta => {
         const result: TreeNodeWithMeta = {
             title: (
-                <div
-                    className={'one-line'}
-                    title={node.name}
-                    style={{cursor: node.isDirectory ? 'pointer' : 'default'}}
+                <Dropdown
+                    menu={{ items: getContextMenuItems(node) }}
+                    trigger={['contextMenu']}
                 >
-                    <FileIcon 
-                        fileName={node.name} 
-                        isDirectory={node.isDirectory} 
-                        style={{marginRight: 8}} 
-                    />
-                    {node.name}
-                </div>
+                    <div
+                        className={'one-line'}
+                        title={node.name}
+                        style={{ cursor: node.isDirectory ? 'pointer' : 'default' }}
+                    >
+                        <FileIcon
+                            fileName={node.name}
+                            isDirectory={node.isDirectory}
+                            style={{ marginRight: 8 }}
+                        />
+                        {node.name}
+                    </div>
+                </Dropdown>
             ),
             key: node.id,
             meta: node,
@@ -110,7 +115,7 @@ export const FileTree: React.FC = () => {
     }
 
     const onLoadData = async (node: TreeNodeWithMeta): Promise<void> => {
-        const {meta} = node;
+        const { meta } = node;
         if (!meta.isDirectory || loadedKeys.has(meta.id)) {
             return;
         }
@@ -123,6 +128,65 @@ export const FileTree: React.FC = () => {
             console.error('加载子节点失败:', error);
             message.error('加载子节点失败，请重试');
         }
+    };
+
+    const getContextMenuItems = (node: FileNode): MenuProps['items'] => {
+        const items: MenuProps['items'] = [];
+
+        if (node.isDirectory) {
+            items.push({
+                key: 'newFile',
+                icon: <PlusOutlined />,
+                label: '新建文件',
+                onClick: async () => {
+                    try {
+                        const targetPath = node.isDirectory ? node.path : currentFolder;
+                        if (!targetPath) return;
+
+                        const newFilePath = `${targetPath}/新文件.txt`;
+                        await window.electronAPI.writeFile(newFilePath, '');
+                        message.success('文件创建成功');
+                        // await onLoadData(node);
+                        setCurrentFile(newFilePath);
+                    } catch (error) {
+                        console.error('创建文件失败:', error);
+                        message.error('创建文件失败');
+                    }
+                }
+            });
+        }
+
+        items.push({
+            key: 'open',
+            icon: node.isDirectory ? <FolderOpenOutlined /> : <FileOutlined />,
+            label: node.isDirectory ? '打开文件夹' : '用默认程序打开',
+            onClick: async () => {
+                try {
+                    await window.electronAPI.openFile(node.path);
+                    message.success('操作成功');
+                } catch (error) {
+                    console.error('打开文件失败:', error);
+                    message.error('打开文件失败');
+                }
+            }
+        });
+
+        items.push({
+            key: 'openInFolder',
+            icon: <FolderOpenOutlined />,
+            label: '在文件夹中显示',
+            onClick: async () => {
+                try {
+                    await window.electronAPI.showItemInFolder(node.path);
+                    message.success('文件夹已打开');
+                } catch (error) {
+                    console.error('打开文件夹失败:', error);
+                    message.error('打开文件夹失败');
+                }
+            }
+        });
+
+        return items;
     };
 
     useEffect(() => {
@@ -152,11 +216,11 @@ export const FileTree: React.FC = () => {
     }, [currentFile, fileList]);
 
     return (
-        <div style={{height: '100%', overflowY: 'auto', overflowX: 'hidden'}}>
-            <ConfigProvider theme={{token: {colorBgContainer: 'transparent'}}}>
+        <div style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
+            <ConfigProvider theme={{ token: { colorBgContainer: 'transparent' } }}>
                 {initialLoading
                     ? (
-                        <div style={{textAlign: 'center', padding: '20px'}}>
+                        <div style={{ textAlign: 'center', padding: '20px' }}>
                             加载中...
                         </div>
                     )
