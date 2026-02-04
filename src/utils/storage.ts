@@ -73,7 +73,7 @@ export const fileHistoryManager = {
    */
   getFolderHistory: (folderPath: string): FileHistoryRecord[] => {
     const allHistory = storage.get<FileHistoryRecord[]>(STORAGE_KEYS.FILE_ACCESS_HISTORY, []);
-    return allHistory.filter(record => record.filePath.startsWith(folderPath));
+    return allHistory.filter(record => record.filePath?.startsWith(folderPath));
   },
 
   /**
