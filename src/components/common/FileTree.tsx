@@ -6,10 +6,7 @@ import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from './FileIcon';
 
-export type TreeNodeWithMeta = DataNode & {
-    meta: FileNode;
-    children?: TreeNodeWithMeta[];
-};
+
 
 export const FileTree: React.FC = () => {
     const { currentFolder, currentFile, setCurrentFile } = useAppContext();
@@ -19,15 +16,15 @@ export const FileTree: React.FC = () => {
     const [loadedKeys, setLoadedKeys] = useState<Set<string>>(new Set());
     const [initialLoading, setInitialLoading] = useState(false);
 
-    const handleTreeSelect: TreeProps<TreeNodeWithMeta>['onSelect'] = async (keys, info) => {
-        const nodeMeta: FileNode | undefined = info.node.meta;
-        if (!nodeMeta.isDirectory) {
+    const handleTreeSelect: TreeProps<DataNode>['onSelect'] = async (keys, info) => {
+        const nodeMeta: FileNode | undefined = info.node as any;
+        if (nodeMeta && !nodeMeta.isDirectory) {
             setCurrentFile(nodeMeta.path);
             setSelectedKeys([nodeMeta.path]);
         }
     };
 
-    const handleTreeExpand: TreeProps<TreeNodeWithMeta>['onExpand'] = async (expandedKeysValue) => {
+    const handleTreeExpand: TreeProps<DataNode>['onExpand'] = async (expandedKeysValue) => {
         setExpandedKeys(expandedKeysValue as string[]);
     };
 
@@ -66,8 +63,8 @@ export const FileTree: React.FC = () => {
         });
     };
 
-    const transformToTreeData = (node: FileNode): TreeNodeWithMeta => {
-        const result: TreeNodeWithMeta = {
+    const transformToTreeData = (node: FileNode): DataNode => {
+        const result: DataNode = {
             title: (
                 <Dropdown
                     menu={{ items: getContextMenuItems(node) }}
@@ -88,7 +85,6 @@ export const FileTree: React.FC = () => {
                 </Dropdown>
             ),
             key: node.id,
-            meta: node,
             isLeaf: !node.isDirectory
         };
 
@@ -114,16 +110,16 @@ export const FileTree: React.FC = () => {
         }
     }
 
-    const onLoadData = async (node: TreeNodeWithMeta): Promise<void> => {
-        const { meta } = node;
-        if (!meta.isDirectory || loadedKeys.has(meta.id)) {
+    const onLoadData = async (node: DataNode): Promise<void> => {
+        const fileNode = node as any;
+        if (!fileNode.isDirectory || loadedKeys.has(fileNode.id)) {
             return;
         }
 
         try {
-            const children = await window.electronAPI.getDirectoryChildren(meta.path);
-            setFileList(prevList => updateNodeChildren(prevList, meta.id, children));
-            setLoadedKeys(prev => new Set([...prev, meta.id]));
+            const children = await window.electronAPI.getDirectoryChildren(fileNode.path);
+            setFileList(prevList => updateNodeChildren(prevList, fileNode.id, children));
+            setLoadedKeys(prev => new Set([...prev, fileNode.id]));
         } catch (error) {
             console.error('加载子节点失败:', error);
             message.error('加载子节点失败，请重试');
@@ -225,7 +221,7 @@ export const FileTree: React.FC = () => {
                         </div>
                     )
                     : (
-                        <Tree<TreeNodeWithMeta>
+                        <Tree<DataNode>
                             treeData={fileList.map(transformToTreeData)}
                             blockNode
                             showLine
