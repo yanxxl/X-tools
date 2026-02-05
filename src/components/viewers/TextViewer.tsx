@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Button, Empty, Skeleton, Space, Typography} from 'antd';
 import {FileTextOutlined, ReloadOutlined} from '@ant-design/icons';
 import {Center} from "../common/Center";
@@ -16,6 +16,7 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const loadTextFile = async () => {
         try {
@@ -53,6 +54,40 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
     useEffect(() => {
         loadTextFile();
     }, [filePath]);
+
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const handleScroll = () => {
+            const scrollTop = container.scrollTop;
+            const scrollKey = `textviewer-scroll-${filePath}`;
+            console.log('保存滚动位置:', scrollKey, scrollTop);
+            localStorage.setItem(scrollKey, scrollTop.toString());
+        };
+
+        container.addEventListener('scroll', handleScroll);
+
+        return () => {
+            container.removeEventListener('scroll', handleScroll);
+        };
+    }, [filePath, loading]);
+
+    useEffect(() => {
+        if (!loading && scrollContainerRef.current) {
+            const scrollKey = `textviewer-scroll-${filePath}`;
+            const savedScrollTop = localStorage.getItem(scrollKey);
+            console.log('读取滚动位置:', scrollKey, savedScrollTop);
+            if (savedScrollTop) {
+                setTimeout(() => {
+                    if (scrollContainerRef.current) {
+                        console.log('恢复滚动位置:', savedScrollTop);
+                        scrollContainerRef.current.scrollTop = parseInt(savedScrollTop, 10);
+                    }
+                }, 500);
+            }
+        }
+    }, [loading, filePath]);
 
     if (loading) {
         return (
@@ -103,7 +138,7 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
                 </Space>
             </div>
 
-            <div style={{flex: 1, overflow: 'auto', padding: '32px', backgroundColor: 'white'}} className={'text-content'}>
+            <div style={{flex: 1, overflow: 'auto', padding: '32px', backgroundColor: 'white'}} className={'text-content'} ref={scrollContainerRef}>
                 {/* 将文本内容按行分割并转换为HTML段落 */}
                 {content.split('\n').map((line, index) => (
                     <div
