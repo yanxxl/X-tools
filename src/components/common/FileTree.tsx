@@ -255,22 +255,21 @@ export const FileTree: React.FC = () => {
         }
     };
 
-    const handleCreateFolder = async () => {
-        if (!currentFolder) return;
+    const handleCreateFolder = async (folderPath?: string | React.MouseEvent<HTMLElement>) => {
+        const targetFolder = typeof folderPath === 'string' ? folderPath : currentFolder;
+        if (!targetFolder) return;
 
         try {
-            const folderName = prompt('请输入文件夹名:');
-            if (folderName) {
-                const folderPath = `${currentFolder}/${folderName}`;
-                const result = await window.electronAPI.threadPoolExecute('createFolder', [folderPath]);
-                if (result.success) {
-                    message.success('文件夹创建成功');
-                    loadFileTree();
-                } else {
-                    message.error(`文件夹创建失败: ${result.error}`);
-                }
+            const result = await window.electronAPI.addFolder(targetFolder);
+            if (result.success && result.folderPath) {
+                message.success('文件夹创建成功');
+                // 更新树结构
+                resetTree(result.folderPath);
+            } else {
+                message.error('文件夹创建失败');
             }
         } catch (error) {
+            console.error('创建文件夹失败:', error);
             message.error('文件夹创建失败');
         }
     };
