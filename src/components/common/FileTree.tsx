@@ -13,6 +13,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from './FileIcon';
 import { storage } from '../../utils/storage';
 import { fullname } from '../../utils/fileCommonUtil';
+import { highlightText } from '../../utils/highlight';
 
 export const FileTree: React.FC = () => {
     const { currentFolder, currentFile, setCurrentFile } = useAppContext();
@@ -151,7 +152,7 @@ export const FileTree: React.FC = () => {
         return items;
     };
 
-    const transformToTreeDataNode = (node: FileNode): DataNode => {
+    const transformToTreeDataNode = (node: FileNode, searchQuery?: string): DataNode => {
         const result: DataNode = {
             title: (
                 <Dropdown
@@ -168,7 +169,7 @@ export const FileTree: React.FC = () => {
                             isDirectory={node.isDirectory}
                             style={{ marginRight: 8 }}
                         />
-                        {node.name}
+                        {searchQuery ? highlightText(node.name, searchQuery) : node.name}
                     </div>
                 </Dropdown>
             ),
@@ -177,7 +178,7 @@ export const FileTree: React.FC = () => {
         };
 
         if (node.isDirectory && node.children && node.children.length > 0) {
-            result.children = node.children.map(transformToTreeDataNode);
+            result.children = node.children.map(child => transformToTreeDataNode(child, searchQuery));
         }
 
         return result;
@@ -190,7 +191,7 @@ export const FileTree: React.FC = () => {
 
         try {
             const children = await window.electronAPI.getDirectoryChildren(node.key as string);
-            const newChildren = children.map(transformToTreeDataNode);
+            const newChildren = children.map(child => transformToTreeDataNode(child));
 
             const updateChildrenInNodeList = (nodes: DataNode[]): DataNode[] => {
                 return nodes.map(n => {
@@ -264,34 +265,35 @@ export const FileTree: React.FC = () => {
 
 
     const resetTree = () => {
-        if (currentFolder) {
-            if (showRootFolder) {
-                const rootFileNode: FileNode = {
-                    id: currentFolder,
-                    name: fullname(currentFolder),
-                    path: currentFolder,
-                    isDirectory: true,
-                    children: []
-                };
-                const rootDataNode = transformToTreeDataNode(rootFileNode);
-                setDataNodeList([rootDataNode]);
-                setSelectedKeys([]);
-                setExpandedKeys([rootDataNode.key as string]);
-            } else {
-                setInitialLoading(true);
-                window.electronAPI.getDirectoryChildren(currentFolder).then((children) => {
-                    setDataNodeList(children.map(transformToTreeDataNode));
-                    setSelectedKeys([]);
-                    setExpandedKeys([]);
-                    setInitialLoading(false);
-                });
+        // 先清空所有状态
+        setDataNodeList([]);
+        setSelectedKeys([]);
+        setExpandedKeys([]);
+        setFileTree(null);
+        
+        // 稍后再初始化（如果有当前文件夹）
+        setTimeout(() => {
+            if (currentFolder) {
+                if (showRootFolder) {
+                    const rootFileNode: FileNode = {
+                        id: currentFolder,
+                        name: fullname(currentFolder),
+                        path: currentFolder,
+                        isDirectory: true,
+                        children: []
+                    };
+                    const rootDataNode = transformToTreeDataNode(rootFileNode);
+                    setDataNodeList([rootDataNode]);
+                    setExpandedKeys([rootDataNode.key as string]);
+                } else {
+                    setInitialLoading(true);
+                    window.electronAPI.getDirectoryChildren(currentFolder).then((children) => {
+                        setDataNodeList(children.map(child => transformToTreeDataNode(child)));
+                        setInitialLoading(false);
+                    });
+                }
             }
-        } else {
-            setDataNodeList([]);
-            setSelectedKeys([]);
-            setExpandedKeys([]);
-            setFileTree(null);
-        }
+        }, 10);
     };
 
     useEffect(() => {
@@ -329,8 +331,7 @@ export const FileTree: React.FC = () => {
     useEffect(() => {
         if (debouncedSearchText.trim() && fileTree) {
             setSearchLoading(true);
-            setInitialLoading(true);
-            
+
             // 使用 setTimeout 确保加载状态有机会显示
             setTimeout(() => {
                 const searchTerm = debouncedSearchText.trim().toLowerCase();
@@ -368,42 +369,22 @@ export const FileTree: React.FC = () => {
                 searchResults = fileTree ? traverse(fileTree) : null;
 
                 if (searchResults) {
-                    if (showRootFolder) {
-                        const rootDataNode = transformToTreeDataNode(searchResults);
-                        setDataNodeList([rootDataNode]);
-                        const getSearchResultKeys = (node: DataNode): string[] => {
+                    const fileNodes = showRootFolder ? [searchResults] : searchResults.children || [];
+                    const searchDataNodes = fileNodes.map(node => transformToTreeDataNode(node, debouncedSearchText.trim()));
+                    setDataNodeList(searchDataNodes);
+                    if (resultCount <= 100) {
+                        const getSearchResultKeys = (nodes: DataNode[]): string[] => {
                             const keys: string[] = [];
-                            if (node.children && node.children.length > 0) {
-                                keys.push(node.key as string);
-                                node.children.forEach(child => {
-                                    keys.push(...getSearchResultKeys(child));
-                                });
-                            }
+                            nodes.forEach(node => {
+                                if (node.children && node.children.length > 0) {
+                                    keys.push(node.key as string);
+                                    keys.push(...getSearchResultKeys(node.children));
+                                }
+                            });
                             return keys;
                         };
-                        setExpandedKeys(getSearchResultKeys(rootDataNode));
-                    } else {
-                        if (searchResults.children) {
-                            const searchDataNodes = searchResults.children.map(transformToTreeDataNode);
-                            setDataNodeList(searchDataNodes);
-                            const getSearchResultKeys = (nodes: DataNode[]): string[] => {
-                                const keys: string[] = [];
-                                nodes.forEach(node => {
-                                    if (node.children && node.children.length > 0) {
-                                        keys.push(node.key as string);
-                                        keys.push(...getSearchResultKeys(node.children));
-                                    }
-                                });
-                                return keys;
-                            };
-                            setExpandedKeys(getSearchResultKeys(searchDataNodes));
-                        } else {
-                            setDataNodeList([]);
-                            setExpandedKeys([]);
-                            resultCount = 0;
-                        }
+                        setExpandedKeys(getSearchResultKeys(searchDataNodes));
                     }
-                    setIsExpanded(true);
                 } else {
                     setDataNodeList([]);
                     setExpandedKeys([]);
@@ -411,7 +392,6 @@ export const FileTree: React.FC = () => {
                 }
                 setSearchResultCount(resultCount);
                 setSearchLoading(false);
-                setInitialLoading(false);
             }, 10);
         } else {
             setSearchLoading(false);
@@ -429,7 +409,7 @@ export const FileTree: React.FC = () => {
 
                 let nodesToExpand: DataNode[] = [];
                 if (showRootFolder && fileTree) {
-                    const rootDataNode = transformToTreeDataNode(fileTree);
+                    const rootDataNode = transformToTreeDataNode(fileTree, debouncedSearchText.trim());
                     nodesToExpand = [rootDataNode];
                 } else if (dataNodeList.length > 0) {
                     nodesToExpand = dataNodeList;
@@ -548,6 +528,7 @@ export const FileTree: React.FC = () => {
                                             setSearchText('');
                                             setDebouncedSearchText('');
                                             setSearchResultCount(0);
+                                            resetTree();
                                         }}
                                         type="text"
                                     />
@@ -582,7 +563,7 @@ export const FileTree: React.FC = () => {
                         />
                     ) : (
                         <Flex style={{ height: '100%' }} align="center" justify="center">
-                            <Empty 
+                            <Empty
                                 // image={Empty.PRESENTED_IMAGE_SIMPLE}
                                 description={
                                     debouncedSearchText.trim() ? "没有找到匹配的文件或文件夹" : "没有可显示的内容"

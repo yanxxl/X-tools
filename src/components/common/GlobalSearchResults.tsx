@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button, Collapse, Space, Statistic, Typography, Switch, Select } from 'antd';
 import { DownOutlined, FolderOutlined, UpOutlined } from '@ant-design/icons';
 import { SearchResult } from '../../types';
+import { highlightText } from '../../utils/highlight';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -37,13 +38,7 @@ const basename = (path: string): string => {
     return lastSeparatorIndex === -1 ? path : path.substring(lastSeparatorIndex + 1);
 };
 
-// 高亮文本中的搜索关键词
-const highlightText = (text: string, query: string) => {
-    if (!query) return text;
 
-    const parts = text.split(new RegExp(`(${query})`, 'gi'));
-    return parts.map((part, idx) => part.toLowerCase() === query.toLowerCase() ? <Text strong key={idx} style={{ backgroundColor: '#fff3cd' }}>{part}</Text> : part);
-};
 
 // 获取默认排序顺序
 const getDefaultSortOrder = (sortBy: string): 'ascend' | 'descend' => {
