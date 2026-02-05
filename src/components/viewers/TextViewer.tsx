@@ -62,7 +62,7 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
         const handleScroll = () => {
             const scrollTop = container.scrollTop;
             const scrollKey = `textviewer-scroll-${filePath}`;
-            console.log('保存滚动位置:', scrollKey, scrollTop);
+            // console.log('保存滚动位置:', scrollKey, scrollTop);
             localStorage.setItem(scrollKey, scrollTop.toString());
         };
 
@@ -77,11 +77,11 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
         if (!loading && scrollContainerRef.current) {
             const scrollKey = `textviewer-scroll-${filePath}`;
             const savedScrollTop = localStorage.getItem(scrollKey);
-            console.log('读取滚动位置:', scrollKey, savedScrollTop);
+            // console.log('读取滚动位置:', scrollKey, savedScrollTop);
             if (savedScrollTop) {
                 setTimeout(() => {
                     if (scrollContainerRef.current) {
-                        console.log('恢复滚动位置:', savedScrollTop);
+                        // console.log('恢复滚动位置:', savedScrollTop);
                         scrollContainerRef.current.scrollTop = parseInt(savedScrollTop, 10);
                     }
                 }, 500);
