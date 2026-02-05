@@ -236,34 +236,6 @@ export const FileTree: React.FC = () => {
         }
     }
 
-    const getAllNonLeafKeys = (nodes: DataNode | DataNode[]): string[] => {
-        if (Array.isArray(nodes)) {
-            const keys: string[] = [];
-            nodes.forEach(node => {
-                if (!node.isLeaf) {
-                    keys.push(node.key as string);
-                    if (node.children) {
-                        keys.push(...getAllNonLeafKeys(node.children));
-                    }
-                }
-            });
-            return keys;
-        } else {
-            const keys: string[] = [];
-            if (!nodes.isLeaf) {
-                keys.push(nodes.key as string);
-                if (nodes.children) {
-                    nodes.children.forEach(child => {
-                        keys.push(...getAllNonLeafKeys(child));
-                    });
-                }
-            }
-            return keys;
-        }
-    };
-
-
-
     const resetTree = () => {
         // 先清空所有状态
         setDataNodeList([]);
@@ -384,7 +356,7 @@ export const FileTree: React.FC = () => {
                             return keys;
                         };
                         setExpandedKeys(getSearchResultKeys(searchDataNodes));
-                    }else{
+                    } else {
                         setExpandedKeys([searchDataNodes[0].key as string]);
                     }
                 } else {
@@ -404,28 +376,37 @@ export const FileTree: React.FC = () => {
     useEffect(() => {
         const handleExpandCollapse = async () => {
             if (isExpanded) {
-                if (!fileTree && currentFolder) {
-                    await loadFileTree();
-                }
+                const tree = await window.electronAPI.getFileTree(currentFolder);
+                // 设置 tree 到 node list，从 tree 获取所有文件夹列表，设置到展开列表
+                if (tree) {
+                    const rootDataNode = transformToTreeDataNode(tree);
+                    setDataNodeList(showRootFolder ? [rootDataNode] : rootDataNode.children || []);
 
-                let nodesToExpand: DataNode[] = [];
-                if (showRootFolder && fileTree) {
-                    const rootDataNode = transformToTreeDataNode(fileTree, debouncedSearchText.trim());
-                    nodesToExpand = [rootDataNode];
-                } else if (dataNodeList.length > 0) {
-                    nodesToExpand = dataNodeList;
-                }
+                    const getAllNonLeafKeys = (node: DataNode): string[] => {
+                        const keys: string[] = [];
+                        if (node.children && node.children.length > 0) {
+                            keys.push(node.key as string);
 
-                if (nodesToExpand.length > 0) {
-                    const allKeys = getAllNonLeafKeys(nodesToExpand);
+                            for (const child of node.children) {
+                                keys.push(...getAllNonLeafKeys(child));
+                            }
+                        }
+                        return keys;
+                    };
+
+                    const allKeys = getAllNonLeafKeys(rootDataNode);
                     setExpandedKeys(allKeys);
                 }
             } else {
                 setExpandedKeys([]);
             }
+            setInitialLoading(false);
         };
 
-        handleExpandCollapse();
+        setInitialLoading(true);
+        setTimeout(() => {
+            handleExpandCollapse();
+        }, 10);
     }, [isExpanded]);
 
     return (
