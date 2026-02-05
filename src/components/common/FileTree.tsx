@@ -270,7 +270,7 @@ export const FileTree: React.FC = () => {
         setSelectedKeys([]);
         setExpandedKeys([]);
         setFileTree(null);
-        
+
         // 稍后再初始化（如果有当前文件夹）
         setTimeout(() => {
             if (currentFolder) {
@@ -372,7 +372,7 @@ export const FileTree: React.FC = () => {
                     const fileNodes = showRootFolder ? [searchResults] : searchResults.children || [];
                     const searchDataNodes = fileNodes.map(node => transformToTreeDataNode(node, debouncedSearchText.trim()));
                     setDataNodeList(searchDataNodes);
-                    if (resultCount <= 100) {
+                    if (resultCount <= 300) {
                         const getSearchResultKeys = (nodes: DataNode[]): string[] => {
                             const keys: string[] = [];
                             nodes.forEach(node => {
@@ -384,6 +384,8 @@ export const FileTree: React.FC = () => {
                             return keys;
                         };
                         setExpandedKeys(getSearchResultKeys(searchDataNodes));
+                    }else{
+                        setExpandedKeys([searchDataNodes[0].key as string]);
                     }
                 } else {
                     setDataNodeList([]);
@@ -396,7 +398,6 @@ export const FileTree: React.FC = () => {
         } else {
             setSearchLoading(false);
             setSearchResultCount(0);
-            resetTree();
         }
     }, [debouncedSearchText]);
 
