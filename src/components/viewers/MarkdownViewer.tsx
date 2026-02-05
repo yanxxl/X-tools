@@ -1,27 +1,27 @@
-import React, {useEffect, useRef, useState} from 'react';
-import type {MenuProps} from 'antd';
-import {Button, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typography} from 'antd';
-import {CodeOutlined, EyeOutlined, FileTextOutlined} from '@ant-design/icons';
-import {OutlineItem, parseMarkdown} from '../../utils/markdown';
-import {storage, STORAGE_KEYS} from '../../utils/storage';
-import {toFileUrl} from '../../utils/fileCommonUtil';
+import React, { useEffect, useRef, useState } from 'react';
+import type { MenuProps } from 'antd';
+import { Button, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typography } from 'antd';
+import { CodeOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
+import { OutlineItem, parseMarkdown } from '../../utils/markdown';
+import { storage, STORAGE_KEYS } from '../../utils/storage';
+import { toFileUrl } from '../../utils/fileCommonUtil';
 import 'highlight.js/styles/github.css';
 import './MarkdownViewer.css';
 import 'katex/dist/katex.min.css';
-import {Center} from "../common/Center";
-import {Container} from "../common/Container";
+import { Center } from "../common/Center";
+import { Container } from "../common/Container";
 import CodeMirror from '@uiw/react-codemirror';
-import {markdown} from '@codemirror/lang-markdown';
-import {EditorState} from '@codemirror/state';
-import {EditorView} from '@codemirror/view';
+import { markdown } from '@codemirror/lang-markdown';
+import { EditorState } from '@codemirror/state';
+import { EditorView } from '@codemirror/view';
 import Speaker from "../common/Speaker";
 import PageSearch from "../common/PageSearch";
 import EditorSearch, { searchHighlightField } from "../common/EditorSearch";
-import {FontSizeAdjuster} from "../common/FontSizeAdjuster";
+import { FontSizeAdjuster } from "../common/FontSizeAdjuster";
 import "../common/PageSearch.css";
 import "../common/EditorSearch.css";
 
-const {Title} = Typography;
+const { Title } = Typography;
 
 interface MarkdownViewerProps {
     filePath: string;
@@ -29,7 +29,7 @@ interface MarkdownViewerProps {
     initialLine?: number;
 }
 
-export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileName, initialLine}) => {
+export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileName, initialLine }) => {
     // ============================== State Management ==============================
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState('');
@@ -158,9 +158,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                                 const targetPos = lineObj.from;
 
                                 view.dispatch({
-                                    selection: {anchor: targetPos},
+                                    selection: { anchor: targetPos },
                                     effects: [
-                                        EditorView.scrollIntoView(targetPos, {y: 'start'})
+                                        EditorView.scrollIntoView(targetPos, { y: 'start' })
                                     ]
                                 });
                             }
@@ -197,15 +197,13 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
     // 解析 Markdown 内容
     useEffect(() => {
         const parseContent = async () => {
-            if (content) {
-                try {
-                    const result = await parseMarkdown(content, filePath);
-                    setHtml(result.html);
-                    setOutline(result.outline);
-                } catch (err) {
-                    console.error('解析 Markdown 失败:', err);
-                    setError('解析 Markdown 内容失败');
-                }
+            try {
+                const result = await parseMarkdown(content, filePath);
+                setHtml(result.html);
+                setOutline(result.outline);
+            } catch (err) {
+                console.error('解析 Markdown 失败:', err);
+                setError('解析 Markdown 内容失败');
             }
         };
 
@@ -221,7 +219,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         // 查找点击目标或其祖先元素中的 a 标签
         const target = event.target as HTMLElement;
         let anchorElement: HTMLAnchorElement | null = null;
-        
+
         if (target.tagName === 'A') {
             anchorElement = target as HTMLAnchorElement;
         } else {
@@ -289,7 +287,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                 const element = document.getElementById(item.id);
                 if (element) {
                     console.log('element', [element]);
-                    element.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     // 添加临时高亮效果
                     element.classList.add('outline-highlight-animation');
                     setTimeout(() => {
@@ -315,7 +313,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                         const lineText = doc.line(line + 1).text;
                         // 检查是否是标题行，并且文本内容匹配
                         if ((lineText.startsWith('#') || lineText.startsWith('##') || lineText.startsWith('###') ||
-                                lineText.startsWith('####') || lineText.startsWith('#####') || lineText.startsWith('######')) &&
+                            lineText.startsWith('####') || lineText.startsWith('#####') || lineText.startsWith('######')) &&
                             lineText.replace(/^#+\s*/, '').trim() === item.title.trim()) {
                             targetLine = line;
                             break;
@@ -329,9 +327,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
 
                         // 应用滚动到目标位置
                         view.dispatch({
-                            selection: {anchor: targetPos},
+                            selection: { anchor: targetPos },
                             effects: [
-                                EditorView.scrollIntoView(targetPos, {y: 'center'})
+                                EditorView.scrollIntoView(targetPos, { y: 'center' })
                             ]
                         });
 
@@ -383,7 +381,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
         const flattenItems = (items: OutlineItem[], level = 0): OutlineItem[] => {
             const result: OutlineItem[] = [];
             for (const item of items) {
-                result.push({...item, level});
+                result.push({ ...item, level });
                 if (item.children && item.children.length > 0) {
                     result.push(...flattenItems(item.children, level + 1));
                 }
@@ -395,7 +393,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
             key: `${item.id}-${item.level}`,
             label: (
                 <div
-                    style={{paddingLeft: `${item.level * 16}px`}}
+                    style={{ paddingLeft: `${item.level * 16}px` }}
                     onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
@@ -413,8 +411,8 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
     // ============================== Loading & Error States ==============================
     if (loading) {
         return (
-            <div style={{padding: 24}}>
-                <Skeleton active paragraph={{rows: 3}}/>
+            <div style={{ padding: 24 }}>
+                <Skeleton active paragraph={{ rows: 3 }} />
             </div>
         );
     }
@@ -432,7 +430,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
 
     // ============================== Main Render ==============================
     return (
-        <Flex vertical={true} style={{height: '100%', background: '#fff'}}>
+        <Flex vertical={true} style={{ height: '100%', background: '#fff' }}>
             {/* 工具栏 */}
             <div style={{
                 padding: '8px 16px',
@@ -442,16 +440,16 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                 justifyContent: 'space-between',
                 background: '#fafafa'
             }}>
-                <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-                    <FileTextOutlined/>
-                    <Title level={5} style={{margin: 0}}>{fileName}</Title>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined />
+                    <Title level={5} style={{ margin: 0 }}>{fileName}</Title>
                 </div>
 
                 <Space size="large">
                     {viewMode === 'rendered' && (
                         <>
-                            <PageSearch cssSelector={'.markdown-content'}/>
-                            <Speaker cssSelector={'.markdown-content'}/>
+                            <PageSearch cssSelector={'.markdown-content'} />
+                            <Speaker cssSelector={'.markdown-content'} />
                         </>
                     )}
 
@@ -459,13 +457,13 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                         <EditorSearch editorView={editorView} />
                     )}
 
-                    <FontSizeAdjuster/>
+                    <FontSizeAdjuster />
 
                     {/* 视图模式切换按钮 */}
                     <Button.Group>
                         <Button
                             type={viewMode === 'rendered' ? 'primary' : 'default'}
-                            icon={<EyeOutlined/>}
+                            icon={<EyeOutlined />}
                             onClick={() => setViewMode('rendered')}
                             size="small"
                         >
@@ -473,7 +471,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                         </Button>
                         <Button
                             type={viewMode === 'source' ? 'primary' : 'default'}
-                            icon={<CodeOutlined/>}
+                            icon={<CodeOutlined />}
                             onClick={() => setViewMode('source')}
                             size="small"
                         >
@@ -483,13 +481,13 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                 </Space>
             </div>
 
-            <Container style={{flex: '1'}}>
-                <Splitter style={{height: '100%'}}>
+            <Container style={{ flex: '1' }}>
+                <Splitter style={{ height: '100%' }}>
                     <Splitter.Panel
                         defaultSize={250}
                         min={'10%'}
                         max={'50%'}
-                        style={{background: '#fff', padding: '16px 0px'}}
+                        style={{ background: '#fff', padding: '16px 0px' }}
                         collapsible
                     >
                         <Menu
@@ -498,20 +496,20 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({filePath, fileNam
                         />
                     </Splitter.Panel>
 
-                    <Splitter.Panel style={{background: '#fff'}}>
-                        <div className={'markdown-container'} style={{height: '100%'}}>
+                    <Splitter.Panel style={{ background: '#fff' }}>
+                        <div className={'markdown-container'} style={{ height: '100%' }}>
                             {viewMode === 'rendered' ? (
                                 <div
                                     ref={previewContainerRef}
                                     className="markdown-content"
-                                    style={{overflowY: 'auto', height: '100%'}}
-                                    dangerouslySetInnerHTML={{__html: html}}
+                                    style={{ overflowY: 'auto', height: '100%' }}
+                                    dangerouslySetInnerHTML={{ __html: html }}
                                     onClick={handleLinkClick}
                                 />
                             ) : (
                                 <div
                                     className="markdown-source"
-                                    style={{height: '100%'}}
+                                    style={{ height: '100%' }}
                                 >
                                     <CodeMirror
                                         ref={editorRef}
