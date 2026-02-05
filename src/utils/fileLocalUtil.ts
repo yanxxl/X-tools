@@ -220,8 +220,8 @@ export async function writeFileText(filePath: string, content: string): Promise<
       console.log(`文件不存在或无法读取，将使用默认编码: ${fileEncoding}，路径: ${filePath}`);
     }
 
-    // 根据文件编码写入内容
-    if (fileEncoding === 'utf-8') {
+    // 根据文件编码写入内容，空文件会被识别为 ascii 编码，默认也用 utf-8 写入
+    if (fileEncoding === 'utf-8' || fileEncoding === 'ascii') {
       // UTF-8编码直接写入
       await fs.promises.writeFile(filePath, content, 'utf-8');
     } else {

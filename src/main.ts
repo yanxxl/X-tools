@@ -227,7 +227,15 @@ function registerIpcHandlers() {
         }
     });
 
-
+    // 写入文件内容
+    ipcMain.handle('writeFile', async (event, filePath: string, content: string) => {
+        try {
+            return await writeFileText(filePath, content);
+        } catch (error) {
+            console.error('写入文件失败:', error);
+            throw error;
+        }
+    });
 
     // 解析Office文档（通用方法）
     ipcMain.handle('parseOffice', async (event, filePath: string, config?: OfficeParserConfig) => {
@@ -248,16 +256,6 @@ function registerIpcHandlers() {
             return text;
         } catch (error) {
             console.error('解析Office文件文本失败:', error);
-            throw error;
-        }
-    });
-
-    // 写入文件内容
-    ipcMain.handle('writeFile', async (event, filePath: string, content: string) => {
-        try {
-            return await writeFileText(filePath, content);
-        } catch (error) {
-            console.error('写入文件失败:', error);
             throw error;
         }
     });
