@@ -31,72 +31,6 @@ export const FileTree: React.FC = () => {
     const [searchLoading, setSearchLoading] = useState<boolean>(false);
     const [searchResultCount, setSearchResultCount] = useState<number>(0);
 
-    const handleTreeSelect: TreeProps<DataNode>['onSelect'] = async (keys, info) => {
-        if (info.node && info.node.isLeaf) {
-            setCurrentFile(info.node.key as string);
-            setSelectedKeys([info.node.key as string]);
-        }
-    };
-
-    const handleTreeExpand: TreeProps<DataNode>['onExpand'] = async (expandedKeysValue) => {
-        setExpandedKeys(expandedKeysValue as string[]);
-    };
-
-    const handleShowRootToggle = (checked: boolean) => {
-        setShowRootFolder(checked);
-        storage.set('filetree-show-root', checked);
-    };
-
-    const handleToggleExpand = () => {
-        setIsExpanded(!isExpanded);
-    };
-
-
-
-    const handleFocusCurrent = () => {
-        if (currentFile) {
-            const parentPaths = getAllParentPaths(currentFile);
-            setExpandedKeys(parentPaths);
-            setSelectedKeys([currentFile]);
-        }
-    };
-
-    const handleCreateFile = async () => {
-        if (!currentFolder) return;
-
-        try {
-            const fileName = prompt('请输入文件名:');
-            if (fileName) {
-                const filePath = `${currentFolder}/${fileName}`;
-                await window.electronAPI.writeFile(filePath, '');
-                message.success('文件创建成功');
-                loadFileTree();
-            }
-        } catch (error) {
-            message.error('文件创建失败');
-        }
-    };
-
-    const handleCreateFolder = async () => {
-        if (!currentFolder) return;
-
-        try {
-            const folderName = prompt('请输入文件夹名:');
-            if (folderName) {
-                const folderPath = `${currentFolder}/${folderName}`;
-                const result = await window.electronAPI.threadPoolExecute('createFolder', [folderPath]);
-                if (result.success) {
-                    message.success('文件夹创建成功');
-                    loadFileTree();
-                } else {
-                    message.error(`文件夹创建失败: ${result.error}`);
-                }
-            }
-        } catch (error) {
-            message.error('文件夹创建失败');
-        }
-    };
-
     const getAllParentPaths = (filePath: string): string[] => {
         const parts = filePath.split(/[\\/]/).filter(part => part !== '');
         const parents: string[] = [];
@@ -113,7 +47,6 @@ export const FileTree: React.FC = () => {
 
         return parents;
     };
-
 
     const getContextMenuItems = (node: FileNode): MenuProps['items'] => {
         const items: MenuProps['items'] = [];
@@ -236,13 +169,11 @@ export const FileTree: React.FC = () => {
     }
 
     const resetTree = () => {
-        // 先清空所有状态
         setDataNodeList([]);
         setSelectedKeys([]);
         setExpandedKeys([]);
         setFileTree(null);
 
-        // 稍后再初始化（如果有当前文件夹）
         setTimeout(() => {
             if (currentFolder) {
                 if (showRootFolder) {
@@ -265,6 +196,70 @@ export const FileTree: React.FC = () => {
                 }
             }
         }, 10);
+    };
+
+    const handleTreeSelect: TreeProps<DataNode>['onSelect'] = async (_, info) => {
+        if (info.node && info.node.isLeaf) {
+            setCurrentFile(info.node.key as string);
+            setSelectedKeys([info.node.key as string]);
+        }
+    };
+
+    const handleTreeExpand: TreeProps<DataNode>['onExpand'] = async (expandedKeysValue) => {
+        setExpandedKeys(expandedKeysValue as string[]);
+    };
+
+    const handleShowRootToggle = (checked: boolean) => {
+        setShowRootFolder(checked);
+        storage.set('filetree-show-root', checked);
+    };
+
+    const handleToggleExpand = () => {
+        setIsExpanded(!isExpanded);
+    };
+
+    const handleFocusCurrent = () => {
+        if (currentFile) {
+            const parentPaths = getAllParentPaths(currentFile);
+            setExpandedKeys(parentPaths);
+            setSelectedKeys([currentFile]);
+        }
+    };
+
+    const handleCreateFile = async () => {
+        if (!currentFolder) return;
+
+        try {
+            const fileName = prompt('请输入文件名:');
+            if (fileName) {
+                const filePath = `${currentFolder}/${fileName}`;
+                await window.electronAPI.writeFile(filePath, '');
+                message.success('文件创建成功');
+                loadFileTree();
+            }
+        } catch (error) {
+            message.error('文件创建失败');
+        }
+    };
+
+    const handleCreateFolder = async () => {
+        if (!currentFolder) return;
+
+        try {
+            const folderName = prompt('请输入文件夹名:');
+            if (folderName) {
+                const folderPath = `${currentFolder}/${folderName}`;
+                const result = await window.electronAPI.threadPoolExecute('createFolder', [folderPath]);
+                if (result.success) {
+                    message.success('文件夹创建成功');
+                    loadFileTree();
+                } else {
+                    message.error(`文件夹创建失败: ${result.error}`);
+                }
+            }
+        } catch (error) {
+            message.error('文件夹创建失败');
+        }
     };
 
     useEffect(() => {
@@ -303,13 +298,11 @@ export const FileTree: React.FC = () => {
         if (debouncedSearchText.trim() && fileTree) {
             setSearchLoading(true);
 
-            // 使用 setTimeout 确保加载状态有机会显示
             setTimeout(() => {
                 const searchTerm = debouncedSearchText.trim().toLowerCase();
                 let resultCount = 0;
                 let searchResults: FileNode | null = null;
 
-                // 内联搜索函数，同时统计命中节点数
                 const traverse = (node: FileNode): FileNode | null => {
                     const nodeMatches = node.name.toLowerCase().includes(searchTerm);
 
@@ -324,7 +317,6 @@ export const FileTree: React.FC = () => {
                     }
 
                     if (nodeMatches || filteredChildren.length > 0) {
-                        // 如果当前节点匹配，则计数
                         if (nodeMatches) {
                             resultCount += 1;
                         }
@@ -376,7 +368,6 @@ export const FileTree: React.FC = () => {
         const handleExpandCollapse = async () => {
             if (isExpanded) {
                 const tree = await window.electronAPI.getFileTree(currentFolder);
-                // 设置 tree 到 node list，从 tree 获取所有文件夹列表，设置到展开列表
                 if (tree) {
                     const rootDataNode = transformToTreeDataNode(tree);
                     setDataNodeList(showRootFolder ? [rootDataNode] : rootDataNode.children || []);
@@ -545,7 +536,6 @@ export const FileTree: React.FC = () => {
                     ) : (
                         <Flex style={{ height: '100%' }} align="center" justify="center">
                             <Empty
-                                // image={Empty.PRESENTED_IMAGE_SIMPLE}
                                 description={
                                     debouncedSearchText.trim() ? "没有找到匹配的文件或文件夹" : "没有可显示的内容"
                                 }
