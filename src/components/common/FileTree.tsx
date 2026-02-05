@@ -168,7 +168,7 @@ export const FileTree: React.FC = () => {
         }
     }
 
-    const resetTree = () => {
+    const resetTree = (filePath?: string) => {
         setDataNodeList([]);
         setSelectedKeys([]);
         setExpandedKeys([]);
@@ -193,6 +193,16 @@ export const FileTree: React.FC = () => {
                         setDataNodeList(children.map(child => transformToTreeDataNode(child)));
                         setInitialLoading(false);
                     });
+                }
+
+                // 如果提供了文件路径，聚焦到该文件
+                if (filePath) {
+                    setTimeout(() => {
+                        setCurrentFile(filePath);
+                        setSelectedKeys([filePath]);
+                        const parentPaths = getAllParentPaths(filePath);
+                        setExpandedKeys(prev => Array.from(new Set([...prev, ...parentPaths])));
+                    }, 100);
                 }
             }
         }, 10);
@@ -226,18 +236,21 @@ export const FileTree: React.FC = () => {
         }
     };
 
-    const handleCreateFile = async () => {
-        if (!currentFolder) return;
+    const handleCreateFile = async (folderPath?: string | React.MouseEvent<HTMLElement>) => {
+        const targetFolder = typeof folderPath === 'string' ? folderPath : currentFolder;
+        if (!targetFolder) return;
 
         try {
-            const fileName = prompt('请输入文件名:');
-            if (fileName) {
-                const filePath = `${currentFolder}/${fileName}`;
-                await window.electronAPI.writeFile(filePath, '');
+            const result = await window.electronAPI.addFile(targetFolder);
+            if (result.success && result.filePath) {
                 message.success('文件创建成功');
-                loadFileTree();
+                // 更新树结构并聚焦到新文件
+                resetTree(result.filePath);
+            } else {
+                message.error('文件创建失败');
             }
         } catch (error) {
+            console.error('创建文件失败:', error);
             message.error('文件创建失败');
         }
     };
