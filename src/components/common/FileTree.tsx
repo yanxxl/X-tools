@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { ConfigProvider, message, Tree, Dropdown, type MenuProps, Flex, Space, Button, Input, Tooltip, Switch } from "antd";
+import { ConfigProvider, message, Tree, Dropdown, type MenuProps, Flex, Space, Button, Input, Tooltip, Switch, Empty } from "antd";
 import type { DataNode, TreeProps } from 'antd/es/tree';
 import {
     DownOutlined, FileOutlined, FolderOpenOutlined,
     HomeOutlined, FolderAddOutlined, FileAddOutlined,
     ExpandOutlined, CompressOutlined, SearchOutlined,
-    AimOutlined, CloseOutlined
+    AimOutlined, CloseOutlined,
+    LoadingOutlined
 } from '@ant-design/icons';
 import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
@@ -26,6 +27,8 @@ export const FileTree: React.FC = () => {
     const [showSearchBox, setShowSearchBox] = useState<boolean>(false);
     const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [dataNodeList, setDataNodeList] = useState<DataNode[]>([]);
+    const [searchLoading, setSearchLoading] = useState<boolean>(false);
+    const [searchResultCount, setSearchResultCount] = useState<number>(0);
 
     const handleTreeSelect: TreeProps<DataNode>['onSelect'] = async (keys, info) => {
         const nodeMeta: FileNode | undefined = info.node as unknown as FileNode;
@@ -258,34 +261,7 @@ export const FileTree: React.FC = () => {
         }
     };
 
-    const searchFileTree = (tree: FileNode | null, searchTerm: string): FileNode | null => {
-        if (!tree || !searchTerm) return null;
 
-        const traverse = (node: FileNode): FileNode | null => {
-            const nodeMatches = node.name.toLowerCase().includes(searchTerm.toLowerCase());
-
-            const filteredChildren: FileNode[] = [];
-            if (node.isDirectory && node.children) {
-                for (const child of node.children) {
-                    const filteredChild = traverse(child);
-                    if (filteredChild) {
-                        filteredChildren.push(filteredChild);
-                    }
-                }
-            }
-
-            if (nodeMatches || filteredChildren.length > 0) {
-                return {
-                    ...node,
-                    children: filteredChildren.length > 0 ? filteredChildren : undefined
-                };
-            }
-
-            return null;
-        };
-
-        return traverse(tree);
-    };
 
     const resetTree = () => {
         if (currentFolder) {
@@ -352,11 +328,44 @@ export const FileTree: React.FC = () => {
 
     useEffect(() => {
         if (debouncedSearchText.trim() && fileTree) {
+            setSearchLoading(true);
             setInitialLoading(true);
             
             // 使用 setTimeout 确保加载状态有机会显示
             setTimeout(() => {
-                const searchResults = searchFileTree(fileTree, debouncedSearchText.trim());
+                const searchTerm = debouncedSearchText.trim().toLowerCase();
+                let resultCount = 0;
+                let searchResults: FileNode | null = null;
+
+                // 内联搜索函数，同时统计命中节点数
+                const traverse = (node: FileNode): FileNode | null => {
+                    const nodeMatches = node.name.toLowerCase().includes(searchTerm);
+
+                    const filteredChildren: FileNode[] = [];
+                    if (node.isDirectory && node.children) {
+                        for (const child of node.children) {
+                            const filteredChild = traverse(child);
+                            if (filteredChild) {
+                                filteredChildren.push(filteredChild);
+                            }
+                        }
+                    }
+
+                    if (nodeMatches || filteredChildren.length > 0) {
+                        // 如果当前节点匹配，则计数
+                        if (nodeMatches) {
+                            resultCount += 1;
+                        }
+                        return {
+                            ...node,
+                            children: filteredChildren.length > 0 ? filteredChildren : undefined
+                        };
+                    }
+
+                    return null;
+                };
+
+                searchResults = fileTree ? traverse(fileTree) : null;
 
                 if (searchResults) {
                     if (showRootFolder) {
@@ -391,17 +400,23 @@ export const FileTree: React.FC = () => {
                         } else {
                             setDataNodeList([]);
                             setExpandedKeys([]);
+                            resultCount = 0;
                         }
                     }
                     setIsExpanded(true);
                 } else {
                     setDataNodeList([]);
                     setExpandedKeys([]);
+                    resultCount = 0;
                 }
+                setSearchResultCount(resultCount);
+                setSearchLoading(false);
                 setInitialLoading(false);
             }, 10);
         } else {
-           resetTree();
+            setSearchLoading(false);
+            setSearchResultCount(0);
+            resetTree();
         }
     }, [debouncedSearchText]);
 
@@ -518,16 +533,25 @@ export const FileTree: React.FC = () => {
                             value={searchText}
                             onChange={(e) => setSearchText(e.target.value)}
                             suffix={
-                                <Button
-                                    size="small"
-                                    icon={<CloseOutlined />}
-                                    onClick={() => {
-                                        setShowSearchBox(false);
-                                        setSearchText('');
-                                        setDebouncedSearchText('');
-                                    }}
-                                    type="text"
-                                />
+                                <Space size="small">
+                                    {searchLoading && <LoadingOutlined spin />}
+                                    {!searchLoading && searchResultCount > 0 && (
+                                        <span style={{ fontSize: '12px', color: '#666' }}>
+                                            {searchResultCount} 个结果
+                                        </span>
+                                    )}
+                                    <Button
+                                        size="small"
+                                        icon={<CloseOutlined />}
+                                        onClick={() => {
+                                            setShowSearchBox(false);
+                                            setSearchText('');
+                                            setDebouncedSearchText('');
+                                            setSearchResultCount(0);
+                                        }}
+                                        type="text"
+                                    />
+                                </Space>
                             }
                             style={{ width: '100%' }}
                             autoFocus
@@ -540,11 +564,9 @@ export const FileTree: React.FC = () => {
                 <ConfigProvider theme={{ token: { colorBgContainer: 'transparent' } }}>
                     {initialLoading ? (
                         <Flex style={{ height: '100%' }} align="center" justify="center">
-                            <div style={{ textAlign: 'center', padding: '20px' }}>
-                                ...
-                            </div>
+                            <LoadingOutlined style={{ fontSize: 24 }} spin />
                         </Flex>
-                    ) : (
+                    ) : dataNodeList.length > 0 ? (
                         <Tree<DataNode>
                             treeData={dataNodeList}
                             blockNode
@@ -558,6 +580,15 @@ export const FileTree: React.FC = () => {
                             expandAction="click"
                             style={{ padding: '8px 0' }}
                         />
+                    ) : (
+                        <Flex style={{ height: '100%' }} align="center" justify="center">
+                            <Empty 
+                                // image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                description={
+                                    debouncedSearchText.trim() ? "没有找到匹配的文件或文件夹" : "没有可显示的内容"
+                                }
+                            />
+                        </Flex>
                     )}
                 </ConfigProvider>
             </div>
