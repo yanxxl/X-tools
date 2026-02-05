@@ -38,6 +38,11 @@ interface ElectronAPI {
     readFileLines: (filePath: string) => Promise<string[]>; // 这个搜索预览时用
     writeFile: (filePath: string, content: string) => Promise<boolean>;
     openExternal: (url: string) => Promise<void>;
+    addFile: (directoryPath: string) => Promise<{ success: boolean; filePath?: string }>;
+    addFolder: (directoryPath: string) => Promise<{ success: boolean; folderPath?: string }>;
+    removeFile: (filePath: string) => Promise<boolean>;
+    removeFolder: (folderPath: string) => Promise<boolean>;
+    moveFile: (fromPath: string, toPath: string) => Promise<boolean>;
 
     // === 应用信息 ===
     getAppVersion: () => Promise<string>;
@@ -93,6 +98,11 @@ const electronAPI: ElectronAPI = {
     readFileLines: (filePath: string) => ipcRenderer.invoke('readFileLines', filePath) as Promise<string[]>,
     writeFile: (filePath: string, content: string) => ipcRenderer.invoke('writeFile', filePath, content) as Promise<boolean>,
     openExternal: (url: string) => ipcRenderer.invoke('openExternal', url) as Promise<void>,
+    addFile: (directoryPath: string) => ipcRenderer.invoke('addFile', directoryPath) as Promise<{ success: boolean; filePath?: string }>,
+    addFolder: (directoryPath: string) => ipcRenderer.invoke('addFolder', directoryPath) as Promise<{ success: boolean; folderPath?: string }>,
+    removeFile: (filePath: string) => ipcRenderer.invoke('removeFile', filePath) as Promise<boolean>,
+    removeFolder: (folderPath: string) => ipcRenderer.invoke('removeFolder', folderPath) as Promise<boolean>,
+    moveFile: (fromPath: string, toPath: string) => ipcRenderer.invoke('moveFile', fromPath, toPath) as Promise<boolean>,
 
     // 应用信息
     getAppVersion: () => ipcRenderer.invoke('getAppVersion') as Promise<string>,

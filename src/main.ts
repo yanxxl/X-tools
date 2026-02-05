@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen, shell } from 'electron';
-import { promises as fs } from 'fs';
+import fs from 'fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { getDirectoryChildren, getFileInfo, getFileTree, readFileText, writeFileText } from './utils/fileLocalUtil';
@@ -41,8 +41,6 @@ function initializeThreadPool() {
             workerPath = path.join(app.getAppPath(), '.vite/build', 'poolWorker.js');
         } else {
             const buildPath = path.join(__dirname, '..', '.vite', 'build', 'poolWorker.js');
-            const fs = require('fs');
-
             if (fs.existsSync(buildPath)) {
                 workerPath = buildPath;
             } else {
@@ -51,8 +49,6 @@ function initializeThreadPool() {
         }
 
         workerPath = path.resolve(workerPath);
-        const workerDir = path.dirname(workerPath);
-
         pool = workerpool.pool(workerPath);
 
         console.log('线程池初始化成功，工作器路径:', workerPath);
@@ -212,7 +208,7 @@ function registerIpcHandlers() {
     // 读取二进制文件内容
     ipcMain.handle('readFileBinary', async (event, filePath: string) => {
         try {
-            const buffer = await fs.readFile(filePath);
+            const buffer = fs.readFileSync(filePath);
             return buffer;
         } catch (error) {
             console.error('读取二进制文件失败:', error);
@@ -276,6 +272,108 @@ function registerIpcHandlers() {
         }
     });
 
+    // 添加文件
+    ipcMain.handle('addFile', async (event, directoryPath: string) => {
+        try {
+            // 确保目录存在
+            if (!fs.existsSync(directoryPath)) {
+                fs.mkdirSync(directoryPath, { recursive: true });
+            }
+
+            // 生成新文件路径，处理重名情况
+            let fileName = '新文件.md';
+            let filePath = path.join(directoryPath, fileName);
+            let counter = 1;
+
+            // 检查文件是否存在，如果存在则添加序号
+            while (fs.existsSync(filePath)) {
+                fileName = `新文件(${counter}).md`;
+                filePath = path.join(directoryPath, fileName);
+                counter++;
+            }
+
+            // 创建空文件
+            fs.writeFileSync(filePath, '', 'utf-8');
+            return { success: true, filePath };
+        } catch (error) {
+            console.error('添加文件失败:', error);
+            throw error;
+        }
+    });
+
+    // 添加文件夹
+    ipcMain.handle('addFolder', async (event, directoryPath: string) => {
+        try {
+            // 确保目录存在
+            if (!fs.existsSync(directoryPath)) {
+                fs.mkdirSync(directoryPath, { recursive: true });
+            }
+
+            // 生成新文件夹路径，处理重名情况
+            let folderName = '新文件夹';
+            let folderPath = path.join(directoryPath, folderName);
+            let counter = 1;
+
+            // 检查文件夹是否存在，如果存在则添加序号
+            while (fs.existsSync(folderPath)) {
+                folderName = `新文件夹(${counter})`;
+                folderPath = path.join(directoryPath, folderName);
+                counter++;
+            }
+
+            // 创建文件夹
+            fs.mkdirSync(folderPath, { recursive: true });
+            return { success: true, folderPath };
+        } catch (error) {
+            console.error('添加文件夹失败:', error);
+            throw error;
+        }
+    });
+
+    // 删除文件
+    ipcMain.handle('removeFile', async (event, filePath: string) => {
+        try {
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('删除文件失败:', error);
+            throw error;
+        }
+    });
+
+    // 删除文件夹
+    ipcMain.handle('removeFolder', async (event, folderPath: string) => {
+        try {
+            if (fs.existsSync(folderPath)) {
+                fs.rmSync(folderPath, { recursive: true, force: true });
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('删除文件夹失败:', error);
+            throw error;
+        }
+    });
+
+    // 移动文件
+    ipcMain.handle('moveFile', async (event, fromPath: string, toPath: string) => {
+        try {
+            // 确保目标目录存在
+            const toDirPath = path.dirname(toPath);
+            if (!fs.existsSync(toDirPath)) {
+                fs.mkdirSync(toDirPath, { recursive: true });
+            }
+            fs.renameSync(fromPath, toPath);
+            return true;
+        } catch (error) {
+            console.error('移动文件失败:', error);
+            throw error;
+        }
+    });
+
     // 获取应用版本号
     ipcMain.handle('getAppVersion', async () => {
         return app.getVersion();
@@ -302,7 +400,7 @@ function registerIpcHandlers() {
     // 获取应用描述
     ipcMain.handle('getAppDescription', async () => {
         const packageJsonPath = path.join(app.getAppPath(), 'package.json');
-        const packageJsonContent = await fs.readFile(packageJsonPath, 'utf-8');
+        const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8');
         const packageJson = JSON.parse(packageJsonContent);
         return packageJson.description;
     });
