@@ -32,10 +32,9 @@ export const FileTree: React.FC = () => {
     const [searchResultCount, setSearchResultCount] = useState<number>(0);
 
     const handleTreeSelect: TreeProps<DataNode>['onSelect'] = async (keys, info) => {
-        const nodeMeta: FileNode | undefined = info.node as unknown as FileNode;
-        if (nodeMeta && !nodeMeta.isDirectory) {
-            setCurrentFile(nodeMeta.path);
-            setSelectedKeys([nodeMeta.path]);
+        if (info.node && info.node.isLeaf) {
+            setCurrentFile(info.node.key as string);
+            setSelectedKeys([info.node.key as string]);
         }
     };
 
