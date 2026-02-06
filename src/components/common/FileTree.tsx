@@ -32,7 +32,7 @@ export const FileTree: React.FC = () => {
     const [searchLoading, setSearchLoading] = useState<boolean>(false);
     const [searchResultCount, setSearchResultCount] = useState<number>(0);
     const [loadedKeys, setLoadedKeys] = useState<string[]>([]);
-    
+
     // 使用 ref 来避免闭包陷阱
     const currentFileRef = useRef<string | null>(null);
     currentFileRef.current = currentFile;
@@ -203,7 +203,7 @@ export const FileTree: React.FC = () => {
                                     message.success('文件已删除');
 
                                     // 如果删除的是当前预览的文件，设置当前文件为null
-                                    console.log('currentFile:', currentFileRef.current,node.path);
+                                    console.log('currentFile:', currentFileRef.current, node.path);
                                     if (currentFileRef.current === node.path) {
                                         setCurrentFile(null);
                                     }
@@ -358,6 +358,114 @@ export const FileTree: React.FC = () => {
 
     const handleLoadedKeys: TreeProps<DataNode>['onLoad'] = (loadedKeysValue) => {
         setLoadedKeys(loadedKeysValue as string[]);
+    };
+
+    const handleDrop: TreeProps<DataNode>['onDrop'] = async (info) => {
+        const { dragNode, node: dropNode, dropToGap } = info;
+
+        const dragPath = dragNode.key as string;
+        const dropPath = dropNode.key as string;
+
+        console.log('dragPath', dragPath);
+        console.log('dropPath', dropPath);
+        console.log('dropToGap', dropToGap);
+        console.log('dropNode.isLeaf', dropNode.isLeaf);
+        try {
+            // 确定目标路径
+            let targetPath: string;
+            const fileName = dragPath.split(/[\\/]/).pop() || '';
+
+            // 根据 dropNode 是否是叶子节点和 dropToGap 来决定目标路径
+            if (dropNode.isLeaf) {
+                // 拖拽到文件上
+                if (!dropToGap) {
+                    // leaf + 非gap：拖拽到文件上，提示不能放到文件里
+                    message.error('只能将文件或文件夹拖拽到文件夹中');
+                    return;
+                } else {
+                    // leaf + gap：拖拽到文件之间的间隙，移动到父文件夹
+                    const parentPath = dropPath.split(/[\\/]/).slice(0, -1).join(dropPath.includes('\\') ? '\\' : '/');
+                    targetPath = parentPath;
+                }
+            } else {
+                // 拖拽到文件夹上
+                if (dropToGap) {
+                    // 非leaf + gap：拖拽到文件夹之间的间隙，移动到父文件夹
+                    const parentPath = dropPath.split(/[\\/]/).slice(0, -1).join(dropPath.includes('\\') ? '\\' : '/');
+                    targetPath = parentPath;
+                } else {
+                    // 非leaf + 非gap：拖拽到文件夹上，移动到该文件夹内
+                    targetPath = dropPath;
+                }
+            }
+
+            // 构建完整的目标路径
+            const separator = targetPath.includes('\\') ? '\\' : '/';
+            const finalTargetPath = targetPath + (targetPath.endsWith(separator) ? '' : separator) + fileName;
+
+            // 检查是否可以移动（不能移动到自身或其子目录）
+            if (dragPath === finalTargetPath || finalTargetPath.startsWith(dragPath + separator)) {
+                message.error('不能将文件或文件夹移动到自身或其子目录中');
+                return;
+            }
+
+            // 检查目标路径是否已存在同名文件/文件夹
+            try {
+                const exists = await window.electronAPI.getFileInfo(finalTargetPath);
+                if (exists) {
+                    message.error(`目标位置已存在同名文件或文件夹: ${fileName}`);
+                    return;
+                }
+            } catch (error) {
+                // 文件不存在是正常情况，继续执行
+            }
+
+            // 执行移动操作
+            const success = await window.electronAPI.moveFile(dragPath, finalTargetPath);
+            if (success) {
+                message.success('文件移动成功');
+
+                // 如果移动的是当前预览的文件，更新当前文件路径
+                if (currentFileRef.current === dragPath) {
+                    setCurrentFile(finalTargetPath);
+                }
+
+                // 刷新文件树
+                resetTree();
+
+                // 移动完成后自动展开文件树中的相关文件夹，方便用户查看结果
+                setTimeout(() => {
+                    // 确定要展开的文件夹路径
+                    const folderToExpand = dropToGap ? targetPath : dropPath;
+
+                    // 将目标文件夹添加到展开的键列表中
+                    setExpandedKeys(prev => {
+                        const newExpandedKeys = new Set(prev);
+                        newExpandedKeys.add(folderToExpand);
+                        const parentPaths = getAllParentPaths(folderToExpand);
+                        parentPaths.forEach(path => newExpandedKeys.add(path));
+                        return Array.from(newExpandedKeys);
+                    });
+
+                    // 如果移动的是文件，也选中它
+                    if (dragNode.isLeaf) {
+                        setSelectedKeys([finalTargetPath]);
+                    }
+                }, 100);
+            } else {
+                message.error('文件移动失败');
+            }
+        } catch (error) {
+            console.error('移动文件失败:', error);
+            // 提供更具体的错误信息
+            if (error.message.includes('ENOTEMPTY')) {
+                message.error('目标文件夹非空，无法移动');
+            } else if (error.message.includes('EISDIR')) {
+                message.error('非法操作：不能将文件移动到目录路径');
+            } else {
+                message.error('移动文件失败');
+            }
+        }
     };
 
     const handleShowRootToggle = (checked: boolean) => {
@@ -708,6 +816,8 @@ export const FileTree: React.FC = () => {
                             onExpand={handleTreeExpand}
                             loadData={onLoadData}
                             onLoad={handleLoadedKeys}
+                            onDrop={handleDrop}
+                            draggable={{ icon: false }}
                             expandAction="click"
                             style={{ padding: '8px 0' }}
                         />
