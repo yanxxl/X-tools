@@ -31,6 +31,7 @@ export const FileTree: React.FC = () => {
     const [dataNodeList, setDataNodeList] = useState<DataNode[]>([]);
     const [searchLoading, setSearchLoading] = useState<boolean>(false);
     const [searchResultCount, setSearchResultCount] = useState<number>(0);
+    const [loadedKeys, setLoadedKeys] = useState<string[]>([]);
 
     const getAllParentPaths = (filePath: string): string[] => {
         const parts = filePath.split(/[\\/]/).filter(part => part !== '');
@@ -209,43 +210,36 @@ export const FileTree: React.FC = () => {
     }
 
     const resetTree = (filePath?: string) => {
-        setDataNodeList([]);
-        setSelectedKeys([]);
-        setExpandedKeys([]);
-        setFileTree(null);
-
-        setTimeout(() => {
-            if (currentFolder) {
-                if (showRootFolder) {
-                    const rootFileNode: FileNode = {
-                        id: currentFolder,
-                        name: fullname(currentFolder),
-                        path: currentFolder,
-                        isDirectory: true,
-                        children: []
-                    };
-                    const rootDataNode = transformToTreeDataNode(rootFileNode);
-                    setDataNodeList([rootDataNode]);
-                    setExpandedKeys([rootDataNode.key as string]);
-                } else {
-                    setInitialLoading(true);
-                    window.electronAPI.getDirectoryChildren(currentFolder).then((children) => {
-                        setDataNodeList(children.map(child => transformToTreeDataNode(child)));
-                        setInitialLoading(false);
-                    });
-                }
-
-                // 如果提供了文件路径，聚焦到该文件
-                if (filePath) {
-                    setTimeout(() => {
-                        setCurrentFile(filePath);
-                        setSelectedKeys([filePath]);
-                        const parentPaths = getAllParentPaths(filePath);
-                        setExpandedKeys(prev => Array.from(new Set([...prev, ...parentPaths])));
-                    }, 100);
-                }
+        console.log('resetTree', filePath);
+        if (currentFolder) {
+            if (showRootFolder) {
+                const rootFileNode: FileNode = {
+                    id: currentFolder,
+                    name: fullname(currentFolder),
+                    path: currentFolder,
+                    isDirectory: true,
+                    children: []
+                };
+                const rootDataNode = transformToTreeDataNode(rootFileNode);
+                setDataNodeList([rootDataNode]);
+            } else {
+                setInitialLoading(true);
+                window.electronAPI.getDirectoryChildren(currentFolder).then((children) => {
+                    setDataNodeList(children.map(child => transformToTreeDataNode(child)));
+                    setInitialLoading(false);
+                });
             }
-        }, 10);
+
+            setSelectedKeys([]);
+            setExpandedKeys([]);
+            setLoadedKeys([]);
+
+            // 如果提供了文件路径，聚焦到该文件
+            if (filePath) setCurrentFile(filePath);
+            setTimeout(() => {
+                handleFocusCurrent();
+            }, 100);
+        }
     };
 
     const handleTreeSelect: TreeProps<DataNode>['onSelect'] = async (_, info) => {
@@ -269,6 +263,7 @@ export const FileTree: React.FC = () => {
     };
 
     const handleFocusCurrent = () => {
+        console.log('handleFocusCurrent', currentFile);
         if (currentFile) {
             const parentPaths = getAllParentPaths(currentFile);
             setExpandedKeys(parentPaths);
@@ -319,23 +314,26 @@ export const FileTree: React.FC = () => {
     }, [currentFolder, showRootFolder]);
 
     useEffect(() => {
-        if (selectedKeys.includes(currentFile)) return;
+        if (!currentFile) return;
 
-        // 检查文件是否存在于树节点列表中，用于新建文件
+        // 检查文件是否存在于树节点列表中，用于新建文件，重命名文件等情况
         const fileExists = isFileInNodeList(currentFile, dataNodeList);
         if (!fileExists) {
             resetTree(currentFile);
+            return;
         }
+
+        if (selectedKeys.includes(currentFile)) return;
 
         setTimeout(() => {
             if (currentFile) {
-                // 文件存在，设置选中状态并展开父节点
+                // 设置选中状态并展开父节点，并保留当前展开状态
                 setSelectedKeys([currentFile]);
                 const parentPaths = getAllParentPaths(currentFile);
                 const newExpandedKeys = Array.from(new Set([...expandedKeys, ...parentPaths]));
                 setExpandedKeys(newExpandedKeys);
             }
-        }, 500);
+        }, 100);
     }, [currentFile]);
 
     useEffect(() => {
@@ -598,6 +596,7 @@ export const FileTree: React.FC = () => {
                             switcherIcon={<DownOutlined />}
                             selectedKeys={selectedKeys}
                             expandedKeys={expandedKeys}
+                            loadedKeys={loadedKeys}
                             onSelect={handleTreeSelect}
                             onExpand={handleTreeExpand}
                             loadData={onLoadData}
