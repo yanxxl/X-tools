@@ -392,6 +392,11 @@ export const FileTree: React.FC = () => {
                 if (dropToGap) {
                     // 非leaf + gap：拖拽到文件夹之间的间隙，移动到父文件夹
                     const parentPath = dropPath.split(/[\\/]/).slice(0, -1).join(dropPath.includes('\\') ? '\\' : '/');
+                    // 检查是否是根目录（主文件夹）
+                    if (dropPath === currentFolder) {
+                        message.error('不能将文件或文件夹移动到主文件夹外');
+                        return;
+                    }
                     targetPath = parentPath;
                 } else {
                     // 非leaf + 非gap：拖拽到文件夹上，移动到该文件夹内
