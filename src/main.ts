@@ -372,6 +372,38 @@ function registerIpcHandlers() {
         }
     });
 
+    // 重命名文件
+    ipcMain.handle('renameFile', async (event, filePath: string, newName: string) => {
+        try {
+            // 提取目录路径
+            const dirPath = path.dirname(filePath);
+            // 构建新的文件路径
+            const newPath = path.join(dirPath, newName);
+            
+            // 检查新路径是否与原路径相同
+            if (newPath === filePath) {
+                return { success: true, newPath: filePath };
+            }
+            
+            // 检查新文件名是否为空
+            if (!newName.trim()) {
+                return { success: false, error: '文件名不能为空' };
+            }
+            
+            // 检查新文件是否已存在
+            if (fs.existsSync(newPath)) {
+                return { success: false, error: '文件名已存在' };
+            }
+            
+            // 重命名文件
+            fs.renameSync(filePath, newPath);
+            return { success: true, newPath };
+        } catch (error) {
+            console.error('重命名文件失败:', error);
+            return { success: false, error: error instanceof Error ? error.message : '重命名文件失败' };
+        }
+    });
+
     // 获取应用版本号
     ipcMain.handle('getAppVersion', async () => {
         return app.getVersion();

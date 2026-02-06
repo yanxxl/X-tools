@@ -14,6 +14,7 @@ import { FileIcon } from './FileIcon';
 import { storage } from '../../utils/storage';
 import { fullname } from '../../utils/fileCommonUtil';
 import { highlightText } from '../../utils/highlight';
+import { EditableFilePath } from './EditableFilePath';
 
 export const FileTree: React.FC = () => {
     const { currentFolder, currentFile, setCurrentFile } = useAppContext();
@@ -46,6 +47,21 @@ export const FileTree: React.FC = () => {
         }
 
         return parents;
+    };
+    
+    // 检查文件是否存在于树节点列表中
+    const isFileInNodeList = (filePath: string, nodes: DataNode[]): boolean => {
+        for (const node of nodes) {
+            if (node.key === filePath) {
+                return true;
+            }
+            if (node.children && node.children.length > 0) {
+                if (isFileInNodeList(filePath, node.children)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     };
 
     const getContextMenuItems = (node: FileNode): MenuProps['items'] => {
@@ -91,18 +107,17 @@ export const FileTree: React.FC = () => {
                     menu={{ items: getContextMenuItems(node) }}
                     trigger={['contextMenu']}
                 >
-                    <div
-                        className={'one-line'}
+                    <span
+                        className="one-line"
                         title={node.name}
-                        style={{ cursor: node.isDirectory ? 'pointer' : 'default' }}
+                        style={{ cursor: node.isDirectory ? 'pointer' : 'default', display: 'flex', alignItems: 'center' }}
                     >
                         <FileIcon
                             fileName={node.name}
                             isDirectory={node.isDirectory}
-                            style={{ marginRight: 8 }}
                         />
-                        {searchQuery ? highlightText(node.name, searchQuery) : node.name}
-                    </div>
+                        {searchQuery ? highlightText(node.name, searchQuery) : <EditableFilePath path={node.path} onRename={setCurrentFile} />}
+                    </span>
                 </Dropdown>
             ),
             key: node.id,
@@ -278,20 +293,30 @@ export const FileTree: React.FC = () => {
         resetTree();
     }, [currentFolder, showRootFolder]);
 
-    useEffect(() => {
+    useEffect(() => {        
         if (selectedKeys.includes(currentFile)) return;
 
         setTimeout(() => {
-            if (currentFile && dataNodeList.length > 0) {
-                setSelectedKeys([currentFile]);
-                const parentPaths = getAllParentPaths(currentFile);
-                const newExpandedKeys = Array.from(new Set([...expandedKeys, ...parentPaths]));
-                setExpandedKeys(newExpandedKeys);
+            if (currentFile) {
+                // 检查文件是否存在于树节点列表中
+                const fileExists = isFileInNodeList(currentFile, dataNodeList);
+                
+                if (fileExists) {
+                    // 文件存在，设置选中状态并展开父节点
+                    setSelectedKeys([currentFile]);
+                    const parentPaths = getAllParentPaths(currentFile);
+                    const newExpandedKeys = Array.from(new Set([...expandedKeys, ...parentPaths]));
+                    setExpandedKeys(newExpandedKeys);
+                } else {
+                    // 文件不存在，刷新树结构
+                    resetTree(currentFile);
+                    setSelectedKeys([currentFile]);
+                }
             } else {
                 setSelectedKeys([]);
             }
         }, 500);
-    }, [currentFile]);
+    }, [currentFile, dataNodeList]);
 
     useEffect(() => {
         const debouncedSearch = (text: string) => {

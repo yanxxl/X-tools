@@ -43,6 +43,7 @@ interface ElectronAPI {
     removeFile: (filePath: string) => Promise<boolean>;
     removeFolder: (folderPath: string) => Promise<boolean>;
     moveFile: (fromPath: string, toPath: string) => Promise<boolean>;
+    renameFile: (filePath: string, newName: string) => Promise<{ success: boolean; newPath?: string; error?: string }>;
 
     // === 应用信息 ===
     getAppVersion: () => Promise<string>;
@@ -103,6 +104,7 @@ const electronAPI: ElectronAPI = {
     removeFile: (filePath: string) => ipcRenderer.invoke('removeFile', filePath) as Promise<boolean>,
     removeFolder: (folderPath: string) => ipcRenderer.invoke('removeFolder', folderPath) as Promise<boolean>,
     moveFile: (fromPath: string, toPath: string) => ipcRenderer.invoke('moveFile', fromPath, toPath) as Promise<boolean>,
+    renameFile: (filePath: string, newName: string) => ipcRenderer.invoke('renameFile', filePath, newName) as Promise<{ success: boolean; newPath?: string; error?: string }>,
 
     // 应用信息
     getAppVersion: () => ipcRenderer.invoke('getAppVersion') as Promise<string>,
