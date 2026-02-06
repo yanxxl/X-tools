@@ -123,6 +123,7 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
                 <span 
                     className="one-line"
                     onDoubleClick={handleDoubleClick}
+                    data-file-path={path}
                     style={{ 
                         cursor: 'pointer',
                         padding: '2px 4px',

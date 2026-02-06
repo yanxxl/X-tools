@@ -85,7 +85,7 @@ export const FileTree: React.FC = () => {
         items.push({
             key: 'openInFolder',
             icon: <FolderOpenOutlined />,
-            label: '在文件夹中显示',
+            label: '打开文件夹',
             onClick: async () => {
                 try {
                     await window.electronAPI.showItemInFolder(node.path);
@@ -93,6 +93,28 @@ export const FileTree: React.FC = () => {
                 } catch (error) {
                     console.error('打开文件夹失败:', error);
                     message.error('打开文件夹失败');
+                }
+            }
+        });
+
+        items.push({
+            key: 'rename',
+            icon: <FileOutlined />,
+            label: '改名',
+            onClick: async () => {
+                try {
+                    // 触发文件名的双击编辑功能
+                    const element = document.querySelector(`[data-file-path="${node.path}"]`);
+                    if (element) {
+                        element.dispatchEvent(new MouseEvent('dblclick', {
+                            view: window,
+                            bubbles: true,
+                            cancelable: true
+                        }));
+                    }
+                } catch (error) {
+                    console.error('触发改名失败:', error);
+                    message.error('触发改名失败');
                 }
             }
         });
