@@ -221,11 +221,12 @@ export async function writeFileText(filePath: string, content: string): Promise<
     }
 
     // 根据文件编码写入内容，空文件会被识别为 ascii 编码，默认也用 utf-8 写入
-    if (fileEncoding === 'utf-8' || fileEncoding === 'ascii') {
-      // UTF-8编码直接写入
+    if (fileEncoding === 'UTF-8' || fileEncoding === 'ASCII') {
+      console.log(`文件编码为 UTF-8 或 ASCII，直接写入，路径: ${filePath}`);
       await fs.promises.writeFile(filePath, content, 'utf-8');
     } else {
       // 其他编码需要使用iconv-lite进行转换后写入
+      console.log(`文件编码为 ${fileEncoding}，需要转换后写入，路径: ${filePath}`);
       const encodedContent = iconv.encode(content, fileEncoding);
       await fs.promises.writeFile(filePath, encodedContent);
     }

@@ -48,7 +48,7 @@ export const FileTree: React.FC = () => {
 
         return parents;
     };
-    
+
     // 检查文件是否存在于树节点列表中
     const isFileInNodeList = (filePath: string, nodes: DataNode[]): boolean => {
         for (const node of nodes) {
@@ -100,7 +100,7 @@ export const FileTree: React.FC = () => {
         items.push({
             key: 'rename',
             icon: <FileOutlined />,
-            label: '改名',
+            label: '重命名',
             onClick: async () => {
                 try {
                     // 触发文件名的双击编辑功能
@@ -315,30 +315,25 @@ export const FileTree: React.FC = () => {
         resetTree();
     }, [currentFolder, showRootFolder]);
 
-    useEffect(() => {        
+    useEffect(() => {
         if (selectedKeys.includes(currentFile)) return;
+
+        // 检查文件是否存在于树节点列表中，用于新建文件
+        const fileExists = isFileInNodeList(currentFile, dataNodeList);
+        if (!fileExists) {
+            resetTree(currentFile);
+        }
 
         setTimeout(() => {
             if (currentFile) {
-                // 检查文件是否存在于树节点列表中
-                const fileExists = isFileInNodeList(currentFile, dataNodeList);
-                
-                if (fileExists) {
-                    // 文件存在，设置选中状态并展开父节点
-                    setSelectedKeys([currentFile]);
-                    const parentPaths = getAllParentPaths(currentFile);
-                    const newExpandedKeys = Array.from(new Set([...expandedKeys, ...parentPaths]));
-                    setExpandedKeys(newExpandedKeys);
-                } else {
-                    // 文件不存在，刷新树结构
-                    resetTree(currentFile);
-                    setSelectedKeys([currentFile]);
-                }
-            } else {
-                setSelectedKeys([]);
+                // 文件存在，设置选中状态并展开父节点
+                setSelectedKeys([currentFile]);
+                const parentPaths = getAllParentPaths(currentFile);
+                const newExpandedKeys = Array.from(new Set([...expandedKeys, ...parentPaths]));
+                setExpandedKeys(newExpandedKeys);
             }
         }, 500);
-    }, [currentFile, dataNodeList]);
+    }, [currentFile]);
 
     useEffect(() => {
         const debouncedSearch = (text: string) => {
