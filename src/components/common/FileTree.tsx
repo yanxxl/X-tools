@@ -253,6 +253,10 @@ export const FileTree: React.FC = () => {
         setExpandedKeys(expandedKeysValue as string[]);
     };
 
+    const handleLoadedKeys: TreeProps<DataNode>['onLoad'] = (loadedKeysValue) => {
+        setLoadedKeys(loadedKeysValue as string[]);
+    };
+
     const handleShowRootToggle = (checked: boolean) => {
         setShowRootFolder(checked);
         storage.set('filetree-show-root', checked);
@@ -600,6 +604,7 @@ export const FileTree: React.FC = () => {
                             onSelect={handleTreeSelect}
                             onExpand={handleTreeExpand}
                             loadData={onLoadData}
+                            onLoad={handleLoadedKeys}
                             expandAction="click"
                             style={{ padding: '8px 0' }}
                         />
