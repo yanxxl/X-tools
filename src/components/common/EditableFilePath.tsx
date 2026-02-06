@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Input, message, InputRef } from 'antd';
+import { Input, message, InputRef, Button, Space } from 'antd';
 import { dirname, fullname } from '../../utils/fileCommonUtil';
 
 interface EditableFilePathProps {
@@ -23,7 +23,7 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
     };
 
     // 处理回车键保存
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             handleSave();
         } else if (e.key === 'Escape') {
@@ -105,20 +105,47 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
     return (
         <span className="file-path-editor no-drag">
             {isEditing ? (
-                <Input
-                    ref={inputRef}
-                    value={fileName}
-                    onChange={handleInputChange}
-                    onKeyPress={handleKeyPress}
-                    onBlur={() => handleSave()}
-                    size="small"
-                    style={{ 
-                        width: 'auto', 
-                        maxWidth: '300px',
-                        border: '1px solid #1890ff',
-                        boxShadow: '0 0 0 2px rgba(24, 144, 255, 0.2)'
-                    }}
-                />
+                <Space 
+                    size={4} 
+                    onClick={(e) => e.stopPropagation()}
+                    onDoubleClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                >
+                    <Input
+                        ref={inputRef}
+                        value={fileName}
+                        onChange={handleInputChange}
+                        onKeyDown={handleKeyDown}
+                        size="small"
+                        style={{ 
+                            width: 'auto', 
+                            maxWidth: '200px',
+                            border: '1px solid #1890ff',
+                            boxShadow: '0 0 0 2px rgba(24, 144, 255, 0.2)'
+                        }}
+                    />
+                    <Button
+                        type="primary"
+                        size="small"
+                        onClick={handleSave}
+                        style={{ 
+                            minWidth: 'auto',
+                            padding: '0 8px'
+                        }}
+                    >
+                        保存
+                    </Button>
+                    <Button
+                        size="small"
+                        onClick={handleCancel}
+                        style={{ 
+                            minWidth: 'auto',
+                            padding: '0 8px'
+                        }}
+                    >
+                        取消
+                    </Button>
+                </Space>
             ) : (
                 <span 
                     className="one-line"
