@@ -110,6 +110,45 @@ export const FileTree: React.FC = () => {
             type: 'divider'
         });
 
+        // 如果是文件夹，添加新建文件和新建文件夹选项
+        if (node.isDirectory) {
+            items.push({
+                key: 'newFile',
+                icon: <FileAddOutlined />,
+                label: '新建文件',
+                onClick: async (e) => {
+                    e.domEvent.stopPropagation();
+                    try {
+                        await handleCreateFile(node.path);
+                    } catch (error) {
+                        console.error('新建文件失败:', error);
+                        message.error('新建文件失败');
+                    }
+                }
+            });
+
+            items.push({
+                key: 'newFolder',
+                icon: <FolderAddOutlined />,
+                label: '新建文件夹',
+                onClick: async (e) => {
+                    e.domEvent.stopPropagation();
+                    try {
+                        await handleCreateFolder(node.path);
+                    } catch (error) {
+                        console.error('新建文件夹失败:', error);
+                        message.error('新建文件夹失败');
+                    }
+                }
+            });
+
+            // 添加分隔线
+            items.push({
+                key: 'divider-new',
+                type: 'divider'
+            });
+        }
+
         items.push({
             key: 'rename',
             icon: <FileOutlined />,
