@@ -71,7 +71,8 @@ export const FileTree: React.FC = () => {
             key: 'open',
             icon: <FileOutlined />,
             label: '打开',
-            onClick: async () => {
+            onClick: async (e) => {
+                e.domEvent.stopPropagation();
                 try {
                     await window.electronAPI.openFile(node.path);
                     message.success('文件已打开');
@@ -86,7 +87,8 @@ export const FileTree: React.FC = () => {
             key: 'openInFolder',
             icon: <FolderOpenOutlined />,
             label: '打开文件夹',
-            onClick: async () => {
+            onClick: async (e) => {
+                e.domEvent.stopPropagation();
                 try {
                     await window.electronAPI.showItemInFolder(node.path);
                     message.success('文件夹已打开');
@@ -101,7 +103,8 @@ export const FileTree: React.FC = () => {
             key: 'rename',
             icon: <FileOutlined />,
             label: '重命名',
-            onClick: async () => {
+            onClick: async (e) => {
+                e.domEvent.stopPropagation();
                 try {
                     // 触发文件名的双击编辑功能
                     const element = document.querySelector(`[data-file-path="${node.path}"]`);
@@ -481,7 +484,10 @@ export const FileTree: React.FC = () => {
                                 <Button
                                     size="small"
                                     icon={<FileAddOutlined />}
-                                    onClick={handleCreateFile}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCreateFile();
+                                    }}
                                     type="text"
                                 />
                             </Tooltip>
@@ -489,7 +495,10 @@ export const FileTree: React.FC = () => {
                                 <Button
                                     size="small"
                                     icon={<FolderAddOutlined />}
-                                    onClick={handleCreateFolder}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCreateFolder();
+                                    }}
                                     type="text"
                                 />
                             </Tooltip>
@@ -500,7 +509,8 @@ export const FileTree: React.FC = () => {
                                 <Button
                                     size="small"
                                     icon={<SearchOutlined />}
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         setShowSearchBox(true)
                                         loadFileTree();
                                     }}
@@ -512,7 +522,10 @@ export const FileTree: React.FC = () => {
                                 <Button
                                     size="small"
                                     icon={isExpanded ? <CompressOutlined /> : <ExpandOutlined />}
-                                    onClick={handleToggleExpand}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleExpand();
+                                    }}
                                     type="text"
                                 />
                             </Tooltip>
@@ -521,7 +534,10 @@ export const FileTree: React.FC = () => {
                                 <Button
                                     size="small"
                                     icon={<AimOutlined />}
-                                    onClick={handleFocusCurrent}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleFocusCurrent();
+                                    }}
                                     type="text"
                                     disabled={!currentFile}
                                 />
@@ -549,7 +565,8 @@ export const FileTree: React.FC = () => {
                                     <Button
                                         size="small"
                                         icon={<CloseOutlined />}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.stopPropagation();
                                             setShowSearchBox(false);
                                             setSearchText('');
                                             setDebouncedSearchText('');
