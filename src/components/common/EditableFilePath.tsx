@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input, message, InputRef, Button, Space } from 'antd';
 import { dirname, fullname } from '../../utils/fileCommonUtil';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface EditableFilePathProps {
     path: string;
@@ -8,12 +9,20 @@ interface EditableFilePathProps {
 }
 
 export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRename }) => {
+    
+    const { currentFolder } = useAppContext();
+    
     const [isEditing, setIsEditing] = useState(false);
     const [fileName, setFileName] = useState(fullname(path));
     const inputRef = useRef<InputRef>(null);
 
     // 双击进入编辑状态
     const handleDoubleClick = () => {
+        // 检查是否是主目录（当前目录），如果是则提示不可重命名
+        if (path === currentFolder) {
+            message.info('主目录不可重命名');
+            return;
+        }
         setIsEditing(true);
     };
 

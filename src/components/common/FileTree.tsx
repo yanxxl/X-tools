@@ -104,6 +104,7 @@ export const FileTree: React.FC = () => {
             key: 'rename',
             icon: <FileOutlined />,
             label: '重命名',
+            disabled: node.path === currentFolder, // 主目录不可重命名
             onClick: async (e) => {
                 e.domEvent.stopPropagation();
                 try {
