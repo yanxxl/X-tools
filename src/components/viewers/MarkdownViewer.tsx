@@ -4,7 +4,6 @@ import { Button, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typograp
 import { CodeOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
 import { OutlineItem, parseMarkdown } from '../../utils/markdown';
 import { storage, STORAGE_KEYS } from '../../utils/storage';
-import { toFileUrl } from '../../utils/fileCommonUtil';
 import 'highlight.js/styles/github.css';
 import './MarkdownViewer.css';
 import 'katex/dist/katex.min.css';
@@ -20,8 +19,8 @@ import EditorSearch, { searchHighlightField } from "../common/EditorSearch";
 import { FontSizeAdjuster } from "../common/FontSizeAdjuster";
 import "../common/PageSearch.css";
 import "../common/EditorSearch.css";
-
-const { Title } = Typography;
+import { EditableFilePath } from '../common/EditableFilePath';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface MarkdownViewerProps {
     filePath: string;
@@ -30,6 +29,8 @@ interface MarkdownViewerProps {
 }
 
 export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileName, initialLine }) => {
+    const { setCurrentFile } = useAppContext();
+
     // ============================== State Management ==============================
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState('');
@@ -442,7 +443,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <FileTextOutlined />
-                    <Title level={5} style={{ margin: 0 }}>{fileName}</Title>
+                    <EditableFilePath path={filePath} onRename={setCurrentFile} />
                 </div>
 
                 <Space size="large">
