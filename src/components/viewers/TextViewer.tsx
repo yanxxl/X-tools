@@ -1,11 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Button, Empty, Skeleton, Space, Typography} from 'antd';
+import {Button, Empty, Skeleton, Space} from 'antd';
 import {FileTextOutlined, ReloadOutlined} from '@ant-design/icons';
 import {Center} from "../common/Center";
 import PageSearch from "../common/PageSearch";
 import Speaker from "../common/Speaker";
 import {FontSizeAdjuster} from "../common/FontSizeAdjuster";
 import {isOfficeParserSupported} from "../../utils/fileCommonUtil";
+import { EditableFilePath } from '../common/EditableFilePath';
+import { useAppContext } from '../../contexts/AppContext';
 
 interface TextViewerProps {
     filePath: string;
@@ -13,6 +15,7 @@ interface TextViewerProps {
 }
 
 export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
+    const { setCurrentFile } = useAppContext();
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -126,10 +129,10 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
                 justifyContent: 'space-between',
                 background: '#fafafa'
             }}>
-                <Space>
-                    <FileTextOutlined/>
-                    <Typography.Title level={5} style={{margin: 0}}>{fileName}</Typography.Title>
-                </Space>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <FileTextOutlined />
+                    <EditableFilePath path={filePath} onRename={setCurrentFile} />
+                </div>
 
                 <Space size="large">
                     <PageSearch cssSelector={'.text-content'}/>

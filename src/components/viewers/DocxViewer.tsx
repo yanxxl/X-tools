@@ -3,6 +3,8 @@ import { message, Button, Splitter } from 'antd';
 import { ZoomInOutlined, ZoomOutOutlined, ReloadOutlined } from '@ant-design/icons';
 // eslint-disable-next-line import/no-unresolved
 import * as docxPreview from 'docx-preview';
+import { EditableFilePath } from '../common/EditableFilePath';
+import { useAppContext } from '../../contexts/AppContext';
 
 // 大纲项类型定义
 interface OutlineItem {
@@ -16,6 +18,7 @@ interface DocxViewerProps {
 }
 
 export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
+    const { setCurrentFile } = useAppContext();
     const containerRef = useRef<HTMLDivElement>(null);
     const [outline, setOutline] = useState<OutlineItem[]>([]);
     const [zoomLevel, setZoomLevel] = useState<number>(100); // 缩放百分比
@@ -114,7 +117,7 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
                 alignItems: 'center',
                 justifyContent: 'space-between'
             }}>
-                <span style={{ fontSize: '14px', color: '#333' }}>{path.split('/').pop()}</span>
+                <EditableFilePath path={path} onRename={setCurrentFile} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <Button
                         type="text"
