@@ -328,30 +328,17 @@ function registerIpcHandlers() {
         }
     });
 
-    // 删除文件
+    // 删除文件或文件夹（移动到回收站）
     ipcMain.handle('removeFile', async (event, filePath: string) => {
         try {
             if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+                // 无论文件还是文件夹，都使用shell.trashItem移动到回收站
+                await shell.trashItem(filePath);
                 return true;
             }
             return false;
         } catch (error) {
-            console.error('删除文件失败:', error);
-            throw error;
-        }
-    });
-
-    // 删除文件夹
-    ipcMain.handle('removeFolder', async (event, folderPath: string) => {
-        try {
-            if (fs.existsSync(folderPath)) {
-                fs.rmSync(folderPath, { recursive: true, force: true });
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('删除文件夹失败:', error);
+            console.error('删除失败:', error);
             throw error;
         }
     });

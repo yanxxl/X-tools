@@ -41,7 +41,6 @@ interface ElectronAPI {
     addFile: (directoryPath: string) => Promise<{ success: boolean; filePath?: string }>;
     addFolder: (directoryPath: string) => Promise<{ success: boolean; folderPath?: string }>;
     removeFile: (filePath: string) => Promise<boolean>;
-    removeFolder: (folderPath: string) => Promise<boolean>;
     moveFile: (fromPath: string, toPath: string) => Promise<boolean>;
     renameFile: (filePath: string, newName: string) => Promise<{ success: boolean; newPath?: string; error?: string }>;
 
@@ -102,7 +101,6 @@ const electronAPI: ElectronAPI = {
     addFile: (directoryPath: string) => ipcRenderer.invoke('addFile', directoryPath) as Promise<{ success: boolean; filePath?: string }>,
     addFolder: (directoryPath: string) => ipcRenderer.invoke('addFolder', directoryPath) as Promise<{ success: boolean; folderPath?: string }>,
     removeFile: (filePath: string) => ipcRenderer.invoke('removeFile', filePath) as Promise<boolean>,
-    removeFolder: (folderPath: string) => ipcRenderer.invoke('removeFolder', folderPath) as Promise<boolean>,
     moveFile: (fromPath: string, toPath: string) => ipcRenderer.invoke('moveFile', fromPath, toPath) as Promise<boolean>,
     renameFile: (filePath: string, newName: string) => ipcRenderer.invoke('renameFile', filePath, newName) as Promise<{ success: boolean; newPath?: string; error?: string }>,
 
