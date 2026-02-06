@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { ConfigProvider, message, Tree, Dropdown, type MenuProps, Flex, Space, Button, Input, Tooltip, Switch, Empty } from "antd";
+import React, { useEffect, useState, useRef } from 'react';
+import { ConfigProvider, message, Tree, Dropdown, type MenuProps, Flex, Space, Button, Input, Tooltip, Switch, Empty, Modal } from "antd";
 import type { DataNode, TreeProps } from 'antd/es/tree';
 import {
     DownOutlined, FileOutlined, FolderOpenOutlined,
@@ -32,6 +32,10 @@ export const FileTree: React.FC = () => {
     const [searchLoading, setSearchLoading] = useState<boolean>(false);
     const [searchResultCount, setSearchResultCount] = useState<number>(0);
     const [loadedKeys, setLoadedKeys] = useState<string[]>([]);
+    
+    // 使用 ref 来避免闭包陷阱
+    const currentFileRef = useRef<string | null>(null);
+    currentFileRef.current = currentFile;
 
     const getAllParentPaths = (filePath: string): string[] => {
         const parts = filePath.split(/[\\/]/).filter(part => part !== '');
@@ -100,6 +104,12 @@ export const FileTree: React.FC = () => {
             }
         });
 
+        // 添加一个分隔线
+        items.push({
+            key: 'divider',
+            type: 'divider'
+        });
+
         items.push({
             key: 'rename',
             icon: <FileOutlined />,
@@ -120,6 +130,59 @@ export const FileTree: React.FC = () => {
                 } catch (error) {
                     console.error('触发改名失败:', error);
                     message.error('触发改名失败');
+                }
+            }
+        });
+
+        // 添加删除菜单项（根目录不可删除）
+        items.push({
+            key: 'delete',
+            icon: <FileOutlined />,
+            label: '删除',
+            disabled: node.path === currentFolder, // 主目录不可删除
+            onClick: async (e) => {
+                e.domEvent.stopPropagation();
+                try {
+                    // 显示删除确认对话框
+                    Modal.confirm({
+                        title: '确认删除',
+                        content: (
+                            <div>
+                                <p>确定要删除 "{node.name}" 吗？</p>
+                                <p style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
+                                    此操作会将文件移动到回收站。
+                                </p>
+                            </div>
+                        ),
+                        okText: '确认删除',
+                        okType: 'danger',
+                        cancelText: '取消',
+                        onOk: async () => {
+                            try {
+                                const success = await window.electronAPI.removeFile(node.path);
+                                if (success) {
+                                    message.success('文件已删除');
+
+                                    // 如果删除的是当前预览的文件，设置当前文件为null
+                                    console.log('currentFile:', currentFileRef.current,node.path);
+                                    if (currentFileRef.current === node.path) {
+                                        setCurrentFile(null);
+                                    }
+
+                                    // 刷新文件树
+                                    resetTree();
+                                } else {
+                                    message.error('删除失败');
+                                }
+                            } catch (error) {
+                                console.error('删除文件失败:', error);
+                                message.error('删除文件失败');
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('删除操作失败:', error);
+                    message.error('删除操作失败');
                 }
             }
         });
