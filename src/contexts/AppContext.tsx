@@ -78,11 +78,36 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
                 if (currentFolder) {
                     console.log('设置当前文件夹:', currentFolder);
+                    
+                    // 检查文件夹是否存在
+                    try {
+                        const folderExists = await window.electronAPI.fileExists(currentFolder);
+                        if (!folderExists) {
+                            console.warn('文件夹不存在:', currentFolder);
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('检查文件夹存在性失败:', error);
+                        return;
+                    }
+                    
                     setCurrentFolder(currentFolder);
 
                     // 从文件历史记录中获取最近访问的文件
                     const lastFile = fileHistoryManager.getFolderHistory(currentFolder)[0];
                     if (lastFile) {
+                        // 检查文件是否存在
+                        try {
+                            const fileExists = await window.electronAPI.fileExists(lastFile.filePath);
+                            if (!fileExists) {
+                                console.warn('文件不存在:', lastFile.filePath);
+                                return;
+                            }
+                        } catch (error) {
+                            console.error('检查文件存在性失败:', error);
+                            return;
+                        }
+                        
                         const fileName = lastFile.filePath.split(/[\\/]/).pop() || '';
                         if (detectFileType(fileName) == "video" || detectFileType(fileName) == "audio") autoPlay.current = false;
 
