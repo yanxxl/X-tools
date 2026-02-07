@@ -556,6 +556,9 @@ const createWindow = (folderPath?: string) => {
             preload: path.join(__dirname, 'preload.js'),
             webSecurity: false, // 可以访问本地文件
             nodeIntegrationInWorker: true, // 允许Web Worker使用Node.js API
+            // 安全设置：阻止外部链接加载
+            contextIsolation: true,
+            allowRunningInsecureContent: false,
         },
         ...(process.platform === 'darwin' ? {
             // macOS specific settings
@@ -586,6 +589,34 @@ const createWindow = (folderPath?: string) => {
             path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
         );
     }
+
+    // 安全设置：阻止外部链接加载
+    newWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+        const parsedUrl = new URL(navigationUrl);
+        
+        // 只允许加载本地文件或开发服务器
+        if (parsedUrl.protocol !== 'file:' && 
+            parsedUrl.host !== 'localhost' && 
+            parsedUrl.host !== '127.0.0.1' &&
+            !navigationUrl.startsWith(MAIN_WINDOW_VITE_DEV_SERVER_URL || '')) {
+            event.preventDefault();
+            console.warn('阻止外部链接导航:', navigationUrl);
+        }
+    });
+
+    // 阻止新窗口创建（外部链接）
+    newWindow.webContents.setWindowOpenHandler(({ url }) => {
+        // 只允许打开本地文件或开发服务器
+        const parsedUrl = new URL(url);
+        if (parsedUrl.protocol !== 'file:' && 
+            parsedUrl.host !== 'localhost' && 
+            parsedUrl.host !== '127.0.0.1' &&
+            !url.startsWith(MAIN_WINDOW_VITE_DEV_SERVER_URL || '')) {
+            console.warn('阻止新窗口打开外部链接:', url);
+            return { action: 'deny' };
+        }
+        return { action: 'allow' };
+    });
 
     // 窗口关闭时清理引用
     newWindow.on('closed', () => {
