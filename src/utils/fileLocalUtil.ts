@@ -3,7 +3,7 @@ import path from 'node:path';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
 import { FileNode, FileInfo } from '../types';
-import { isTextFile } from './fileCommonUtil';
+import { getExtension, isTextFile } from './fileCommonUtil';
 
 // =======================================
 // 文件树相关功能
@@ -253,6 +253,12 @@ export async function writeFileText(filePath: string, content: string): Promise<
 
 /**
  * 根据文件内容判断文件是否是文本文件
+ * 1. 先排除目录
+ * 2. 排除有扩展名的文件
+ * 3. 排除大小超过1MB的文件
+ * 4. 读取文件的前4KB内容进行检测
+ * 5. 如果检测到编码是文本编码，则认为是文本文件
+ * 6. 如果检测到文件内容包含大量不可打印字符，则认为是二进制文件
  * @param filePath 文件路径
  * @returns true（如果是文本文件）
  */
@@ -264,6 +270,16 @@ export function isTextFileByContent(filePath: string): boolean {
     if (stats.isDirectory()) {
       return false;
     }
+    // 排除有扩展名的文件
+    const ext = getExtension(filePath);
+    if (ext) {
+      return isTextFile(ext);
+    }
+
+    // 排除大小超过1MB的文件
+    if (stats.size > 1024 * 1024) {
+      return false;
+    }    
 
     // 读取文件的前4KB内容进行检测
     const buffer = fs.readFileSync(filePath);
