@@ -44,6 +44,47 @@ export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName, init
 
     console.log('file', ext, type, filePath)
 
+    // 如果还在加载中，显示加载状态，前面的类型明确，不需要等文件信息加载完成
+    if (loading) {
+        return (
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%'
+            }}>
+                <Typography.Text>...</Typography.Text>
+            </div>
+        );
+    }
+
+    // 如果 fileInfo 为 null，提示文件已删除或不存在
+    if (fileInfo === null) {
+        return (
+            <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100%',
+                padding: '24px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: 8
+            }}>
+                <FileTextOutlined style={{fontSize: 48, color: '#999', marginBottom: 16}}/>
+                <Typography.Title level={4} style={{marginBottom: 8}}>
+                    文件不存在
+                </Typography.Title>
+                <Typography.Text style={{marginBottom: 24, color: '#666'}}>
+                    文件可能已被删除、移动或不存在
+                </Typography.Text>
+                <Typography.Text type="secondary" style={{fontSize: 12}}>
+                    {fileName}
+                </Typography.Text>
+            </div>
+        );
+    }
+
     if (type === 'image') {
         return <div style={{height: '100%'}}><ImageViewer path={filePath}/></div>;
     }
@@ -82,28 +123,14 @@ export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName, init
     if (isOfficeParserSupported(fileName)) {
         return <TextViewer filePath={filePath} fileName={fileName}/>;
     }
-
-    // 如果还在加载中，显示加载状态，前面的类型明确，不需要等文件信息加载完成
-    if (loading) {
-        return (
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%'
-            }}>
-                <Typography.Text>正在检测文件信息...</Typography.Text>
-            </div>
-        );
-    }
-
+    
     // 如果是文本文件，使用 TextView 组件
-    if (fileInfo?.isText) {
+    if (fileInfo.isText) {
         return <TextViewer filePath={filePath} fileName={fileName}/>;
     }
 
     // 如果是文件夹，提示暂不展示
-    if (fileInfo?.isDirectory) {
+    if (fileInfo.isDirectory) {
         return (
             <div style={{
                 display: 'flex',
