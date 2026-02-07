@@ -210,6 +210,9 @@ export const FileTree: React.FC = () => {
 
                                     // 刷新文件树
                                     resetTree();
+                                    setTimeout(() => {
+                                        setExpandedKeys(getAllParentPaths(node.path));
+                                    }, 100);
                                 } else {
                                     message.error('删除失败，请重试');
                                 }
