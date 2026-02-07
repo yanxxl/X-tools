@@ -473,9 +473,10 @@ export const FileTree: React.FC = () => {
         }
     };
 
-    const handleShowRootToggle = (checked: boolean) => {
-        setShowRootFolder(checked);
-        storage.set('filetree-show-root', checked);
+    const handleShowRootToggle = () => {
+        const newValue = !showRootFolder;
+        setShowRootFolder(newValue);
+        storage.set('filetree-show-root', newValue);
     };
 
     const handleToggleExpand = () => {
@@ -690,12 +691,12 @@ export const FileTree: React.FC = () => {
                     }}>
                         <Space align="center">
                             <Tooltip title="显示主目录">
-                                <Switch
+                                <Button
                                     size="small"
-                                    checked={showRootFolder}
-                                    onChange={handleShowRootToggle}
-                                    checkedChildren={<HomeOutlined />}
-                                    unCheckedChildren={<HomeOutlined />}
+                                    icon={<HomeOutlined />}
+                                    onClick={handleShowRootToggle}
+                                    type={showRootFolder ? "primary" : "text"}
+                                    ghost
                                 />
                             </Tooltip>
 
