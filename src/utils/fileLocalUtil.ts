@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
-import { FileNode } from '../types';
+import { FileNode, FileInfo } from '../types';
 import { isTextFile } from './fileCommonUtil';
 
 // =======================================
@@ -127,26 +127,35 @@ export function getDirectoryChildren(dirPath: string): FileNode[] {
  * @param targetPath 文件或目录路径
  * @returns 文件或目录的基本信息
  */
-export function getFileInfo(targetPath: string) {
+export function getFileInfo(targetPath: string): FileInfo {
   const stats = fs.statSync(targetPath);
   const name = path.basename(targetPath);
   const isDirectory = stats.isDirectory();
+
   const ext = isDirectory ? '' : (path.extname(name).replace('.', '').toLowerCase());
-  let childrenCount = 0;
+  let childrenCount = 0, isText = false;
+
   if (isDirectory) {
     try {
       childrenCount = fs.readdirSync(targetPath).filter(n => !n.startsWith('.')).length;
     } catch {
       childrenCount = 0;
     }
+  } else {
+    try {
+      isText = isTextFile(name) ? true : isTextFileByContent(targetPath);
+    } catch (error) {
+      console.error('读取文件内容失败:', error);
+    }
   }
+
   return {
     path: targetPath,
     name,
     ext,
     isDirectory,
     childrenCount,
-    isText: isDirectory ? false : isTextFile(name) ?  isTextFileByContent(targetPath) : false,
+    isText,
     size: stats.size,
     atimeMs: stats.atimeMs,
     mtimeMs: stats.mtimeMs,

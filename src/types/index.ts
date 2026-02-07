@@ -31,13 +31,15 @@ export interface RecentFolder {
 export interface FileInfo {
     path: string;
     name: string;
+    ext: string;
     isDirectory: boolean;
+    childrenCount: number;
+    isText: boolean;
     size: number;
+    atimeMs: number;
     mtimeMs: number;
     ctimeMs: number;
-    atimeMs: number;
-    ext: string;
-    childrenCount?: number;
+    birthtimeMs: number;
 }
 
 // ============================================================================
