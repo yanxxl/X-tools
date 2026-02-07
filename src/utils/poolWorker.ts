@@ -7,6 +7,7 @@ import { clearCache, getCacheStats, readFileLines } from './fileCacheUtil';
 import { truncateTextWithQuery } from './format';
 import { SearchResult } from '../types';
 import { fixWindowsConsoleEncoding } from './fixConsoleEncoding';
+import { isTextFileByContent } from './fileLocalUtil';
 
 // 修复Windows控制台中文乱码问题
 fixWindowsConsoleEncoding();
@@ -16,7 +17,7 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
   const startTime = performance.now();
   try {
     // 检查是否为可搜索文件（文本文件或officeparser支持的文件）
-    if (!isTextFile(filePath) && !isOfficeParserSupported(filePath)) {
+    if (!isTextFile(filePath) && !isOfficeParserSupported(filePath) && !isTextFileByContent(filePath)) {
       return null;
     }
 
