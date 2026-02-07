@@ -154,10 +154,14 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             setPreviewError(null);
 
             if (!isTextFile(path) && !isOfficeParserSupported(path)) {
-                setPreviewError('该文件不是文本文件或支持的办公文档，无法预览内容');
-                setLines([]);
-                setDisplayedLines([]);
-                return;
+                // 获取文件信息，判断是否是文本
+                const fileInfo = await window.electronAPI.getFileInfo(path);
+                if (!fileInfo.isText) {
+                    setPreviewError('该文件不是文本文件或支持的办公文档，无法预览内容');
+                    setLines([]);
+                    setDisplayedLines([]);
+                    return;
+                }
             }
 
             if (window.electronAPI) {
