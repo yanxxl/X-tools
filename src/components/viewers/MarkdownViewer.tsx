@@ -91,7 +91,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
             try {
                 await window.electronAPI.writeFile(filePath, text);
                 lastSavedContentRef.current = text;
-                message.success('文件已自动保存');
+                // message.success('文件已自动保存');
             } catch (err) {
                 console.error('保存文件失败:', err);
                 message.error('文件保存失败');
