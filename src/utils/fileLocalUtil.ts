@@ -3,6 +3,7 @@ import path from 'node:path';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
 import { FileNode } from '../types';
+import { isTextFile } from './fileCommonUtil';
 
 // =======================================
 // 文件树相关功能
@@ -142,13 +143,15 @@ export function getFileInfo(targetPath: string) {
   return {
     path: targetPath,
     name,
+    ext,
     isDirectory,
+    childrenCount,
+    isText: isDirectory ? false : isTextFile(name) ?  isTextFileByContent(targetPath) : false,
     size: stats.size,
+    atimeMs: stats.atimeMs,
     mtimeMs: stats.mtimeMs,
     ctimeMs: stats.ctimeMs,
-    atimeMs: stats.atimeMs,
-    ext,
-    childrenCount
+    birthtimeMs: stats.birthtimeMs,
   };
 }
 
@@ -236,5 +239,64 @@ export async function writeFileText(filePath: string, content: string): Promise<
     // 处理写入失败的情况
     console.error('写入文件失败:', error);
     throw error;
+  }
+}
+
+/**
+ * 根据文件内容判断文件是否是文本文件
+ * @param filePath 文件路径
+ * @returns true（如果是文本文件）
+ */
+export function isTextFileByContent(filePath: string): boolean {
+  try {
+    const stats = fs.statSync(filePath);
+
+    // 先排除目录
+    if (stats.isDirectory()) {
+      return false;
+    }
+
+    // 读取文件的前4KB内容进行检测
+    const buffer = fs.readFileSync(filePath);
+    const sampleSize = Math.min(buffer.length, 4096);
+    const sampleBuffer = buffer.slice(0, sampleSize);
+
+    // 检测文件编码
+    const detectedEncoding = chardet.detect(sampleBuffer);
+
+    // 常见的文本文件编码
+    const textEncodings = [
+      'UTF-8', 'UTF-16LE', 'UTF-16BE', 'UTF-32LE', 'UTF-32BE',
+      'ASCII', 'ISO-8859-1', 'ISO-8859-2', 'ISO-8859-15',
+      'Windows-1252', 'Windows-1251', 'Windows-1250',
+      'GB2312', 'GBK', 'GB18030', 'Big5', 'Shift_JIS', 'EUC-JP', 'EUC-KR'
+    ];
+
+    // 如果检测到编码是文本编码，则认为是文本文件
+    if (detectedEncoding && textEncodings.includes(detectedEncoding.toUpperCase())) {
+      return true;
+    }
+
+    // 检查文件内容是否包含大量不可打印字符
+    let nonPrintableCount = 0;
+    for (let i = 0; i < sampleBuffer.length; i++) {
+      const byte = sampleBuffer[i];
+      // 检查是否为控制字符（除了常见的空白字符如制表符、换行符等）
+      if (byte < 32 && byte !== 9 && byte !== 10 && byte !== 13) {
+        nonPrintableCount++;
+      }
+    }
+    // 如果不可打印字符超过10%，则认为是二进制文件
+    const nonPrintableRatio = nonPrintableCount / sampleBuffer.length;
+
+    if (nonPrintableRatio > 0.1) {
+      return false;
+    } else {
+      return true;
+    }
+  } catch (error) {
+    // 如果无法读取文件，返回false
+    console.error('检测文件类型失败:', error);
+    return false;
   }
 }
