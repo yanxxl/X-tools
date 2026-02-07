@@ -21,6 +21,7 @@ interface ElectronAPI {
     getFileTree: (path: string) => Promise<FileNode>;
     getDirectoryChildren: (dirPath: string) => Promise<FileNode[]>;
     getFileInfo: (filePath: string) => Promise<any>;
+    fileExists: (filePath: string) => Promise<boolean>;
 
     // === 窗口控制 ===
     setWindowButtonVisibility: (visible: boolean) => Promise<void>;
@@ -81,6 +82,7 @@ const electronAPI: ElectronAPI = {
     getFileTree: (path: string) => ipcRenderer.invoke('getFileTree', path) as Promise<FileNode>,
     getDirectoryChildren: (dirPath: string) => ipcRenderer.invoke('getDirectoryChildren', dirPath) as Promise<FileNode[]>,
     getFileInfo: (filePath: string) => ipcRenderer.invoke('getFileInfo', filePath),
+    fileExists: (filePath: string) => ipcRenderer.invoke('fileExists', filePath) as Promise<boolean>,
 
     // 窗口控制
     setWindowButtonVisibility: (visible: boolean) => ipcRenderer.invoke('setWindowButtonVisibility', visible) as Promise<void>,

@@ -416,7 +416,7 @@ export const FileTree: React.FC = () => {
 
             // 检查目标路径是否已存在同名文件/文件夹
             try {
-                const exists = await window.electronAPI.getFileInfo(finalTargetPath);
+                const exists = await window.electronAPI.fileExists(finalTargetPath);
                 if (exists) {
                     message.error(`目标位置已存在同名文件或文件夹: ${fileName}`);
                     return;

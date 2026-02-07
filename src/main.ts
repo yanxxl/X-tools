@@ -124,6 +124,16 @@ function registerIpcHandlers() {
         }
     });
 
+    // 检查文件是否存在
+    ipcMain.handle('fileExists', async (event, filePath: string) => {
+        try {
+            return fs.existsSync(filePath);
+        } catch (error) {
+            console.error('检查文件存在失败:', error);
+            throw error;
+        }
+    });
+
     // 控制红绿灯的显示/隐藏
     ipcMain.handle('setWindowButtonVisibility', (event, visible: boolean) => {
         const window = BrowserWindow.fromWebContents(event.sender);
