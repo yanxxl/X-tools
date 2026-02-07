@@ -83,7 +83,7 @@ export const FileTree: React.FC = () => {
                     message.success('文件已打开');
                 } catch (error) {
                     console.error('打开文件失败:', error);
-                    message.error('打开文件失败');
+                    message.error('打开失败');
                 }
             }
         });
@@ -99,7 +99,7 @@ export const FileTree: React.FC = () => {
                     message.success('文件夹已打开');
                 } catch (error) {
                     console.error('打开文件夹失败:', error);
-                    message.error('打开文件夹失败');
+                    message.error('打开失败');
                 }
             }
         });
@@ -122,7 +122,7 @@ export const FileTree: React.FC = () => {
                         await handleCreateFile(node.path);
                     } catch (error) {
                         console.error('新建文件失败:', error);
-                        message.error('新建文件失败');
+                        message.error('新建失败');
                     }
                 }
             });
@@ -137,7 +137,7 @@ export const FileTree: React.FC = () => {
                         await handleCreateFolder(node.path);
                     } catch (error) {
                         console.error('新建文件夹失败:', error);
-                        message.error('新建文件夹失败');
+                        message.error('新建失败');
                     }
                 }
             });
@@ -168,7 +168,7 @@ export const FileTree: React.FC = () => {
                     }
                 } catch (error) {
                     console.error('触发改名失败:', error);
-                    message.error('触发改名失败');
+                    message.error('重命名失败');
                 }
             }
         });
@@ -211,17 +211,17 @@ export const FileTree: React.FC = () => {
                                     // 刷新文件树
                                     resetTree();
                                 } else {
-                                    message.error('删除失败');
+                                    message.error('删除失败，请重试');
                                 }
                             } catch (error) {
                                 console.error('删除文件失败:', error);
-                                message.error('删除文件失败');
+                                message.error('删除失败');
                             }
                         }
                     });
                 } catch (error) {
                     console.error('删除操作失败:', error);
-                    message.error('删除操作失败');
+                    message.error('删除失败');
                 }
             }
         });
@@ -290,7 +290,7 @@ export const FileTree: React.FC = () => {
             setDataNodeList(prev => updateChildrenInNodeList(prev));
         } catch (error) {
             console.error('加载子节点失败:', error);
-            message.error('加载子节点失败，请重试');
+            message.error('加载失败，请重试');
         }
     };
 
@@ -305,7 +305,7 @@ export const FileTree: React.FC = () => {
                 setFileTree(tree);
             } catch (error) {
                 console.error('加载文件树失败:', error);
-                message.error('加载文件树失败，请重试');
+                message.error('加载失败，请重试');
             }
         } else {
             console.error('没有当前文件夹:');
@@ -380,7 +380,7 @@ export const FileTree: React.FC = () => {
                 // 拖拽到文件上
                 if (!dropToGap) {
                     // leaf + 非gap：拖拽到文件上，提示不能放到文件里
-                    message.error('只能将文件或文件夹拖拽到文件夹中');
+                    message.error('只能拖拽到文件夹中');
                     return;
                 } else {
                     // leaf + gap：拖拽到文件之间的间隙，移动到父文件夹
@@ -394,7 +394,7 @@ export const FileTree: React.FC = () => {
                     const parentPath = dropPath.split(/[\\/]/).slice(0, -1).join(dropPath.includes('\\') ? '\\' : '/');
                     // 检查是否是根目录（主文件夹）
                     if (dropPath === currentFolder) {
-                        message.error('不能将文件或文件夹移动到主文件夹外');
+                        message.error('不能移动到主文件夹外');
                         return;
                     }
                     targetPath = parentPath;
@@ -410,7 +410,7 @@ export const FileTree: React.FC = () => {
 
             // 检查是否可以移动（不能移动到自身或其子目录）
             if (dragPath === finalTargetPath || finalTargetPath.startsWith(dragPath + separator)) {
-                message.error('不能将文件或文件夹移动到自身或其子目录中');
+                message.error('不能移动到自身或其子目录');
                 return;
             }
 
@@ -458,17 +458,17 @@ export const FileTree: React.FC = () => {
                     }
                 }, 100);
             } else {
-                message.error('文件移动失败');
+                message.error('移动失败');
             }
         } catch (error) {
             console.error('移动文件失败:', error);
             // 提供更具体的错误信息
             if (error.message.includes('ENOTEMPTY')) {
-                message.error('目标文件夹非空，无法移动');
+                message.error('目标文件夹非空');
             } else if (error.message.includes('EISDIR')) {
-                message.error('非法操作：不能将文件移动到目录路径');
+                message.error('不能移动到目录路径');
             } else {
-                message.error('移动文件失败');
+                message.error('移动失败');
             }
         }
     };
@@ -502,11 +502,11 @@ export const FileTree: React.FC = () => {
                 // 更新树结构并聚焦到新文件
                 resetTree(result.filePath);
             } else {
-                message.error('文件创建失败');
+                message.error('创建失败');
             }
         } catch (error) {
             console.error('创建文件失败:', error);
-            message.error('文件创建失败');
+            message.error('创建失败');
         }
     };
 
@@ -521,11 +521,11 @@ export const FileTree: React.FC = () => {
                 // 更新树结构
                 resetTree(result.folderPath);
             } else {
-                message.error('文件夹创建失败');
+                message.error('创建失败');
             }
         } catch (error) {
             console.error('创建文件夹失败:', error);
-            message.error('文件夹创建失败');
+            message.error('创建失败');
         }
     };
 
