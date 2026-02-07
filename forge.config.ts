@@ -21,6 +21,16 @@ const config: ForgeConfig = {
         extraResource: [
             path.join(__dirname, 'public/pdfjs'),
         ],
+        // Windows特定配置：隐藏控制台窗口
+        win32metadata: {
+            CompanyName: 'X-tools',
+            FileDescription: 'X-tools',
+            OriginalFilename: 'X-tools.exe',
+            ProductName: 'X-tools',
+            InternalName: 'X-tools',
+            // 隐藏控制台窗口
+            "requested-execution-level": "asInvoker"
+        }
     },
     rebuildConfig: {},
     hooks: {
