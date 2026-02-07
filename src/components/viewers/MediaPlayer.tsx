@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { toFileUrl, isElectronSupportedMedia, isVideoFile, isAudioFile } from "../../utils/fileCommonUtil";
+import { useAppContext } from "../../contexts/AppContext";
 
 interface MediaPlayerProps {
   file: string;
@@ -9,6 +10,7 @@ interface MediaPlayerProps {
 export const MediaPlayer: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 }) => {
   const [canPlay, setCanPlay] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { loopPlay } = useAppContext();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
 
@@ -72,6 +74,7 @@ export const MediaPlayer: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 
           playsInline
           preload="auto"
           onCanPlay={handleCanPlay}
+          loop={loopPlay}
           style={{ maxWidth: "100%", maxHeight: "100%" }}
         />
       ) : (
@@ -81,6 +84,7 @@ export const MediaPlayer: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 
           controls
           preload="auto"
           onCanPlay={handleCanPlay}
+          loop={loopPlay}
           style={{ width: "100%" }}
         />
       )}

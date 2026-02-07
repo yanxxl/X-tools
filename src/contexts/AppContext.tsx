@@ -13,6 +13,11 @@ export interface AppContextType {
 
     autoPlay: boolean;
 
+    /** 循环播放状态 */
+    loopPlay: boolean;
+    /** 设置循环播放状态 */
+    setLoopPlay: (loop: boolean) => void;
+
     /** 标题栏是否可见 */
     titleBarVisible: boolean;
     /** 设置标题栏可见性 */
@@ -47,6 +52,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const [currentFile, setCurrentFile] = useState<string | null>(null);
     const [titleBarVisible, setTitleBarVisible] = useState<boolean>(true);
     const [searchPanelOpen, setSearchPanelOpen] = useState<boolean>(false);
+    const [loopPlay, setLoopPlay] = useState<boolean>(false);
 
     const [leftPanelVisible, setLeftPanelVisible] = useState<boolean>(() => {
         const saved = localStorage.getItem('leftPanelVisible');
@@ -62,6 +68,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const handleSetCurrentFile = (file: string | null) => {
         // 运行到这里，便不是第一个打开的文件了，恢复自动播放，人点击视频不就是为了看吗？
         if (!autoPlay.current) autoPlay.current = true;
+        // 每次文件改变时，重置循环播放状态为false
+        setLoopPlay(false);
         fileHistoryManager.addFileAccess(file);
         setCurrentFile(file);
     };
@@ -136,6 +144,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         currentFile,
         setCurrentFile: handleSetCurrentFile,
         autoPlay: autoPlay.current,
+        loopPlay,
+        setLoopPlay,
         titleBarVisible,
         setTitleBarVisible,
         searchPanelOpen,

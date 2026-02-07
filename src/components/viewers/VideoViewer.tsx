@@ -254,7 +254,7 @@ const getVideoProgress = (path: string): number => {
 };
 
 export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
-  const { autoPlay } = useAppContext();
+  const { autoPlay, loopPlay } = useAppContext();
 
   // Refs
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -521,6 +521,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
               preload="metadata"
               onCanPlay={handleCanPlay}
               onTimeUpdate={handleTimeUpdate}
+              loop={loopPlay}
               autoPlay={autoPlay}
             />
 

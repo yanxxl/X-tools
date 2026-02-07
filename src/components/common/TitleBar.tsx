@@ -2,8 +2,8 @@
 import React, { useEffect, useState } from 'react';
 
 // 第三方库导入
-import { Button, Divider, Dropdown, Flex, message, Modal } from "antd";
-import { BorderOutlined, CloseOutlined, DownOutlined, FolderOpenOutlined, MinusOutlined, PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Divider, Dropdown, Flex, message, Modal, Tooltip } from "antd";
+import { BorderOutlined, CloseOutlined, DownOutlined, FolderOpenOutlined, MinusOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, RetweetOutlined } from '@ant-design/icons';
 
 // 应用内部导入
 import { useAppContext } from '../../contexts/AppContext';
@@ -11,7 +11,7 @@ import { truncateFolderName } from '../../utils/uiUtils';
 import { removeFolderPath, updateFolderPath } from '../../utils/config';
 import { RecentFolder } from '../../types';
 import { CloseButton } from './CloseButton';
-import { fullname } from '../../utils/fileCommonUtil';
+import { fullname, detectFileType } from '../../utils/fileCommonUtil';
 
 export const TitleBar: React.FC = () => {
     // 1. 获取应用上下文
@@ -25,6 +25,8 @@ export const TitleBar: React.FC = () => {
         setLeftPanelVisible,
         rightPanelVisible,
         setRightPanelVisible,
+        loopPlay,
+        setLoopPlay,
     } = useAppContext();
 
     // 2. 平台相关状态
@@ -325,6 +327,20 @@ export const TitleBar: React.FC = () => {
                     <div style={{ flex: '1 3 auto', minWidth: 0 }}>
                         <div className="one-line text-center">
                             {currentFile ? fullname(currentFile) : ''}
+                            {/* 循环播放按钮 - 仅在当前文件是支持的媒体文件时显示 */}
+                            {currentFile && (detectFileType(currentFile) === 'video' || detectFileType(currentFile) === 'audio') && (
+                                <Tooltip title={loopPlay ? "循环播放中" : "循环播放"}>
+                                    <RetweetOutlined 
+                                        onClick={() => setLoopPlay(!loopPlay)}
+                                        style={{
+                                          marginLeft: 16,
+                                          color: loopPlay ? '#1890ff' : '#8c8c8c',
+                                          cursor: 'pointer',
+                                          fontSize: 14,
+                                        }}
+                                    />
+                                </Tooltip>
+                            )}
                         </div>
                     </div>
 
