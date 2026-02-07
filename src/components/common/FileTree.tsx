@@ -678,7 +678,8 @@ export const FileTree: React.FC = () => {
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{
                 borderBottom: '1px solid #f0f0f0',
-                backgroundColor: '#fafafa'
+                // backgroundColor: '#fafafa',
+                margin: '8px 0px 0px 0px'
             }}>
                 {!showSearchBox ? (
                     <div style={{
