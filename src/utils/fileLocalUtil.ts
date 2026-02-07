@@ -125,43 +125,53 @@ export function getDirectoryChildren(dirPath: string): FileNode[] {
 /**
  * 获取文件/目录的基本信息
  * @param targetPath 文件或目录路径
- * @returns 文件或目录的基本信息
+ * @returns 文件或目录的基本信息，如果文件不存在则返回null
  */
-export function getFileInfo(targetPath: string): FileInfo {
-  const stats = fs.statSync(targetPath);
-  const name = path.basename(targetPath);
-  const isDirectory = stats.isDirectory();
+export function getFileInfo(targetPath: string): FileInfo | null {
+  try {
+    const stats = fs.statSync(targetPath);
+    const name = path.basename(targetPath);
+    const isDirectory = stats.isDirectory();
 
-  const ext = isDirectory ? '' : (path.extname(name).replace('.', '').toLowerCase());
-  let childrenCount = 0, isText = false;
+    const ext = isDirectory ? '' : (path.extname(name).replace('.', '').toLowerCase());
+    let childrenCount = 0, isText = false;
 
-  if (isDirectory) {
-    try {
-      childrenCount = fs.readdirSync(targetPath).filter(n => !n.startsWith('.')).length;
-    } catch {
-      childrenCount = 0;
+    if (isDirectory) {
+      try {
+        childrenCount = fs.readdirSync(targetPath).filter(n => !n.startsWith('.')).length;
+      } catch {
+        childrenCount = 0;
+      }
+    } else {
+      try {
+        isText = isTextFile(name) ? true : isTextFileByContent(targetPath);
+      } catch (error) {
+        console.error('读取文件内容失败:', error);
+      }
     }
-  } else {
-    try {
-      isText = isTextFile(name) ? true : isTextFileByContent(targetPath);
-    } catch (error) {
-      console.error('读取文件内容失败:', error);
+
+    return {
+      path: targetPath,
+      name,
+      ext,
+      isDirectory,
+      childrenCount,
+      isText,
+      size: stats.size,
+      atimeMs: stats.atimeMs,
+      mtimeMs: stats.mtimeMs,
+      ctimeMs: stats.ctimeMs,
+      birthtimeMs: stats.birthtimeMs,
+    };
+  } catch (error) {
+    // 处理文件不存在的情况
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      console.warn(`文件不存在: ${targetPath}`);
+      return null;
     }
+    // 重新抛出其他类型的错误
+    throw error;
   }
-
-  return {
-    path: targetPath,
-    name,
-    ext,
-    isDirectory,
-    childrenCount,
-    isText,
-    size: stats.size,
-    atimeMs: stats.atimeMs,
-    mtimeMs: stats.mtimeMs,
-    ctimeMs: stats.ctimeMs,
-    birthtimeMs: stats.birthtimeMs,
-  };
 }
 
 // =======================================

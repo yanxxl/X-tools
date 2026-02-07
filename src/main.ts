@@ -117,7 +117,11 @@ function registerIpcHandlers() {
     // 获取文件/目录基本信息
     ipcMain.handle('getFileInfo', async (event, filePath: string) => {
         try {
-            return getFileInfo(filePath);
+            const fileInfo = getFileInfo(filePath);
+            if (fileInfo === null) {
+                throw new Error(`文件不存在: ${filePath}`);
+            }
+            return fileInfo;
         } catch (error) {
             console.error('获取文件信息失败:', error);
             throw error;
