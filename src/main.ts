@@ -55,7 +55,7 @@ function initializeThreadPool() {
         }
 
         workerPath = path.resolve(workerPath);
-        pool = workerpool.pool(workerPath);
+        pool = workerpool.pool(workerPath, { workerType: 'thread' });      
 
         console.log('线程池初始化成功，工作器路径:', workerPath);
     } catch (error) {
