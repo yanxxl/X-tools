@@ -38,6 +38,7 @@ const AppContent: React.FC = () => {
 
     // 2. 组件状态
     const [sizes, setSizes] = useState<number[]>([320, undefined, 320]);
+    const [drawerWidth, setDrawerWidth] = useState<number|string>('75%');
 
     // 3. 辅助函数
     /**
@@ -200,11 +201,12 @@ const AppContent: React.FC = () => {
 
             {/* 全局搜索抽屉 */}
             <Drawer
+                className="no-drag"
                 title="搜索"
                 placement="left"
-                width="75%"
-                open={searchPanelOpen}
-                closable={false}
+                size={drawerWidth}
+                open={searchPanelOpen} 
+                closable={{ placement: 'end' }}
                 maskClosable={true}
                 onClose={handleCloseSearchPanel}
                 styles={{
@@ -216,6 +218,7 @@ const AppContent: React.FC = () => {
                         textAlign: 'center',
                     }
                 }}
+                resizable={{onResize: (newSize) => setDrawerWidth(newSize)}}
             >
                 <div style={{ height: '100%' }}>
                     <GlobalSearch/>

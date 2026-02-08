@@ -24,6 +24,10 @@ body {
     app-region: no-drag;
 }
 
+.no-drag {
+    app-region: no-drag;
+}
+
 /* 单行文本样式：保持一行，居中，边距16px，超出缩短 */
 .one-line {
     white-space: nowrap;
