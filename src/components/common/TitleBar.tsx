@@ -330,13 +330,14 @@ export const TitleBar: React.FC = () => {
                             {/* 循环播放按钮 - 仅在当前文件是支持的媒体文件时显示 */}
                             {currentFile && (detectFileType(currentFile) === 'video' || detectFileType(currentFile) === 'audio') && (
                                 <Tooltip title={loopPlay ? "循环播放中" : "循环播放"}>
-                                    <RetweetOutlined 
+                                    <Button 
+                                        ghost
+                                        type={loopPlay ? "primary" : "text"}
+                                        size="small"
+                                        icon={<RetweetOutlined />}
                                         onClick={() => setLoopPlay(!loopPlay)}
                                         style={{
                                           marginLeft: 16,
-                                          color: loopPlay ? '#1890ff' : '#8c8c8c',
-                                          cursor: 'pointer',
-                                          fontSize: 14,
                                         }}
                                     />
                                 </Tooltip>
