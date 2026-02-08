@@ -6,11 +6,7 @@ import * as fs from 'fs/promises';
 import { clearCache, getCacheStats, readFileLines } from './fileCacheUtil';
 import { truncateTextWithQuery } from './format';
 import { SearchResult } from '../types';
-import { fixWindowsConsoleEncoding } from './fixConsoleEncoding';
 import { isTextFileByContent } from './fileLocalUtil';
-
-// 修复Windows控制台中文乱码问题
-fixWindowsConsoleEncoding();
 
 // 搜索文件内容
 async function searchFileContent(filePath: string, query: string, searchMode: 'content' | 'filename'): Promise<SearchResult | null> {

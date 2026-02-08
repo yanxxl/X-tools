@@ -6,7 +6,6 @@ import { getDirectoryChildren, getFileInfo, getFileTree, readFileText, writeFile
 import { readFileLines } from './utils/fileCacheUtil';
 import { loadConfig, saveConfig } from './utils/configManager';
 import { Config } from "./utils/config";
-import { fixWindowsConsoleEncoding } from './utils/fixConsoleEncoding';
 import { OfficeParserConfig } from './office/types';
 import workerpool from 'workerpool';
 import { astToJson, astToText, parseOfficeDocument } from './utils/office';
