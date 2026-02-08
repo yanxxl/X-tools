@@ -1,11 +1,13 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Button, Card, Descriptions, Skeleton, Space, Typography} from 'antd';
 import {FileOutlined, FolderOpenOutlined} from '@ant-design/icons';
-import {countText, formatDate, formatFileSize, getFileTextStats, getSelectedText, truncateText} from '../../utils/format';
-import {isTextFile} from '../../utils/fileCommonUtil';
+
 import {useAppContext} from '../../contexts/AppContext';
-import {FileInfo} from "../../types";
+import {FileInfo} from '../../types';
 import {ToolWindow} from './toolWindow';
+import {formatDate, formatFileSize, getFileTextStats} from '../../utils/format';
+import {isTextFile} from '../../utils/fileCommonUtil';
+import {SelectedTextPanel} from './SelectedTextPanel';
 
 const {Text} = Typography;
 
@@ -14,79 +16,14 @@ const {Text} = Typography;
  */
 const FileInfoPanel: React.FC = () => {
     const {currentFile, currentFolder} = useAppContext();
+    
     const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [selectedText, setSelectedText] = useState('');
-    const [selectedTextCount, setSelectedTextCount] = useState('0 字');
     const [fileTextStats, setFileTextStats] = useState<{ chars: number; words: number; chineseChars: number } | null>(null);
 
-    // 处理文本选择
-    const handleSelectionChange = () => {
-        const selection = getSelectedText();
-        if (selection !== selectedText) {
-            setSelectedText(selection);
-            const count = countText(selection);
-            if (count.chars > 0) {
-                setSelectedTextCount(`${count.chars} 字`);
-            } else {
-                setSelectedTextCount('0 字');
-            }
-        }
-    };
-
-    // 强制更新选择状态
-    const forceUpdateSelection = () => {
-        const selection = getSelectedText();
-        setSelectedText(selection);
-        const count = countText(selection);
-        setSelectedTextCount(count.chars > 0 ? `${count.chars} 字` : '0 字');
-    };
-
-    // 监听文本选择变化
-    // 这里看起来事件挺杂乱，但确是 Trae 精挑细选的，不能删一条，不然总会漏掉一些场景。
-    // 这个事情，也不能挪到更高层级共享状态，会影响页面选中。要避免 Markdown 页面因状态而重新渲染，而影响选中状态。
-    useEffect(() => {
-        // 监听PDF文本选择事件
-        const handlePdfTextSelected = (event: CustomEvent) => {
-            const selectedText = event.detail;
-            setSelectedText(selectedText);
-            const count = countText(selectedText);
-            if (count.chars > 0) {
-                setSelectedTextCount(`${count.chars} 字`);
-            } else {
-                setSelectedTextCount('0 字');
-            }
-        };
-
-        // 监听选择变化
-        document.addEventListener('selectionchange', handleSelectionChange);
-        // 监听鼠标点击事件（处理点击空白处取消选择）
-        document.addEventListener('click', forceUpdateSelection);
-        // 监听键盘事件（处理ESC键等取消选择）
-        document.addEventListener('keydown', forceUpdateSelection);
-        // 监听键盘释放事件
-        document.addEventListener('keyup', handleSelectionChange);
-        // 监听窗口失焦（可能导致选择被清除）
-        window.addEventListener('blur', forceUpdateSelection);
-        // 监听PDF文本选择事件
-        window.addEventListener('pdf-text-selected', handlePdfTextSelected);
-
-        return () => {
-            document.removeEventListener('selectionchange', handleSelectionChange);
-            document.removeEventListener('click', forceUpdateSelection);
-            document.removeEventListener('keydown', forceUpdateSelection);
-            document.removeEventListener('keyup', handleSelectionChange);
-            window.removeEventListener('blur', forceUpdateSelection);
-            // 移除PDF文本选择事件监听器
-            window.removeEventListener('pdf-text-selected', handlePdfTextSelected);
-        };
-    }, [selectedText]);
-
-    // 获取当前选中的路径
     const targetPath = currentFile || currentFolder;
 
-    // 处理打开文件
     const handleOpenFile = async () => {
         if (targetPath && window.electronAPI) {
             try {
@@ -97,7 +34,6 @@ const FileInfoPanel: React.FC = () => {
         }
     };
 
-    // 处理显示文件夹
     const handleShowInFolder = async () => {
         if (targetPath && window.electronAPI) {
             try {
@@ -108,7 +44,6 @@ const FileInfoPanel: React.FC = () => {
         }
     };
 
-    // 获取文件信息
     useEffect(() => {
         const fetchFileInfo = async () => {
             if (!currentFile && !currentFolder) {
@@ -134,7 +69,6 @@ const FileInfoPanel: React.FC = () => {
                     const info = await window.electronAPI.getFileInfo(targetPath);
                     setFileInfo(info);
 
-                    // 如果是文本文件，获取字符数统计
                     if (!info.isDirectory && isTextFile(info.name)) {
                         const stats = await getFileTextStats(targetPath);
                         setFileTextStats(stats);
@@ -142,7 +76,6 @@ const FileInfoPanel: React.FC = () => {
                         setFileTextStats(null);
                     }
                 } else {
-                    // 浏览器环境下的模拟数据
                     setError('浏览器环境下无法获取文件信息');
                 }
             } catch (err) {
@@ -153,13 +86,11 @@ const FileInfoPanel: React.FC = () => {
             }
         };
 
-        // 延后更新，让试图先
         setTimeout(() => {
             fetchFileInfo();
-        }, 10)
+        }, 10);
     }, [currentFile, currentFolder]);
 
-    // 渲染加载状态
     if (loading) {
         return (
             <div style={{padding: 24}}>
@@ -168,7 +99,6 @@ const FileInfoPanel: React.FC = () => {
         );
     }
 
-    // 渲染错误状态
     if (error) {
         return (
             <div style={{padding: 16}}>
@@ -182,7 +112,6 @@ const FileInfoPanel: React.FC = () => {
         );
     }
 
-    // 渲染空状态
     if (!fileInfo) {
         return (
             <div style={{padding: 16, textAlign: 'center'}}>
@@ -196,7 +125,6 @@ const FileInfoPanel: React.FC = () => {
 
     return (
         <div style={{height: '100%', padding: 8, display: 'flex', flexDirection: 'column', gap: 8}}>
-            {/* 基本文件信息卡片 */}
             <Card
                 size="small"
                 title="基本信息"
@@ -247,7 +175,6 @@ const FileInfoPanel: React.FC = () => {
                 </Descriptions>
             </Card>
 
-            {/* 文件字数统计卡片 - 仅对文本文件显示 */}
             {!fileInfo.isDirectory && fileTextStats && (
                 <Card
                     size="small"
@@ -269,25 +196,7 @@ const FileInfoPanel: React.FC = () => {
                 </Card>
             )}
 
-            {/* 选中内容统计卡片 - 始终显示 */}
-            <Card
-                size="small"
-                title="选中内容"
-            >
-                <Descriptions size="small" column={1} labelStyle={{width: '80px', textAlign: 'right'}}>
-                    <Descriptions.Item label="选中字数">
-                        <Text strong style={{color: '#fa8c16'}}>{selectedTextCount}</Text>
-                    </Descriptions.Item>
-
-                    {selectedText && selectedTextCount !== '0 字' && (
-                        <Descriptions.Item label="选中内容">
-                            <Text style={{fontSize: 12, wordBreak: 'break-all'}} type="secondary">
-                                {truncateText(selectedText, 100)}
-                            </Text>
-                        </Descriptions.Item>
-                    )}
-                </Descriptions>
-            </Card>
+            <SelectedTextPanel />
         </div>
     );
 };
