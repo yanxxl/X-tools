@@ -158,7 +158,8 @@ export const FileTree: React.FC = () => {
                 e.domEvent.stopPropagation();
                 try {
                     // 触发文件名的双击编辑功能
-                    const element = document.querySelector(`[data-file-path="${node.path}"]`);
+                    const escapedPath = node.path.replace(/\\/g, '\\\\');
+                    const element = document.querySelector(`[data-file-path="${escapedPath}"]`);
                     if (element) {
                         element.dispatchEvent(new MouseEvent('dblclick', {
                             view: window,
