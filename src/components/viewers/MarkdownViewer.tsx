@@ -476,7 +476,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                             onClick={() => setViewMode('source')}
                             size="small"
                         >
-                            原文
+                            编辑
                         </Button>
                     </Button.Group>
                 </Space>
