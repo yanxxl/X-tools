@@ -22,14 +22,13 @@ const config: ForgeConfig = {
             path.join(__dirname, 'public/pdfjs'),
         ],
         // Windows特定配置：隐藏控制台窗口
+        // 注意：不要设置 appCopyright，否则会显示控制台窗口
         win32metadata: {
             CompanyName: 'X-tools',
             FileDescription: 'X-tools',
             OriginalFilename: 'X-tools.exe',
             ProductName: 'X-tools',
-            InternalName: 'X-tools',
-            // 隐藏控制台窗口
-            "requested-execution-level": "asInvoker"
+            InternalName: 'X-tools'
         }
     },
     rebuildConfig: {},
