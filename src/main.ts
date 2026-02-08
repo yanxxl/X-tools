@@ -10,10 +10,14 @@ import { fixWindowsConsoleEncoding } from './utils/fixConsoleEncoding';
 import { OfficeParserConfig } from './office/types';
 import workerpool from 'workerpool';
 import { astToJson, astToText, parseOfficeDocument } from './utils/office';
+import { configureLogger } from './utils/logger';
 
 // 添加环境变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
+
+// 配置日志系统
+configureLogger();
 
 // 修复Windows控制台中文乱码问题
 fixWindowsConsoleEncoding();

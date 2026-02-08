@@ -58,6 +58,7 @@
     "chardet": "^2.1.1",
     "concat-stream": "^2.0.0",
     "docx-preview": "^0.3.7",
+    "electron-log": "^5.4.3",
     "electron-squirrel-startup": "^1.0.1",
     "file-type": "^16.5.4",
     "flexsearch": "^0.8.212",
