@@ -112,10 +112,17 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
     }, [isEditing]);
 
     return (
-        <span className="file-path-editor no-drag">
+        <span className="file-path-editor" style={{ display: 'flex', flex: 1, minWidth: 0 }}>
             {isEditing ? (
-                <Space 
-                    size={4} 
+                <div 
+                    style={{ 
+                        display: 'flex', 
+                        width: '100%',
+                        gap: '4px',
+                        alignItems: 'center',
+                        flex: 1,
+                        minWidth: 0
+                    }}
                     onClick={(e) => e.stopPropagation()}
                     onDoubleClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
@@ -127,8 +134,8 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
                         onKeyDown={handleKeyDown}
                         size="small"
                         style={{ 
-                            width: 'auto', 
-                            maxWidth: '200px',
+                            flex: 1,
+                            minWidth: 0,
                             border: '1px solid #1890ff',
                             boxShadow: '0 0 0 2px rgba(24, 144, 255, 0.2)'
                         }}
@@ -139,7 +146,8 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
                         onClick={handleSave}
                         style={{ 
                             minWidth: 'auto',
-                            padding: '0 8px'
+                            padding: '0 8px',
+                            flexShrink: 0
                         }}
                     >
                         保存
@@ -149,12 +157,13 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
                         onClick={handleCancel}
                         style={{ 
                             minWidth: 'auto',
-                            padding: '0 8px'
+                            padding: '0 8px',
+                            flexShrink: 0
                         }}
                     >
                         取消
                     </Button>
-                </Space>
+                </div>
             ) : (
                 <span 
                     className="one-line"

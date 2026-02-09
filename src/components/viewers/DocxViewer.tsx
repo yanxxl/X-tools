@@ -78,19 +78,28 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
         if (!containerRef.current) return;
         console.log('docx container', containerRef.current);
         const renderDocx = async () => {
-            if (!containerRef.current) return;
+            if (!containerRef.current) {
+                console.warn('Container ref is null, skipping render');
+                return;
+            }
 
             try {
-                // 清空容器
-                containerRef.current.innerHTML = '';
+                // 安全地清空容器
+                if (containerRef.current) {
+                    containerRef.current.innerHTML = '';
+                }
 
                 // 读取文件内容
                 const fileBuffer = await window.electronAPI.readFileBinary(path);
 
+                // 再次检查容器引用是否仍然有效
+                if (!containerRef.current) {
+                    console.warn('Container ref became null during file reading');
+                    return;
+                }
+
                 // 渲染 docx
                 await docxPreview.renderAsync(fileBuffer, containerRef.current, containerRef.current, { inWrapper: true });
-
-
 
                 // 文档渲染完成后，从DOM中提取大纲并设置ID
                 extractOutline();
@@ -103,7 +112,10 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
             }
         };
 
-        renderDocx();
+        // 使用 setTimeout 确保 DOM 已经完全渲染
+        setTimeout(() => {
+            renderDocx();
+        }, 0);
     }, [path]);
 
     return (
@@ -118,7 +130,7 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
                 justifyContent: 'space-between'
             }}>
                 <EditableFilePath path={path} onRename={setCurrentFile} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px',marginLeft: 16 }}>
                     <Button
                         type="text"
                         size="small"

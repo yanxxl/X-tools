@@ -129,7 +129,7 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
                 justifyContent: 'space-between',
                 background: '#fafafa'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8,flex: '1',marginRight: 16 }}>
                     <FileTextOutlined />
                     <EditableFilePath path={filePath} onRename={setCurrentFile} />
                 </div>

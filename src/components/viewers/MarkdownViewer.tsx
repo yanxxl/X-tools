@@ -441,7 +441,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                 justifyContent: 'space-between',
                 background: '#fafafa'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8,flex: '1',marginRight: 16 }}>
                     <FileTextOutlined />
                     <EditableFilePath path={filePath} onRename={setCurrentFile} />
                 </div>
