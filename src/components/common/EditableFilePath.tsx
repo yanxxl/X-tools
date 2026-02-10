@@ -171,7 +171,7 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
                     data-file-path={path}
                     style={{ 
                         cursor: 'pointer',
-                        padding: '0px 8px',
+                        padding: '0px 4px',
                         borderRadius: '4px',
                         transition: 'all 0.2s'
                     }}
