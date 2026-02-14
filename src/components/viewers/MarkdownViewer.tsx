@@ -48,6 +48,29 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
     const previewContainerRef = useRef<HTMLDivElement>(null);
     const scrollPollingRef = useRef<NodeJS.Timeout | null>(null);
 
+    // ============================== Keyboard Event Handlers ==============================
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            // 预览模式下按 'i' 键进入编辑模式
+            if (viewMode === 'rendered' && event.key === 'i') {
+                event.preventDefault();
+                setViewMode('source');
+            }
+            
+            // 编辑模式下按 'Escape' 键进入预览模式
+            if (viewMode === 'source' && event.key === 'Escape') {
+                event.preventDefault();
+                setViewMode('rendered');
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [viewMode]);
+
 
 
     // ============================== File Loading ==============================
