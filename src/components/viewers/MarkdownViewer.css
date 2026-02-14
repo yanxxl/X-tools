@@ -307,3 +307,9 @@
     font-size: var(--markdown-font-size);
     line-height: var(--markdown-line-height);
 }
+
+/*右键菜单高亮样式*/
+.context-menu-highlight {
+    background-color: #fff3cd !important;
+    transition: background-color 0.3s ease-out;
+}

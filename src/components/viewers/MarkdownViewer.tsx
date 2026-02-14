@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { MenuProps } from 'antd';
-import { Button, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typography } from 'antd';
-import { CodeOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typography } from 'antd';
+import { CodeOutlined, EditOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
 import { OutlineItem, parseMarkdown } from '../../utils/markdown';
 import { storage, STORAGE_KEYS } from '../../utils/storage';
 import 'highlight.js/styles/github.css';
@@ -432,6 +432,95 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
 
     const menuItems = generateMenuItems(outline);
 
+    // ============================== Context Menu ==============================
+    const handleContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        
+        const target = event.target as HTMLElement;
+        let element: HTMLElement | null = target;
+
+        // console.log('target:', target);
+        
+        const blockElements = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'BLOCKQUOTE', 'PRE', 'TD', 'TH'];
+        
+        while (element && !element.classList.contains('markdown-content')) {
+            if (blockElements.includes(element.tagName)) {
+                break;
+            }
+            element = element.parentElement;
+        }
+        
+        if (element && !element.classList.contains('markdown-content')) {
+            element.classList.add('context-menu-highlight');
+            // console.log('element:', element);
+        }
+    };
+
+    const handleEdit = () => {
+        const highlightedElement = document.querySelector('.context-menu-highlight');
+        if (highlightedElement) {
+            const text = highlightedElement.textContent || '';
+            
+            if (text) {
+                setViewMode('source');
+                
+                setTimeout(() => {
+                    if (editorRef.current) {
+                        const editor = editorRef.current;
+                        const view = editor.view;
+                        const doc = view.state.doc;
+                        
+                        let targetLine = -1;
+                        const searchLines = text.split('\n').slice(0, 5);
+                        
+                        for (let line = 0; line < doc.lines; line++) {
+                            const lineText = doc.line(line + 1).text;
+                            for (const searchLine of searchLines) {
+                                if (searchLine.trim() && lineText.includes(searchLine.trim())) {
+                                    targetLine = line;
+                                    break;
+                                }
+                            }
+                            if (targetLine >= 0) break;
+                        }
+                        
+                        if (targetLine >= 0) {
+                            const lineObj = doc.line(targetLine + 1);
+                            const targetPos = lineObj.from;
+                            
+                            view.dispatch({
+                                selection: { anchor: targetPos },
+                                effects: [
+                                    EditorView.scrollIntoView(targetPos, { y: 'center' })
+                                ]
+                            });
+                        }
+                    }
+                }, 100);
+            }
+            
+            highlightedElement.classList.remove('context-menu-highlight');
+        }
+    };
+
+    const handleMenuOpenChange = (open: boolean) => {
+        if (!open) {
+            const highlightedElement = document.querySelector('.context-menu-highlight');
+            if (highlightedElement) {
+                highlightedElement.classList.remove('context-menu-highlight');
+            }
+        }
+    };
+
+    const contextMenuItems: MenuProps['items'] = [
+        {
+            key: 'edit',
+            label: '编辑',
+            icon: <EditOutlined />,
+            onClick: handleEdit,
+        },
+    ];
+
     // ============================== Loading & Error States ==============================
     if (loading) {
         return (
@@ -523,13 +612,16 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                     <Splitter.Panel style={{ background: '#fff' }}>
                         <div className={'markdown-container'} style={{ height: '100%' }}>
                             {viewMode === 'rendered' ? (
-                                <div
-                                    ref={previewContainerRef}
-                                    className="markdown-content"
-                                    style={{ overflowY: 'auto', height: '100%' }}
-                                    dangerouslySetInnerHTML={{ __html: html }}
-                                    onClick={handleLinkClick}
-                                />
+                                <Dropdown menu={{ items: contextMenuItems }} trigger={['contextMenu']} onOpenChange={handleMenuOpenChange}>
+                                    <div
+                                        ref={previewContainerRef}
+                                        className="markdown-content"
+                                        style={{ overflowY: 'auto', height: '100%' }}
+                                        dangerouslySetInnerHTML={{ __html: html }}
+                                        onClick={handleLinkClick}
+                                        onContextMenu={handleContextMenu}
+                                    />
+                                 </Dropdown>
                             ) : (
                                 <div
                                     className="markdown-source"
