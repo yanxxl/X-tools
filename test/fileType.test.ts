@@ -10,7 +10,7 @@ import {
   isPdfFile,
   dirname,
   join,
-  fullname,
+  basename,
   nameWithoutExtension,
   normalizePath,
   toFileUrl,
@@ -144,19 +144,19 @@ describe('fileCommonUtil.ts 测试', () => {
       });
     });
 
-    describe('fullname', () => {
+    describe('basename', () => {
       it('应该正确获取文件名', () => {
-        expect(fullname('/path/to/file.txt')).toBe('file.txt');
-        expect(fullname('C:\\Users\\John\\file.txt')).toBe('file.txt');
-        expect(fullname('file.txt')).toBe('file.txt');
-        expect(fullname('/')).toBe('');
+        expect(basename('/path/to/file.txt')).toBe('file.txt');
+        expect(basename('C:\\Users\\John\\file.txt')).toBe('file.txt');
+        expect(basename('file.txt')).toBe('file.txt');
+        expect(basename('/')).toBe('');
       });
       
       it('应该正确处理文件夹路径', () => {
-        expect(fullname('/path/to/folder/')).toBe('folder');
-        expect(fullname('C:\\Users\\John\\Documents\\')).toBe('Documents');
-        expect(fullname('/path/to/folder//')).toBe('folder');
-        expect(fullname('C:\\Users\\John\\folder\\\\')).toBe('folder');
+        expect(basename('/path/to/folder/')).toBe('folder');
+        expect(basename('C:\\Users\\John\\Documents\\')).toBe('Documents');
+        expect(basename('/path/to/folder//')).toBe('folder');
+        expect(basename('C:\\Users\\John\\folder\\\\')).toBe('folder');
       });
     });
 

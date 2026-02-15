@@ -11,7 +11,7 @@ import { ToolWindow } from './toolWindow';
 
 const { Text } = Typography;
 
-import { fullname } from '../../utils/fileCommonUtil';
+import { basename } from '../../utils/fileCommonUtil';
 import { DangerText } from '../common/DangerText';
 
 export const FileHistoryToolWindow: React.FC = () => {
@@ -90,7 +90,7 @@ export const FileHistoryToolWindow: React.FC = () => {
                                         <FileIcon fileName={record.filePath} className="file-icon" />
                                         <Tooltip title={record.filePath}>
                                             <Text strong className="file-name">
-                                                {fullname(record.filePath)}
+                                                {basename(record.filePath)}
                                             </Text>
                                         </Tooltip>
                                     </div>

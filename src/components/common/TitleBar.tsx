@@ -11,7 +11,7 @@ import { truncateFolderName } from '../../utils/uiUtils';
 import { removeFolderPath, updateFolderPath } from '../../utils/config';
 import { RecentFolder } from '../../types';
 import { CloseButton } from './CloseButton';
-import { fullname, detectFileType } from '../../utils/fileCommonUtil';
+import { basename, detectFileType } from '../../utils/fileCommonUtil';
 
 export const TitleBar: React.FC = () => {
     // 1. 获取应用上下文
@@ -318,7 +318,7 @@ export const TitleBar: React.FC = () => {
                                 type="link"
                                 loading={loading}
                             >
-                                {currentFolder ? truncateFolderName(fullname(currentFolder)) : '选择文件夹'} <DownOutlined />
+                                {currentFolder ? truncateFolderName(basename(currentFolder)) : '选择文件夹'} <DownOutlined />
                             </Button>
                         </Dropdown>
                     </div>
@@ -326,7 +326,7 @@ export const TitleBar: React.FC = () => {
                     {/* 中间区域 - 当前文件名显示 */}
                     <div style={{ flex: '1 3 auto', minWidth: 0 }}>
                         <div className="one-line text-center">
-                            {currentFile ? fullname(currentFile) : ''}
+                            {currentFile ? basename(currentFile) : ''}
                             {/* 循环播放按钮 - 仅在当前文件是支持的媒体文件时显示 */}
                             {currentFile && (detectFileType(currentFile) === 'video' || detectFileType(currentFile) === 'audio') && (
                                 <Tooltip title={loopPlay ? "循环播放中" : "循环播放"}>

@@ -18,7 +18,7 @@ import { FileViewer } from './components/viewers/FileViewer';
 import { ToolWindowsPane } from './components/windows/ToolWindowsPane';
 
 // 工具函数
-import { fullname } from './utils/fileCommonUtil';
+import { basename } from './utils/fileCommonUtil';
 
 // 常量定义
 const WINDOW_SIZE_KEY = 'x-tools-window-size';
@@ -178,7 +178,7 @@ const AppContent: React.FC = () => {
                         {currentFile ? (
                             <FileViewer
                                 filePath={currentFile}
-                                fileName={fullname(currentFile)}
+                                fileName={basename(currentFile)}
                             />
                         ) : (
                             <Center style={{color: 'gray'}}>

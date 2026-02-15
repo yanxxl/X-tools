@@ -104,7 +104,7 @@ export function isElectronSupportedMedia(fileName: string): boolean {
 export function getExtension(name: string): string {
   const idx = name.lastIndexOf('.');
   // 处理隐藏文件（以.开头的文件）
-  const fileName = fullname(name);
+  const fileName = basename(name);
   if (idx === -1 || fileName.startsWith('.')) return '';
   return name.slice(idx + 1).toLowerCase();
 }
@@ -220,7 +220,7 @@ export function join(...paths: string[]): string {
  * 获取文件名或文件夹名
  * @param filePath 文件或文件夹路径
  */
-export function fullname(filePath: string): string {
+export function basename(filePath: string): string {
   // 移除末尾的路径分隔符
   const normalizedPath = filePath.replace(/[/\\]+$/, '');
   const parts = normalizedPath.split(/[/\\]/);
@@ -232,7 +232,7 @@ export function fullname(filePath: string): string {
  * @param filePath 文件路径
  */
 export function nameWithoutExtension(filePath: string): string {
-  const filename = fullname(filePath);
+  const filename = basename(filePath);
   const idx = filename.lastIndexOf('.');
   if (idx === -1) return filename;
   return filename.slice(0, idx);

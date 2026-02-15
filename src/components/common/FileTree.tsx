@@ -12,7 +12,7 @@ import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from './FileIcon';
 import { storage } from '../../utils/storage';
-import { fullname } from '../../utils/fileCommonUtil';
+import { basename } from '../../utils/fileCommonUtil';
 import { highlightText } from '../../utils/highlight';
 import { EditableFilePath } from './EditableFilePath';
 
@@ -322,7 +322,7 @@ export const FileTree: React.FC = () => {
             if (showRootFolder) {
                 const rootFileNode: FileNode = {
                     id: currentFolder,
-                    name: fullname(currentFolder),
+                    name: basename(currentFolder),
                     path: currentFolder,
                     isDirectory: true,
                     children: []

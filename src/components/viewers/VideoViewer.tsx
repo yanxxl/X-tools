@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, CSSProperties } from "react";
 import { Button, Splitter } from "antd";
 import { SearchOutlined, LeftOutlined, RightOutlined, CloseOutlined } from "@ant-design/icons";
-import { toFileUrl, fullname, nameWithoutExtension } from "../../utils/fileCommonUtil";
+import { toFileUrl, basename, nameWithoutExtension } from "../../utils/fileCommonUtil";
 import {
   findSubtitleFiles,
   loadAndParseSubtitle,
@@ -222,7 +222,7 @@ const saveVideoProgress = (path: string, currentTime: number): void => {
 
 // 解析字幕文件名，提取有意义的名称
 const getSubtitleDisplayName = (subtitlePath: string, index: number): string => {
-  const fileName = fullname(subtitlePath);
+  const fileName = basename(subtitlePath);
   const videoName = nameWithoutExtension(subtitlePath);
 
   // 尝试从文件名中提取语言代码或其他标识

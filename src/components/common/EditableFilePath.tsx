@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Input, message, InputRef, Button, Space } from 'antd';
-import { dirname, fullname } from '../../utils/fileCommonUtil';
+import { dirname, basename } from '../../utils/fileCommonUtil';
 import { useAppContext } from '../../contexts/AppContext';
 
 interface EditableFilePathProps {
@@ -13,7 +13,7 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
     const { currentFolder } = useAppContext();
     
     const [isEditing, setIsEditing] = useState(false);
-    const [fileName, setFileName] = useState(fullname(path));
+    const [fileName, setFileName] = useState(basename(path));
     const inputRef = useRef<InputRef>(null);
 
     // 双击进入编辑状态
@@ -79,7 +79,7 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
 
     // 处理取消
     const handleCancel = () => {
-        setFileName(fullname(path));
+        setFileName(basename(path));
         setIsEditing(false);
     };
 
@@ -182,7 +182,7 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
                         e.currentTarget.style.backgroundColor = 'transparent';
                     }}
                 >
-                    {fullname(path)}
+                    {basename(path)}
                 </span>
             )}
         </span>

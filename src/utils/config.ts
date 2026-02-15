@@ -1,4 +1,5 @@
 import { RecentFolder } from '../types';
+import { basename } from './fileCommonUtil';
 
 // 配置类型定义
 export interface Config {
@@ -11,7 +12,7 @@ export function updateFolderPath(config: Config, folderPath: string): Config {
 
     config.recentFolders.unshift({
         path: folderPath,
-        name: folderPath.substring(folderPath.lastIndexOf('/') + 1),
+        name: basename(folderPath),
         timestamp: Date.now(),
     });
 
