@@ -13,9 +13,10 @@ import { getExtension, isTextFile } from './fileCommonUtil';
  * 获取文件树结构（懒加载模式 - 只加载第一层）
  * @param dirPath 目录路径
  * @param deep 是否深度递归加载（默认false，只加载第一层）
+ * @param includeHidden 是否包含隐藏文件（默认false，不包含以.开头的文件）
  * @returns 文件树节点
  */
-export function getFileTree(dirPath: string, deep = false): FileNode {
+export function getFileTree(dirPath: string, deep = false, includeHidden = false): FileNode {
   const stats = fs.statSync(dirPath);
   const name = path.basename(dirPath);
   const node: FileNode = {
@@ -24,13 +25,14 @@ export function getFileTree(dirPath: string, deep = false): FileNode {
     path: dirPath,
     isDirectory: stats.isDirectory(),
     mtimeMs: stats.mtimeMs,
+    size: stats.isDirectory() ? 0 : stats.size,
   };
 
   if (stats.isDirectory()) {
     try {
       const files = fs.readdirSync(dirPath);
       node.children = files
-        .filter(file => !file.startsWith('.')) // 过滤掉以.开头的隐藏文件和目录
+        .filter(file => includeHidden || !file.startsWith('.')) // 根据参数决定是否过滤隐藏文件
         .map(file => {
           const filePath = path.join(dirPath, file);
           try {
@@ -41,11 +43,12 @@ export function getFileTree(dirPath: string, deep = false): FileNode {
               path: filePath,
               isDirectory: fileStats.isDirectory(),
               mtimeMs: fileStats.mtimeMs,
+              size: fileStats.isDirectory() ? 0 : fileStats.size,
             };
 
             // 深度模式下递归加载
             if (fileStats.isDirectory() && deep) {
-              return getFileTree(filePath, true);
+              return getFileTree(filePath, true, includeHidden);
             }
 
             return fileNode;
@@ -74,9 +77,10 @@ export function getFileTree(dirPath: string, deep = false): FileNode {
 /**
  * 懒加载指定目录的直接子节点
  * @param dirPath 目录路径
+ * @param includeHidden 是否包含隐藏文件（默认false，不包含以.开头的文件）
  * @returns 直接子节点列表
  */
-export function getDirectoryChildren(dirPath: string): FileNode[] {
+export function getDirectoryChildren(dirPath: string, includeHidden = false): FileNode[] {
   const stats = fs.statSync(dirPath);
 
   if (!stats.isDirectory()) {
@@ -86,7 +90,7 @@ export function getDirectoryChildren(dirPath: string): FileNode[] {
   try {
     const files = fs.readdirSync(dirPath);
     return files
-      .filter(file => !file.startsWith('.')) // 过滤掉以.开头的隐藏文件和目录
+      .filter(file => includeHidden || !file.startsWith('.')) // 根据参数决定是否过滤隐藏文件
       .map(file => {
         const filePath = path.join(dirPath, file);
         try {
@@ -97,6 +101,7 @@ export function getDirectoryChildren(dirPath: string): FileNode[] {
             path: filePath,
             isDirectory: fileStats.isDirectory(),
             mtimeMs: fileStats.mtimeMs,
+            size: fileStats.isDirectory() ? 0 : fileStats.size,
           };
           return fileNode;
         } catch (error) {

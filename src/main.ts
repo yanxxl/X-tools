@@ -101,9 +101,9 @@ function registerIpcHandlers() {
     });
 
     // 处理获取文件树请求
-    ipcMain.handle('getFileTree', async (event, dirPath: string) => {
+    ipcMain.handle('getFileTree', async (event, dirPath: string, deep = true, includeHidden = false) => {
         try {
-            return getFileTree(dirPath, true); // 全部加载
+            return getFileTree(dirPath, deep, includeHidden);
         } catch (error) {
             console.error('获取文件树失败:', error);
             throw error;
@@ -111,9 +111,9 @@ function registerIpcHandlers() {
     });
 
     // 处理懒加载获取目录子节点请求
-    ipcMain.handle('getDirectoryChildren', async (event, dirPath: string) => {
+    ipcMain.handle('getDirectoryChildren', async (event, dirPath: string, includeHidden = false) => {
         try {
-            return getDirectoryChildren(dirPath);
+            return getDirectoryChildren(dirPath, includeHidden);
         } catch (error) {
             console.error('获取目录子节点失败:', error);
             throw error;

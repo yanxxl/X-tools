@@ -13,6 +13,7 @@ export interface FileNode {
     path: string;
     isDirectory: boolean;
     mtimeMs?: number;
+    size?: number;
     children?: FileNode[];
 }
 

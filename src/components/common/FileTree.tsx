@@ -78,6 +78,7 @@ export const FileTree: React.FC = () => {
             onClick: async (e) => {
                 e.domEvent.stopPropagation();
                 setCurrentFile(node.path);
+                setExpandedKeys([node.path]);
             }
         });
 

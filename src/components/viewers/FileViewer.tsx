@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Button, Typography} from 'antd';
-import {FileTextOutlined, FolderOpenOutlined, FolderOutlined} from '@ant-design/icons';
-import {detectFileType, getExtension, toFileUrl, isElectronSupportedMedia, isOfficeParserSupported} from '../../utils/fileCommonUtil';
+import {FileTextOutlined, FolderOpenOutlined} from '@ant-design/icons';
+import {detectFileType, getExtension, isElectronSupportedMedia, isOfficeParserSupported} from '../../utils/fileCommonUtil';
 import {FileInfo} from '../../types';
 import {ImageViewer} from './ImageViewer';
 import {VideoViewer} from './VideoViewer';
@@ -11,6 +11,7 @@ import {TextViewer} from './TextViewer';
 import {DocxViewer} from './DocxViewer';
 import {PptxViewer} from './PptxViewer';
 import {XlsxViewer} from './XlsxViewer';
+import {FolderViewer} from './FolderViewer';
 
 interface FilePreviewProps {
     filePath: string;
@@ -129,35 +130,9 @@ export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName, init
         return <TextViewer filePath={filePath} fileName={fileName}/>;
     }
 
-    // 如果是文件夹，提示暂不展示
+    // 如果是文件夹，使用 FolderViewer
     if (fileInfo.isDirectory) {
-        return (
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '100%',
-                padding: '24px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: 8
-            }}>
-                <FolderOutlined style={{fontSize: 48, color: '#999', marginBottom: 16}}/>
-                <Typography.Title level={4} style={{marginBottom: 8}}>
-                    文件夹
-                </Typography.Title>
-                <Typography.Text style={{marginBottom: 24, color: '#666'}}>
-                    文件夹，暂不展示
-                </Typography.Text>
-                <Button
-                    type="primary"
-                    icon={<FolderOpenOutlined/>}
-                    onClick={() => window.electronAPI.openFile(filePath)}
-                >
-                    在本地打开
-                </Button>
-            </div>
-        );
+        return <FolderViewer folderPath={filePath} />;
     }
 
     // 对于不知道该如何打开的文件，提示
