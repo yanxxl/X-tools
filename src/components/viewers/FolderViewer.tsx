@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Space, Switch, Table, Typography, Empty, Spin, Statistic, Row, Col, type TableColumnType } from 'antd';
+import { Card, Space, Switch, Table, Typography, Empty, Spin, Statistic, Row, Col } from 'antd';
 import { FileOutlined, FolderOutlined } from '@ant-design/icons';
 import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
@@ -33,6 +33,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     const [stats, setStats] = useState<FolderStats | null>(null);
     const [fileListPageSize, setFileListPageSize] = useState(10);
     const [extensionPageSize, setExtensionPageSize] = useState(10);
+    const [selectedExtension, setSelectedExtension] = useState<string | null>(null);
 
     const formatSize = (bytes: number): string => {
         if (bytes === 0) return '0 B';
@@ -40,6 +41,19 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
         const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return `${(bytes / Math.pow(k, i)).toFixed(2)} ${sizes[i]}`;
+    };
+
+    const getFilteredFileList = (): FileNode[] => {
+        if (!stats) return [];
+        
+        if (selectedExtension) {
+            return stats.fileList.filter(file => {
+                const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || '(no extension)' : '(no extension)';
+                return ext === selectedExtension;
+            });
+        }
+        
+        return stats.fileList;
     };
 
     const isHiddenFile = (fileName: string): boolean => {
@@ -112,6 +126,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
 
     useEffect(() => {
         loadFolderStats();
+        setSelectedExtension(null);
     }, [targetFolder, showHiddenFiles, includeSubfolders]);
 
     const columns = [
@@ -122,10 +137,25 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             render: (ext: string) => (
                 <Space>
                     <FileIcon fileName={`test.${ext}`} isDirectory={false} />
-                    <span>{ext}</span>
+                    <span style={{ 
+                        cursor: 'pointer', 
+                        color: selectedExtension === ext ? '#1890ff' : 'inherit',
+                        fontWeight: selectedExtension === ext ? 'bold' : 'normal'
+                    }}>
+                        {ext}
+                    </span>
                 </Space>
             ),
-            sorter: (a: FileStats, b: FileStats) => a.ext.localeCompare(b.ext)
+            sorter: (a: FileStats, b: FileStats) => a.ext.localeCompare(b.ext),
+            onCell: (record: FileStats) => ({
+                onClick: () => {
+                    if (selectedExtension === record.ext) {
+                        setSelectedExtension(null);
+                    } else {
+                        setSelectedExtension(record.ext);
+                    }
+                }
+            })
         },
         {
             title: '文件数量',
@@ -260,10 +290,26 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                         }}
                     />
 
-                    <Typography.Title level={5} style={{ marginTop: '32px' }}>文件列表</Typography.Title>
+                    <Typography.Title level={5} style={{ marginTop: '32px' }}>
+                        {selectedExtension ? `文件列表 - ${selectedExtension} 类型` : '文件列表'}
+                        {selectedExtension && (
+                            <span 
+                                style={{ 
+                                    marginLeft: '8px', 
+                                    fontSize: '14px', 
+                                    color: '#1890ff', 
+                                    cursor: 'pointer',
+                                    fontWeight: 'normal'
+                                }}
+                                onClick={() => setSelectedExtension(null)}
+                            >
+                                (清除筛选)
+                            </span>
+                        )}
+                    </Typography.Title>
                     <Table
                         columns={fileColumns}
-                        dataSource={stats.fileList}
+                        dataSource={getFilteredFileList()}
                         rowKey="path"
                         size="small"
                         locale={{
