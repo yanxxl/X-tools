@@ -51,16 +51,10 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
     // ============================== Keyboard Event Handlers ==============================
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            // 预览模式下按 'i' 键进入编辑模式
-            if (viewMode === 'rendered' && event.key === 'i') {
+            // Ctrl+E 或 Cmd+E 切换预览/编辑模式
+            if (event.key === 'e' && (event.ctrlKey || event.metaKey)) {
                 event.preventDefault();
-                setViewMode('source');
-            }
-            
-            // 编辑模式下按 'Escape' 键进入预览模式
-            if (viewMode === 'source' && event.key === 'Escape') {
-                event.preventDefault();
-                setViewMode('rendered');
+                setViewMode(prev => prev === 'rendered' ? 'source' : 'rendered');
             }
         };
 
@@ -69,7 +63,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [viewMode]);
+    }, []);
 
 
 
@@ -579,6 +573,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                             icon={<EyeOutlined />}
                             onClick={() => setViewMode('rendered')}
                             size="small"
+                            title="预览模式 (Ctrl+E / Cmd+E)"
                         >
                             预览
                         </Button>
@@ -587,6 +582,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                             icon={<CodeOutlined />}
                             onClick={() => setViewMode('source')}
                             size="small"
+                            title="编辑模式 (Ctrl+E / Cmd+E)"
                         >
                             编辑
                         </Button>
