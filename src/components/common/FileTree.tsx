@@ -71,11 +71,26 @@ export const FileTree: React.FC = () => {
 
     const getContextMenuItems = (node: FileNode): MenuProps['items'] => {
         const items: MenuProps['items'] = [];
+        items.push({
+            key: 'open-inner',
+            icon: <FileOutlined />,
+            label: '打开',
+            onClick: async (e) => {
+                e.domEvent.stopPropagation();
+                setCurrentFile(node.path);
+            }
+        });
+
+        // 添加分隔线
+        items.push({
+            key: 'divider-0',
+            type: 'divider'
+        });
 
         items.push({
             key: 'open',
             icon: <FileOutlined />,
-            label: '打开',
+            label: '打开（本机）',
             onClick: async (e) => {
                 e.domEvent.stopPropagation();
                 try {
@@ -91,7 +106,7 @@ export const FileTree: React.FC = () => {
         items.push({
             key: 'openInFolder',
             icon: <FolderOpenOutlined />,
-            label: '打开文件夹',
+            label: '打开所在文件夹（本机）',
             onClick: async (e) => {
                 e.domEvent.stopPropagation();
                 try {
@@ -106,7 +121,7 @@ export const FileTree: React.FC = () => {
 
         // 添加一个分隔线
         items.push({
-            key: 'divider',
+            key: 'divider-1',
             type: 'divider'
         });
 
@@ -144,7 +159,7 @@ export const FileTree: React.FC = () => {
 
             // 添加分隔线
             items.push({
-                key: 'divider-new',
+                key: 'divider-2',
                 type: 'divider'
             });
         }
