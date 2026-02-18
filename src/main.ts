@@ -66,10 +66,11 @@ function initializeThreadPool() {
 // 注册所有IPC处理程序
 function registerIpcHandlers() {
     // 处理文件夹选择对话框请求
-    ipcMain.handle('selectDirectory', async () => {
+    ipcMain.handle('selectDirectory', async (event, defaultPath?: string) => {
         const result = await dialog.showOpenDialog({
             properties: ['openDirectory'],
             title: '选择文件夹',
+            defaultPath: defaultPath
         });
 
         if (!result.canceled && result.filePaths.length > 0) {
@@ -366,12 +367,30 @@ function registerIpcHandlers() {
     // 移动文件
     ipcMain.handle('moveFile', async (event, fromPath: string, toPath: string) => {
         try {
+            // 检查源文件是否存在
+            if (!fs.existsSync(fromPath)) {
+                throw new Error('源文件不存在');
+            }
+            
+            // 如果目标路径是文件夹，则将文件移动到文件夹内
+            let finalToPath = toPath;
+            if (fs.existsSync(toPath) && fs.statSync(toPath).isDirectory()) {
+                const fileName = path.basename(fromPath);
+                finalToPath = path.join(toPath, fileName);
+            }
+            
+            // 检查目标文件是否已存在
+            if (fs.existsSync(finalToPath)) {
+                throw new Error('目标文件已存在');
+            }
+            
             // 确保目标目录存在
-            const toDirPath = path.dirname(toPath);
+            const toDirPath = path.dirname(finalToPath);
             if (!fs.existsSync(toDirPath)) {
                 fs.mkdirSync(toDirPath, { recursive: true });
             }
-            fs.renameSync(fromPath, toPath);
+            
+            fs.renameSync(fromPath, finalToPath);
             return true;
         } catch (error) {
             console.error('移动文件失败:', error);

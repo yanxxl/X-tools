@@ -16,7 +16,7 @@ interface ElectronAPI {
     setCurrentWindowFolder: (folderPath: string) => Promise<boolean>;
 
     // === 文件系统操作 ===
-    selectDirectory: () => Promise<string | null>;
+    selectDirectory: (defaultPath?: string) => Promise<string | null>;
     openFileDialog: (options?: any) => Promise<string[]>;
     getFileTree: (path: string, deep?: boolean, includeHidden?: boolean) => Promise<FileNode>;
     getDirectoryChildren: (dirPath: string, includeHidden?: boolean) => Promise<FileNode[]>;
@@ -77,7 +77,7 @@ const electronAPI: ElectronAPI = {
     setCurrentWindowFolder: (folderPath: string) => ipcRenderer.invoke('setCurrentWindowFolder', folderPath) as Promise<boolean>,
 
     // 文件系统操作
-    selectDirectory: () => ipcRenderer.invoke('selectDirectory') as Promise<string | null>,
+    selectDirectory: (defaultPath?: string) => ipcRenderer.invoke('selectDirectory', defaultPath) as Promise<string | null>,
     openFileDialog: (options?: any) => ipcRenderer.invoke('openFileDialog', options) as Promise<string[]>,
     getFileTree: (path: string, deep?: boolean, includeHidden?: boolean) => ipcRenderer.invoke('getFileTree', path, deep, includeHidden) as Promise<FileNode>,
     getDirectoryChildren: (dirPath: string, includeHidden?: boolean) => ipcRenderer.invoke('getDirectoryChildren', dirPath, includeHidden) as Promise<FileNode[]>,

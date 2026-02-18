@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Space, Switch, Table, Typography, Empty, Spin, Statistic, Row, Col } from 'antd';
-import { FileOutlined, FolderOutlined } from '@ant-design/icons';
+import { Card, Space, Switch, Table, Typography, Empty, Spin, Statistic, Row, Col, Button, Checkbox, message, Modal } from 'antd';
+import { FileOutlined, FolderOutlined, DeleteOutlined, FolderOpenOutlined } from '@ant-design/icons';
 import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from '../common/FileIcon';
@@ -34,6 +34,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     const [fileListPageSize, setFileListPageSize] = useState(10);
     const [extensionPageSize, setExtensionPageSize] = useState(10);
     const [selectedExtension, setSelectedExtension] = useState<string | null>(null);
+    const [selectedFileKeys, setSelectedFileKeys] = useState<React.Key[]>([]);
 
     const formatSize = (bytes: number): string => {
         if (bytes === 0) return '0 B';
@@ -45,15 +46,75 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
 
     const getFilteredFileList = (): FileNode[] => {
         if (!stats) return [];
-        
+
         if (selectedExtension) {
             return stats.fileList.filter(file => {
                 const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || '(no extension)' : '(no extension)';
                 return ext === selectedExtension;
             });
         }
-        
+
         return stats.fileList;
+    };
+
+    const handleDeleteFiles = async () => {
+        if (selectedFileKeys.length === 0) {
+            message.warning('请先选择要删除的文件');
+            return;
+        }
+
+        // 显示删除确认对话框
+        Modal.confirm({
+            title: '确认删除',
+            content: (
+                <div>
+                    <p>确定要删除选中的 {selectedFileKeys.length} 个文件吗？</p>
+                    <p style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
+                        此操作会将文件移动到回收站。
+                    </p>
+                </div>
+            ),
+            okText: '确认删除',
+            okType: 'danger',
+            cancelText: '取消',
+            onOk: async () => {
+                try {
+                    await Promise.all(selectedFileKeys.map(path => window.electronAPI.removeFile(path as string)));
+                    message.success(`成功删除 ${selectedFileKeys.length} 个文件`);
+                    setSelectedFileKeys([]);
+                    loadFolderStats();
+                } catch (error) {
+                    console.error('删除文件失败:', error);
+                    message.error(`删除文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
+                }
+            }
+        });
+    };
+
+    const handleMoveFiles = async () => {
+        if (selectedFileKeys.length === 0) {
+            message.warning('请先选择要移动的文件');
+            return;
+        }
+
+        try {
+            const selectedFolder = await window.electronAPI.selectDirectory(currentFolder);
+
+            if (!selectedFolder) {
+                return;
+            }
+
+            const destination = selectedFolder;
+            await Promise.all(selectedFileKeys.map(path =>
+                window.electronAPI.moveFile(path as string, destination)
+            ));
+            message.success(`成功移动 ${selectedFileKeys.length} 个文件到 ${destination}`);
+            setSelectedFileKeys([]);
+            loadFolderStats();
+        } catch (error) {
+            console.error('移动文件失败:', error);
+            message.error(`移动文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        }
     };
 
     const isHiddenFile = (fileName: string): boolean => {
@@ -137,8 +198,8 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             render: (ext: string) => (
                 <Space>
                     <FileIcon fileName={`test.${ext}`} isDirectory={false} />
-                    <span style={{ 
-                        cursor: 'pointer', 
+                    <span style={{
+                        cursor: 'pointer',
                         color: selectedExtension === ext ? '#1890ff' : 'inherit',
                         fontWeight: selectedExtension === ext ? 'bold' : 'normal'
                     }}>
@@ -175,6 +236,23 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
 
     const fileColumns = [
         {
+            title: '选择',
+            key: 'selection',
+            width: 60,
+            render: (_, record: FileNode) => (
+                <Checkbox
+                    checked={selectedFileKeys.includes(record.path)}
+                    onChange={(e) => {
+                        if (e.target.checked) {
+                            setSelectedFileKeys([...selectedFileKeys, record.path]);
+                        } else {
+                            setSelectedFileKeys(selectedFileKeys.filter(key => key !== record.path));
+                        }
+                    }}
+                />
+            )
+        },
+        {
             title: '文件路径',
             dataIndex: 'path',
             key: 'path',
@@ -182,7 +260,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             render: (path: string) => (
                 <Space>
                     <FileIcon fileName={path} isDirectory={false} />
-                    <span>{path}</span>
+                    <span title={path}>{path}</span>
                 </Space>
             ),
             sorter: (a: FileNode, b: FileNode) => a.path.localeCompare(b.path)
@@ -290,23 +368,69 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                         }}
                     />
 
-                    <Typography.Title level={5} style={{ marginTop: '32px' }}>
-                        {selectedExtension ? `文件列表 - ${selectedExtension} 类型` : '文件列表'}
-                        {selectedExtension && (
-                            <span 
-                                style={{ 
-                                    marginLeft: '8px', 
-                                    fontSize: '14px', 
-                                    color: '#1890ff', 
-                                    cursor: 'pointer',
-                                    fontWeight: 'normal'
-                                }}
-                                onClick={() => setSelectedExtension(null)}
-                            >
-                                (清除筛选)
+                    <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <Typography.Title level={5} style={{ margin: 0 }}>
+                            {selectedExtension ? `文件列表 - ${selectedExtension} 类型` : '文件列表'}
+                            {selectedExtension ? (
+                                <span
+                                    style={{
+                                        marginLeft: '8px',
+                                        fontSize: '14px',
+                                        color: '#1890ff',
+                                        cursor: 'pointer',
+                                        fontWeight: 'normal'
+                                    }}
+                                    onClick={() => setSelectedExtension(null)}
+                                >
+                                    (清除筛选)
+                                </span>
+                            ) : (
+                                <span
+                                    style={{
+                                        marginLeft: '8px',
+                                        fontSize: '12px',
+                                        color: '#999',
+                                        fontWeight: 'normal'
+                                    }}
+                                >
+                                    可选择上面的类型过滤文件
+                                </span>
+                            )}
+                        </Typography.Title>
+                        
+                        <Space>
+                            <span style={{ opacity: selectedFileKeys.length > 0 ? 1 : 0.3 }}>
+                                已选择 {selectedFileKeys.length} 个文件
                             </span>
-                        )}
-                    </Typography.Title>
+                            <Button
+                                type="primary"
+                                danger
+                                size="small"
+                                icon={<DeleteOutlined />}
+                                onClick={handleDeleteFiles}
+                                disabled={selectedFileKeys.length === 0}
+                            >
+                                删除
+                            </Button>
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<FolderOpenOutlined />}
+                                onClick={handleMoveFiles}
+                                disabled={selectedFileKeys.length === 0}
+                            >
+                                移动到
+                            </Button>
+                            <Button
+                                size="small"
+                                onClick={() => setSelectedFileKeys([])}
+                                disabled={selectedFileKeys.length === 0}
+                            >
+                                取消选择
+                            </Button>
+                        </Space>
+                    </div>
+
                     <Table
                         columns={fileColumns}
                         dataSource={getFilteredFileList()}
