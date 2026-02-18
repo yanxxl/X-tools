@@ -31,7 +31,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     const [showHiddenFiles, setShowHiddenFiles] = useState(false);
     const [includeSubfolders, setIncludeSubfolders] = useState(false);
     const [stats, setStats] = useState<FolderStats | null>(null);
-    const [fileListPageSize, setFileListPageSize] = useState(20);
+    const [fileListPageSize, setFileListPageSize] = useState(10);
     const [extensionPageSize, setExtensionPageSize] = useState(10);
 
     const formatSize = (bytes: number): string => {
@@ -177,99 +177,112 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     }
 
     return (
-        <div style={{ padding: '16px', height: '100%', overflow: 'auto' }}>
-            <Card
-                title={
-                    <Space>
-                        <FolderOutlined />
-                        <span>{basename(targetFolder || '')} - 文件夹统计</span>
-                    </Space>
-                }
-                extra={
-                    <Space>
-                        <Space size="small">
-                            <Typography.Text style={{ fontSize: '12px' }}>包含隐藏文件</Typography.Text>
-                            <Switch
-                                size="small"
-                                checked={showHiddenFiles}
-                                onChange={setShowHiddenFiles}
-                            />
-                        </Space>
-                        <Space size="small">
-                            <Typography.Text style={{ fontSize: '12px' }}>包含子文件夹</Typography.Text>
-                            <Switch
-                                size="small"
-                                checked={includeSubfolders}
-                                onChange={setIncludeSubfolders}
-                            />
-                        </Space>
-                    </Space>
-                }
-            >
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: '48px' }}>
-                        <Spin size="large" />
-                    </div>
-                ) : stats ? (
-                    <div>
-                        <Row gutter={16} style={{ marginBottom: '24px' }}>
-                            <Col span={8}>
-                                <Statistic
-                                    title="文件夹数"
-                                    value={stats.totalFolders}
-                                    prefix={<FolderOutlined />}
-                                />
-                            </Col>
-                            <Col span={8}>
-                                <Statistic
-                                    title="文件数"
-                                    value={stats.totalFiles}
-                                    prefix={<FileOutlined />}
-                                />
-                            </Col>
-                            <Col span={8}>
-                                <Statistic
-                                    title="占用空间"
-                                    value={formatSize(stats.totalSize)}
-                                    valueStyle={{ fontSize: '20px' }}
-                                />
-                            </Col>
-                        </Row>
-
-                        <Typography.Title level={5}>按文件类型统计</Typography.Title>
-                        <Table
-                            columns={columns}
-                            dataSource={stats.byExtension}
-                            rowKey="ext"
+        <Card
+            title={
+                <Space>
+                    <FolderOutlined />
+                    <span>{basename(targetFolder || '')}</span>
+                </Space>
+            }
+            extra={
+                <Space>
+                    <Space size="small">
+                        <Typography.Text style={{ fontSize: '12px' }}>包含隐藏文件</Typography.Text>
+                        <Switch
                             size="small"
-                            pagination={{
-                                pageSize: extensionPageSize,
-                                pageSizeOptions: [10, 20, 50, 100],
-                                showSizeChanger: true,
-                                showTotal: (total) => `共 ${total} 种文件类型`,
-                                onShowSizeChange: (current, size) => setExtensionPageSize(size)
-                            }}
+                            checked={showHiddenFiles}
+                            onChange={setShowHiddenFiles}
                         />
-
-                        <Typography.Title level={5} style={{ marginTop: '32px' }}>文件列表</Typography.Title>
-                        <Table
-                            columns={fileColumns}
-                            dataSource={stats.fileList}
-                            rowKey="path"
+                    </Space>
+                    <Space size="small">
+                        <Typography.Text style={{ fontSize: '12px' }}>包含子文件夹</Typography.Text>
+                        <Switch
                             size="small"
-                            pagination={{
-                                pageSize: fileListPageSize,
-                                pageSizeOptions: [10, 20, 50, 100],
-                                showSizeChanger: true,
-                                showTotal: (total) => `共 ${total} 个文件`,
-                                onShowSizeChange: (current, size) => setFileListPageSize(size)
-                            }}
+                            checked={includeSubfolders}
+                            onChange={setIncludeSubfolders}
                         />
-                    </div>
-                ) : (
-                    <Empty description="暂无数据" />
-                )}
-            </Card>
-        </div>
+                    </Space>
+                </Space>
+            }
+            styles={{
+                root: { margin: 0, overflow: 'hidden', borderRadius: 0, height: '100%', display: 'flex', flexDirection: 'column' },
+                header: { minHeight: 48 },
+                body: { flex: 1, overflow: 'auto' }
+            }}
+        >
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '48px' }}>
+                    <Spin size="large" />
+                </div>
+            ) : stats ? (
+                <div>
+                    <Row gutter={16} style={{ marginBottom: '24px' }}>
+                        <Col span={8}>
+                            <Statistic
+                                title="文件夹数"
+                                value={stats.totalFolders}
+                                prefix={<FolderOutlined />}
+                            />
+                        </Col>
+                        <Col span={8}>
+                            <Statistic
+                                title="文件数"
+                                value={stats.totalFiles}
+                                prefix={<FileOutlined />}
+                            />
+                        </Col>
+                        <Col span={8}>
+                            <Statistic
+                                title="占用空间"
+                                value={formatSize(stats.totalSize)}
+                                valueStyle={{ fontSize: '20px' }}
+                            />
+                        </Col>
+                    </Row>
+
+                    <Typography.Title level={5}>类型统计</Typography.Title>
+                    <Table
+                        columns={columns}
+                        dataSource={stats.byExtension}
+                        rowKey="ext"
+                        size="small"
+                        locale={{
+                            triggerDesc: '点击降序',
+                            triggerAsc: '点击升序',
+                            cancelSort: '取消排序'
+                        }}
+                        pagination={{
+                            pageSize: extensionPageSize,
+                            pageSizeOptions: [10, 20, 50, 100],
+                            showSizeChanger: true,
+                            showTotal: (total) => `共 ${total} 种文件类型`,
+                            onShowSizeChange: (current, size) => setExtensionPageSize(size)
+                        }}
+                    />
+
+                    <Typography.Title level={5} style={{ marginTop: '32px' }}>文件列表</Typography.Title>
+                    <Table
+                        columns={fileColumns}
+                        dataSource={stats.fileList}
+                        rowKey="path"
+                        size="small"
+                        locale={{
+                            triggerDesc: '点击降序',
+                            triggerAsc: '点击升序',
+                            cancelSort: '取消排序'
+                        }}
+                        pagination={{
+                            pageSize: fileListPageSize,
+                            pageSizeOptions: [10, 20, 50, 100],
+                            showSizeChanger: true,
+                            showTotal: (total) => `共 ${total} 个文件`,
+                            onShowSizeChange: (current, size) => setFileListPageSize(size)
+                        }}
+                    />
+                </div>
+            ) : (
+                <Empty description="暂无数据" />
+            )}
+        </Card>
     );
 };
