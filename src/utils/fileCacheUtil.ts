@@ -55,10 +55,21 @@ export async function readFileLines(filePath: string): Promise<string[]> {
             lines = textContent.split('\n');
         } else if (isDocFile(filePath)) {
             // 如果是 doc 文件，使用 WordExtractor 获取正文内容
-            const extractor = new WordExtractor();
-            const extracted = await extractor.extract(filePath);
-            const bodyContent = extracted.getBody();
-            lines = bodyContent.split('\n');
+            try {
+                const extractor = new WordExtractor();
+                const extracted = await extractor.extract(filePath);
+                const bodyContent = extracted.getBody();
+                lines = bodyContent.split('\n');
+            } catch (error) {
+                console.warn('WordExtractor 提取失败，回退到文本读取:', error);
+                // 如果 WordExtractor 失败，回退到文本读取
+                const { readFileText } = await import('./fileLocalUtil');
+                const content = await readFileText(filePath);
+                if (content === null) {
+                    throw new Error(`无法读取文件: ${filePath}`);
+                }
+                lines = content.split('\n');
+            }
         } else {
             const { readFileText } = await import('./fileLocalUtil');
             const content = await readFileText(filePath);
