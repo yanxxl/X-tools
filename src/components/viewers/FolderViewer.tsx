@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Space, Switch, Table, Typography, Empty, Spin, Statistic, Row, Col, Button, Checkbox, message, Modal } from 'antd';
-import { FileOutlined, FolderOutlined, DeleteOutlined, FolderOpenOutlined } from '@ant-design/icons';
+import { FileOutlined, FolderOutlined, DeleteOutlined, FolderOpenOutlined, FileTextOutlined } from '@ant-design/icons';
 import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from '../common/FileIcon';
@@ -114,6 +114,22 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
         } catch (error) {
             console.error('移动文件失败:', error);
             message.error(`移动文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
+        }
+    };
+
+    const handleOpenFile = async () => {
+        if (selectedFileKeys.length !== 1) {
+            message.warning('请选择一条文件进行打开');
+            return;
+        }
+
+        try {
+            const filePath = selectedFileKeys[0] as string;
+            await window.electronAPI.openFile(filePath);
+            message.success('文件已打开');
+        } catch (error) {
+            console.error('打开文件失败:', error);
+            message.error(`打开文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
         }
     };
 
@@ -411,6 +427,15 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                                 disabled={selectedFileKeys.length === 0}
                             >
                                 删除
+                            </Button>
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<FileTextOutlined />}
+                                onClick={handleOpenFile}
+                                disabled={selectedFileKeys.length !== 1}
+                            >
+                                打开
                             </Button>
                             <Button
                                 type="primary"
