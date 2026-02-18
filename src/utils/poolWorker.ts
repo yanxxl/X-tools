@@ -1,6 +1,6 @@
 // myWorker.ts - 线程池工作器脚本
 import workerpool from 'workerpool';
-import { isOfficeParserSupported, isTextFile } from './fileCommonUtil';
+import { isDocFile, isOfficeParserSupported, isTextFile } from './fileCommonUtil';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { clearCache, getCacheStats, readFileLines } from './fileCacheUtil';
@@ -13,7 +13,7 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
   const startTime = performance.now();
   try {
     // 检查是否为可搜索文件（文本文件或officeparser支持的文件）
-    if (!isTextFile(filePath) && !isOfficeParserSupported(filePath) && !isTextFileByContent(filePath)) {
+    if (!isTextFile(filePath) && !isOfficeParserSupported(filePath) && !isTextFileByContent(filePath) && !isDocFile(filePath)) {
       return null;
     }
 

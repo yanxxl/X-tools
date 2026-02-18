@@ -38,6 +38,8 @@ export const FileIcon: React.FC<FileIconProps> = ({
             return <FilePdfOutlined className={className} style={defaultStyle} />;
         case 'docx':
             return <FileWordOutlined className={className} style={defaultStyle} />;
+        case 'doc':
+            return <FileWordOutlined className={className} style={defaultStyle} />;
         case 'pptx':
             return <FilePptOutlined className={className} style={defaultStyle} />;
         case 'xlsx':

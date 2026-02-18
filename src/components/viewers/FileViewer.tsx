@@ -102,6 +102,10 @@ export const FileViewer: React.FC<FilePreviewProps> = ({filePath, fileName, init
         return <div style={{height: '100%'}}><DocxViewer path={filePath}/></div>;
     }
 
+    if (type === 'doc') {
+        return <TextViewer filePath={filePath} fileName={fileName}/>;
+    }
+
     if (type === 'pptx') {
         return <div style={{height: '100%'}}><PptxViewer path={filePath}/></div>;
     }

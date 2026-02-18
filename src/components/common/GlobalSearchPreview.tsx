@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button, Empty, Skeleton, Select, Space } from 'antd';
 import { Center } from './Center';
 import { FileIcon } from './FileIcon';
-import { isTextFile, isOfficeParserSupported } from '../../utils/fileCommonUtil';
+import { isTextFile, isOfficeParserSupported, isDocFile } from '../../utils/fileCommonUtil';
 import { isSubtitleFile, findVideoFiles, timeToSeconds, isSubtitleTimeLine, extractTimeRange } from '../../utils/subtitleUtil';
 import { MediaPlayer } from '../viewers/MediaPlayer';
 import { useAppContext } from '../../contexts/AppContext';
@@ -153,7 +153,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             setPreviewLoading(true);
             setPreviewError(null);
 
-            if (!isTextFile(path) && !isOfficeParserSupported(path)) {
+            if (!isTextFile(path) && !isOfficeParserSupported(path) && !isDocFile(path)) {
                 // 获取文件信息，判断是否是文本
                 const fileInfo = await window.electronAPI.getFileInfo(path);
                 if (!fileInfo.isText) {

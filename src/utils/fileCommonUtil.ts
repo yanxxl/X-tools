@@ -1,7 +1,7 @@
 // =======================================
 // 类型定义
 // =======================================
-export type DetectedFileType = 'text' | 'image' | 'video' | 'audio' | 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'other';
+export type DetectedFileType = 'text' | 'image' | 'video' | 'audio' | 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'doc' | 'other';
 
 // =======================================
 // 常量定义
@@ -24,6 +24,9 @@ const FILE_EXTENSIONS = {
   
   // DOCX文件扩展名
   DOCX: new Set(['docx']),
+  
+  // DOC文件扩展名
+  DOC: new Set(['doc']),
   
   // PPTX文件扩展名
   PPTX: new Set(['pptx']),
@@ -75,6 +78,7 @@ const FILE_TYPE_DISPLAY_NAMES: Record<DetectedFileType, string> = {
   docx: 'DOCX文件',
   pptx: 'PPTX文件',
   xlsx: 'XLSX文件',
+  doc: 'DOC文件',
   other: '其他文件'
 };
 
@@ -120,6 +124,7 @@ export function detectFileType(name: string): DetectedFileType {
   if (FILE_EXTENSIONS.VIDEO.has(ext)) return 'video';
   if (FILE_EXTENSIONS.PDF.has(ext)) return 'pdf';
   if (FILE_EXTENSIONS.DOCX.has(ext)) return 'docx';
+  if (FILE_EXTENSIONS.DOC.has(ext)) return 'doc';
   if (FILE_EXTENSIONS.PPTX.has(ext)) return 'pptx';
   if (FILE_EXTENSIONS.XLSX.has(ext)) return 'xlsx';
   if (FILE_EXTENSIONS.TEXT.has(ext)) return 'text';
@@ -181,6 +186,14 @@ export function isPptxFile(name: string): boolean {
  */
 export function isXlsxFile(name: string): boolean {
   return detectFileType(name) === 'xlsx';
+}
+
+/**
+ * 判断是否为DOC文件
+ * @param name 文件名或路径
+ */
+export function isDocFile(name: string): boolean {
+  return detectFileType(name) === 'doc';
 }
 
 /**

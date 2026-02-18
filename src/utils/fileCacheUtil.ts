@@ -1,8 +1,9 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { isOfficeParserSupported } from './fileCommonUtil';
+import { isOfficeParserSupported, isDocFile } from './fileCommonUtil';
 import { parseOfficeDocument, astToText } from './office';
+import WordExtractor from 'word-extractor';
 
 // 缓存目录路径 - 直接使用用户主目录下的 .x-tools/search-cache
 const CACHE_DIR = path.join(process.env.HOME || '', '.x-tools', 'search-cache');
@@ -52,6 +53,12 @@ export async function readFileLines(filePath: string): Promise<string[]> {
             const ast = await parseOfficeDocument(filePath, {extractAttachments: false, includeRawContent: true});
             const textContent = astToText(ast);
             lines = textContent.split('\n');
+        } else if (isDocFile(filePath)) {
+            // 如果是 doc 文件，使用 WordExtractor 获取正文内容
+            const extractor = new WordExtractor();
+            const extracted = await extractor.extract(filePath);
+            const bodyContent = extracted.getBody();
+            lines = bodyContent.split('\n');
         } else {
             const { readFileText } = await import('./fileLocalUtil');
             const content = await readFileText(filePath);
