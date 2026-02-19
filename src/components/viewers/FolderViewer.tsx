@@ -34,10 +34,14 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     const [includeSubfolders, setIncludeSubfolders] = useState(false);
     const [stats, setStats] = useState<FolderStats | null>(null);
     const [fileListPageSize, setFileListPageSize] = useState(10);
-    const [extensionPageSize, setExtensionPageSize] = useState(10);
+    const [extensionPageSize, setExtensionPageSize] = useState(5);
     const [selectedExtension, setSelectedExtension] = useState<string | null>(null);
     const [selectedFileKeys, setSelectedFileKeys] = useState<React.Key[]>([]);
     const [includeTextSize, setIncludeTextSize] = useState(false);
+
+    useEffect(() => {
+        setSelectedFileKeys([]);
+    }, [folderPath, selectedExtension]);
 
     const formatSize = (bytes: number): string => {
         if (bytes === 0) return '0 B';
@@ -121,15 +125,14 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     };
 
     const handleOpenFile = async () => {
-        if (selectedFileKeys.length !== 1) {
-            message.warning('请选择一条文件进行打开');
+        if (selectedFileKeys.length === 0) {
+            message.warning('请选择要打开的文件');
             return;
         }
 
         try {
-            const filePath = selectedFileKeys[0] as string;
-            await window.electronAPI.openFile(filePath);
-            message.success('文件已打开');
+            await Promise.all(selectedFileKeys.map(path => window.electronAPI.openFile(path as string)));
+            message.success(`成功打开 ${selectedFileKeys.length} 个文件`);
         } catch (error) {
             console.error('打开文件失败:', error);
             message.error(`打开文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
@@ -241,7 +244,6 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                 <Space>
                     <FileIcon fileName={`test.${ext}`} isDirectory={false} />
                     <span style={{
-                        cursor: 'pointer',
                         color: selectedExtension === ext ? '#1890ff' : 'inherit',
                         fontWeight: selectedExtension === ext ? 'bold' : 'normal'
                     }}>
@@ -249,16 +251,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                     </span>
                 </Space>
             ),
-            sorter: (a: FileStats, b: FileStats) => a.ext.localeCompare(b.ext),
-            onCell: (record: FileStats) => ({
-                onClick: () => {
-                    if (selectedExtension === record.ext) {
-                        setSelectedExtension(null);
-                    } else {
-                        setSelectedExtension(record.ext);
-                    }
-                }
-            })
+            sorter: (a: FileStats, b: FileStats) => a.ext.localeCompare(b.ext)
         },
         {
             title: '文件数量',
@@ -271,7 +264,12 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             dataIndex: 'totalTextSize',
             key: 'totalTextSize',
             align: 'right' as const,
-            render: (textSize: number) => textSize.toLocaleString(),
+            render: (textSize: number) => {
+                if (textSize === undefined || textSize === null || textSize === 0) {
+                    return '-'
+                }
+                return textSize.toLocaleString();
+            },
             sorter: (a: FileStats, b: FileStats) => a.totalTextSize - b.totalTextSize
         },
         {
@@ -308,10 +306,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             key: 'path',
             ellipsis: true,
             render: (path: string) => (
-                <Space>
-                    <FileIcon fileName={path} isDirectory={false} />
-                    <span title={path}>{path}</span>
-                </Space>
+                 <span title={path}>{path.replace(currentFolder, '').replace(/^[\\/]/, '')}</span>
             ),
             sorter: (a: FileNode, b: FileNode) => a.path.localeCompare(b.path)
         },
@@ -322,7 +317,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             width: 120,
             align: 'right' as const,
             render: (textSize: number | undefined) => {
-                if (textSize === undefined || textSize === null) {
+                if (textSize === undefined || textSize === null || textSize === 0) {
                     return '-'
                 }
                 return textSize.toLocaleString();
@@ -396,34 +391,42 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                 </div>
             ) : stats ? (
                 <div>
-                    <Row gutter={16} style={{ marginBottom: '24px' }}>
+                    <Row gutter={16} style={{ marginBottom: '24px', justifyContent: 'center' }}>
                         <Col span={6}>
-                            <Statistic
-                                title="文件夹数"
-                                value={stats.totalFolders}
-                                prefix={<FolderOutlined />}
-                            />
+                            <div style={{ textAlign: 'center' }}>
+                                <Statistic
+                                    title="文件夹数"
+                                    value={stats.totalFolders}
+                                    prefix={<FolderOutlined />}
+                                />
+                            </div>
                         </Col>
                         <Col span={6}>
-                            <Statistic
-                                title="文件数"
-                                value={stats.totalFiles}
-                                prefix={<FileOutlined />}
-                            />
+                            <div style={{ textAlign: 'center' }}>
+                                <Statistic
+                                    title="文件数"
+                                    value={stats.totalFiles}
+                                    prefix={<FileOutlined />}
+                                />
+                            </div>
                         </Col>
                         <Col span={6}>
-                            <Statistic
-                                title="占用空间"
-                                value={formatSize(stats.totalSize)}
-                                valueStyle={{ fontSize: '20px' }}
-                            />
+                            <div style={{ textAlign: 'center' }}>
+                                <Statistic
+                                    title="总字数"
+                                    value={stats.totalTextSize.toLocaleString()}
+                                    valueStyle={{ fontSize: '20px' }}
+                                />
+                            </div>
                         </Col>
                         <Col span={6}>
-                            <Statistic
-                                title="总字数"
-                                value={stats.totalTextSize.toLocaleString()}
-                                valueStyle={{ fontSize: '20px' }}
-                            />
+                            <div style={{ textAlign: 'center' }}>
+                                <Statistic
+                                    title="占用空间"
+                                    value={formatSize(stats.totalSize)}
+                                    valueStyle={{ fontSize: '20px' }}
+                                />
+                            </div>
                         </Col>
                     </Row>
 
@@ -440,11 +443,21 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                         }}
                         pagination={{
                             pageSize: extensionPageSize,
-                            pageSizeOptions: [10, 20, 50, 100],
+                            pageSizeOptions: [5, 10, 20, 50, 100],
                             showSizeChanger: true,
                             showTotal: (total) => `共 ${total} 种文件类型`,
                             onShowSizeChange: (current, size) => setExtensionPageSize(size)
                         }}
+                        onRow={(record: FileStats) => ({
+                            style: { cursor: 'pointer' },
+                            onClick: () => {
+                                if (selectedExtension === record.ext) {
+                                    setSelectedExtension(null);
+                                } else {
+                                    setSelectedExtension(record.ext);
+                                }
+                            }
+                        })}
                     />
 
                     <div style={{ marginTop: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -496,7 +509,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                                 size="small"
                                 icon={<FileTextOutlined />}
                                 onClick={handleOpenFile}
-                                disabled={selectedFileKeys.length !== 1}
+                                disabled={selectedFileKeys.length === 0}
                             >
                                 打开
                             </Button>

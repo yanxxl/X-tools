@@ -30,12 +30,6 @@ async function ensureCacheDir(): Promise<void> {
  */
 export async function readFileLines(filePath: string): Promise<string[]> {
     try {
-        // 确保是可搜索的文本文件
-        if (!isTextableFile(filePath)) {
-            console.log(`文件 ${filePath} 不是可搜索的文本文件`);
-            return [];
-        }
-
         // 获取文件信息
         const stats = await fs.stat(filePath);
         const fileSize = stats.size;
@@ -52,6 +46,12 @@ export async function readFileLines(filePath: string): Promise<string[]> {
             return JSON.parse(cacheContent);
         } catch {
             // 缓存不存在，继续读取文件
+        }
+
+        // 确保是可搜索的文本文件
+        if (!isTextableFile(filePath)) {
+            console.log(`文件 ${filePath} 不是可搜索的文本文件`);
+            return [];
         }
         
         // 读取文件内容

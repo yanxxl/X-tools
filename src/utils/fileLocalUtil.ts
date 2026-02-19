@@ -156,24 +156,16 @@ export async function getDirectoryChildren(dirPath: string, includeHidden = fals
  * @returns 文本长度（字符数），如果无法读取则返回0
  */
 export async function calculateTextSize(filePath: string): Promise<number> {
+  const startTime = Date.now();
   try {
-    // 如果是Office文档或PDF，使用Office解析器获取文本内容
-    if (isOfficeParserSupported(filePath)) {
-      try {
-        const ast = await parseOfficeDocument(filePath);
-        const textContent = astToText(ast);
-        return textContent.length;
-      } catch (officeError) {
-        console.warn(`Office文档解析失败，使用纯文本方式: ${filePath}`, officeError);
-        // 如果Office解析失败，回退到纯文本方式
-      }
-    }
-
-    // 对于普通文本文件，使用原有的方式
     const lines = await readFileLines(filePath);
-    return lines.reduce((total, line) => total + line.length, 0);
+    const textSize = lines.reduce((total, line) => total + line.length, 0);
+    const endTime = Date.now();
+    console.log(`计算文本长度耗时: ${endTime - startTime}ms, 文件: ${filePath}, 字符数: ${textSize}`);
+    return textSize;
   } catch (error) {
-    console.error('计算文本长度失败:', error);
+    const endTime = Date.now();
+    console.error(`计算文本长度失败，耗时: ${endTime - startTime}ms, 文件: ${filePath}, 错误:`, error);
     return 0;
   }
 }
@@ -378,5 +370,10 @@ export function isTextFileByContent(filePath: string): boolean {
  * @param name 文件名或路径
  */
 export function isTextableFile(name: string): boolean {
-  return isSearchableFile(name) || isTextFileByContent(name);
+  // 先通过扩展名判断
+  if (getExtension(name)) {
+    return isSearchableFile(name);
+  } else {
+    return isTextFileByContent(name);
+  }
 }
