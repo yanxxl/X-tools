@@ -284,23 +284,6 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
 
     const fileColumns = [
         {
-            title: '选择',
-            key: 'selection',
-            width: 60,
-            render: (_, record: FileNode) => (
-                <Checkbox
-                    checked={selectedFileKeys.includes(record.path)}
-                    onChange={(e) => {
-                        if (e.target.checked) {
-                            setSelectedFileKeys([...selectedFileKeys, record.path]);
-                        } else {
-                            setSelectedFileKeys(selectedFileKeys.filter(key => key !== record.path));
-                        }
-                    }}
-                />
-            )
-        },
-        {
             title: '文件路径',
             dataIndex: 'path',
             key: 'path',
@@ -546,10 +529,16 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                         dataSource={getFilteredFileList()}
                         rowKey="path"
                         size="small"
-                        locale={{
-                            triggerDesc: '点击降序',
-                            triggerAsc: '点击升序',
-                            cancelSort: '取消排序'
+                        rowSelection={{
+                            selectedRowKeys: selectedFileKeys,
+                            onChange: (selectedRowKeys: React.Key[]) => {
+                                setSelectedFileKeys(selectedRowKeys);
+                            },
+                            selections: [
+                                Table.SELECTION_ALL,
+                                Table.SELECTION_INVERT,
+                                Table.SELECTION_NONE,
+                            ]
                         }}
                         pagination={{
                             pageSize: fileListPageSize,

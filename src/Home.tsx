@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 // 第三方库
 import { App, ConfigProvider, Drawer, Splitter } from "antd";
+import zhCN from 'antd/locale/zh_CN';
 
 // 上下文
 import { AppProvider, useAppContext } from './contexts/AppContext';
@@ -231,6 +232,7 @@ const AppContent: React.FC = () => {
 export const Home: React.FC = () => {
     return (
         <ConfigProvider
+            locale={zhCN}
             theme={{
                 token: {
                     // Seed Token，影响范围大
