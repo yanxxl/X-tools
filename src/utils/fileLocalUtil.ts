@@ -3,7 +3,9 @@ import path from 'node:path';
 import chardet from 'chardet';
 import iconv from 'iconv-lite';
 import { FileNode, FileInfo } from '../types';
-import { getExtension, isTextFile } from './fileCommonUtil';
+import { getExtension, isTextFile, isOfficeParserSupported, isSearchableFile } from './fileCommonUtil';
+import { readFileLines } from './fileCacheUtil';
+import { parseOfficeDocument, astToText } from './office';
 
 // =======================================
 // 文件树相关功能
@@ -14,9 +16,10 @@ import { getExtension, isTextFile } from './fileCommonUtil';
  * @param dirPath 目录路径
  * @param deep 是否深度递归加载（默认false，只加载第一层）
  * @param includeHidden 是否包含隐藏文件（默认false，不包含以.开头的文件）
+ * @param includeTextSize 是否包含文本长度统计（默认false）
  * @returns 文件树节点
  */
-export function getFileTree(dirPath: string, deep = false, includeHidden = false): FileNode {
+export async function getFileTree(dirPath: string, deep = false, includeHidden = false, includeTextSize = false): Promise<FileNode> {
   const stats = fs.statSync(dirPath);
   const name = path.basename(dirPath);
   const node: FileNode = {
@@ -31,67 +34,13 @@ export function getFileTree(dirPath: string, deep = false, includeHidden = false
   if (stats.isDirectory()) {
     try {
       const files = fs.readdirSync(dirPath);
-      node.children = files
-        .filter(file => includeHidden || !file.startsWith('.')) // 根据参数决定是否过滤隐藏文件
-        .map(file => {
-          const filePath = path.join(dirPath, file);
-          try {
-            const fileStats = fs.statSync(filePath);
-            const fileNode: FileNode = {
-              id: filePath,
-              name: file,
-              path: filePath,
-              isDirectory: fileStats.isDirectory(),
-              mtimeMs: fileStats.mtimeMs,
-              size: fileStats.isDirectory() ? 0 : fileStats.size,
-            };
+      const children: FileNode[] = [];
 
-            // 深度模式下递归加载
-            if (fileStats.isDirectory() && deep) {
-              return getFileTree(filePath, true, includeHidden);
-            }
+      for (const file of files) {
+        if (!includeHidden && file.startsWith('.')) {
+          continue;
+        }
 
-            return fileNode;
-          } catch (error) {
-            // 忽略无法访问的文件或目录
-            return null;
-          }
-        })
-        .filter((item): item is FileNode => item !== null)
-        .sort((a, b) => {
-          // 目录排在文件前面
-          if (a.isDirectory && !b.isDirectory) return -1;
-          if (!a.isDirectory && b.isDirectory) return 1;
-          // 然后按名称排序
-          return a.name.localeCompare(b.name);
-        });
-    } catch (error) {
-      // 如果无法读取目录，设置children为空数组
-      node.children = [];
-    }
-  }
-
-  return node;
-}
-
-/**
- * 懒加载指定目录的直接子节点
- * @param dirPath 目录路径
- * @param includeHidden 是否包含隐藏文件（默认false，不包含以.开头的文件）
- * @returns 直接子节点列表
- */
-export function getDirectoryChildren(dirPath: string, includeHidden = false): FileNode[] {
-  const stats = fs.statSync(dirPath);
-
-  if (!stats.isDirectory()) {
-    return [];
-  }
-
-  try {
-    const files = fs.readdirSync(dirPath);
-    return files
-      .filter(file => includeHidden || !file.startsWith('.')) // 根据参数决定是否过滤隐藏文件
-      .map(file => {
         const filePath = path.join(dirPath, file);
         try {
           const fileStats = fs.statSync(filePath);
@@ -103,23 +52,129 @@ export function getDirectoryChildren(dirPath: string, includeHidden = false): Fi
             mtimeMs: fileStats.mtimeMs,
             size: fileStats.isDirectory() ? 0 : fileStats.size,
           };
-          return fileNode;
+
+          // 如果是文件且需要计算文本长度，则计算文本长度
+          if (!fileStats.isDirectory() && includeTextSize && isTextableFile(filePath)) {
+            fileNode.textSize = await calculateTextSize(filePath);
+          }
+
+          // 深度模式下递归加载
+          if (fileStats.isDirectory() && deep) {
+            children.push(await getFileTree(filePath, true, includeHidden, includeTextSize));
+          } else {
+            children.push(fileNode);
+          }
         } catch (error) {
           // 忽略无法访问的文件或目录
-          return null;
+          console.warn(`无法访问文件: ${filePath}`, error);
         }
-      })
-      .filter((item): item is FileNode => item !== null)
-      .sort((a, b) => {
+      }
+
+      node.children = children.sort((a, b) => {
         // 目录排在文件前面
         if (a.isDirectory && !b.isDirectory) return -1;
         if (!a.isDirectory && b.isDirectory) return 1;
         // 然后按名称排序
         return a.name.localeCompare(b.name);
       });
+    } catch (error) {
+      // 如果无法读取目录，设置children为空数组
+      node.children = [];
+    }
+  }
+
+  return node;
+}
+
+/**
+ * 获取目录的直接子节点（不递归）
+ * @param dirPath 目录路径
+ * @param includeHidden 是否包含隐藏文件（默认false，不包含以.开头的文件）
+ * @param includeTextSize 是否包含文本长度统计（默认false）
+ * @returns 直接子节点列表
+ */
+export async function getDirectoryChildren(dirPath: string, includeHidden = false, includeTextSize = false): Promise<FileNode[]> {
+  const stats = fs.statSync(dirPath);
+
+  if (!stats.isDirectory()) {
+    return [];
+  }
+
+  try {
+    const files = fs.readdirSync(dirPath);
+    const fileNodes: FileNode[] = [];
+
+    for (const file of files) {
+      if (!includeHidden && file.startsWith('.')) {
+        continue;
+      }
+
+      const filePath = path.join(dirPath, file);
+      try {
+        const fileStats = fs.statSync(filePath);
+        const fileNode: FileNode = {
+          id: filePath,
+          name: file,
+          path: filePath,
+          isDirectory: fileStats.isDirectory(),
+          mtimeMs: fileStats.mtimeMs,
+          size: fileStats.isDirectory() ? 0 : fileStats.size,
+        };
+
+        // 如果是文件且需要计算文本长度，则计算文本长度
+        if (!fileStats.isDirectory() && includeTextSize && isTextableFile(filePath)) {
+          fileNode.textSize = await calculateTextSize(filePath);
+        }
+
+        fileNodes.push(fileNode);
+      } catch (error) {
+        // 忽略无法访问的文件或目录
+        console.warn(`无法访问文件: ${filePath}`, error);
+      }
+    }
+
+    return fileNodes.sort((a, b) => {
+      // 目录排在文件前面
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      // 然后按名称排序
+      return a.name.localeCompare(b.name);
+    });
   } catch (error) {
     console.error('读取目录失败:', error);
     return [];
+  }
+}
+
+// =======================================
+// 文本长度计算功能
+// =======================================
+
+/**
+ * 计算文件的文本长度（读取文件行数并计算每行长度之和）
+ * @param filePath 文件路径
+ * @returns 文本长度（字符数），如果无法读取则返回0
+ */
+export async function calculateTextSize(filePath: string): Promise<number> {
+  try {
+    // 如果是Office文档或PDF，使用Office解析器获取文本内容
+    if (isOfficeParserSupported(filePath)) {
+      try {
+        const ast = await parseOfficeDocument(filePath);
+        const textContent = astToText(ast);
+        return textContent.length;
+      } catch (officeError) {
+        console.warn(`Office文档解析失败，使用纯文本方式: ${filePath}`, officeError);
+        // 如果Office解析失败，回退到纯文本方式
+      }
+    }
+
+    // 对于普通文本文件，使用原有的方式
+    const lines = await readFileLines(filePath);
+    return lines.reduce((total, line) => total + line.length, 0);
+  } catch (error) {
+    console.error('计算文本长度失败:', error);
+    return 0;
   }
 }
 
@@ -283,18 +338,9 @@ export function isTextFileByContent(filePath: string): boolean {
 
     // 先排除目录
     if (stats.isDirectory()) {
+      console.log(`路径 ${filePath} 是目录，不是文本文件`);
       return false;
     }
-    // 排除有扩展名的文件
-    const ext = getExtension(filePath);
-    if (ext) {
-      return isTextFile(ext);
-    }
-
-    // 排除大小超过1MB的文件
-    if (stats.size > 1024 * 1024) {
-      return false;
-    }    
 
     // 读取文件的前4KB内容进行检测
     const buffer = fs.readFileSync(filePath);
@@ -308,35 +354,29 @@ export function isTextFileByContent(filePath: string): boolean {
     const textEncodings = [
       'UTF-8', 'UTF-16LE', 'UTF-16BE', 'UTF-32LE', 'UTF-32BE',
       'ASCII', 'ISO-8859-1', 'ISO-8859-2', 'ISO-8859-15',
-      'Windows-1252', 'Windows-1251', 'Windows-1250',
+      // 'Windows-1252', 'Windows-1251', 'Windows-1250', 视频文件常被检测为这几个编码，去掉，只保留常见的
       'GB2312', 'GBK', 'GB18030', 'Big5', 'Shift_JIS', 'EUC-JP', 'EUC-KR'
     ];
 
     // 如果检测到编码是文本编码，则认为是文本文件
-    if (detectedEncoding && textEncodings.includes(detectedEncoding.toUpperCase())) {
+    if (detectedEncoding && textEncodings.includes(detectedEncoding)) {
+      console.log(`路径 ${filePath} 是文本文件，编码: ${detectedEncoding}`);
       return true;
     }
 
-    // 检查文件内容是否包含大量不可打印字符
-    let nonPrintableCount = 0;
-    for (let i = 0; i < sampleBuffer.length; i++) {
-      const byte = sampleBuffer[i];
-      // 检查是否为控制字符（除了常见的空白字符如制表符、换行符等）
-      if (byte < 32 && byte !== 9 && byte !== 10 && byte !== 13) {
-        nonPrintableCount++;
-      }
-    }
-    // 如果不可打印字符超过10%，则认为是二进制文件
-    const nonPrintableRatio = nonPrintableCount / sampleBuffer.length;
-
-    if (nonPrintableRatio > 0.1) {
-      return false;
-    } else {
-      return true;
-    }
+    console.log(`路径 ${filePath} 不是文本文件，编码: ${detectedEncoding || 'unknown'}`);
+    return false;
   } catch (error) {
     // 如果无法读取文件，返回false
     console.error('检测文件类型失败:', error);
     return false;
   }
+}
+
+/**
+ * 判断文件是否可文本化（文本文件、parser支持的文件、DOC文件）
+ * @param name 文件名或路径
+ */
+export function isTextableFile(name: string): boolean {
+  return isSearchableFile(name) || isTextFileByContent(name);
 }

@@ -6,14 +6,14 @@ import * as fs from 'fs/promises';
 import { clearCache, getCacheStats, readFileLines } from './fileCacheUtil';
 import { truncateTextWithQuery } from './format';
 import { SearchResult } from '../types';
-import { isTextFileByContent } from './fileLocalUtil';
+import {isTextableFile} from './fileLocalUtil';
 
 // 搜索文件内容
 async function searchFileContent(filePath: string, query: string, searchMode: 'content' | 'filename'): Promise<SearchResult | null> {
   const startTime = performance.now();
   try {
     // 检查是否为可搜索文件（文本文件或officeparser支持的文件）
-    if (!isTextFile(filePath) && !isOfficeParserSupported(filePath) && !isTextFileByContent(filePath) && !isDocFile(filePath)) {
+    if (!isTextableFile(filePath)) {
       return null;
     }
 

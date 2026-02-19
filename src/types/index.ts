@@ -14,6 +14,7 @@ export interface FileNode {
     isDirectory: boolean;
     mtimeMs?: number;
     size?: number;
+    textSize?: number;
     children?: FileNode[];
 }
 

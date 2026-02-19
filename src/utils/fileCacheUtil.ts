@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import { isOfficeParserSupported, isDocFile } from './fileCommonUtil';
 import { parseOfficeDocument, astToText } from './office';
 import WordExtractor from 'word-extractor';
+import { isTextableFile } from './fileLocalUtil';
 
 // 缓存目录路径 - 直接使用用户主目录下的 .x-tools/search-cache
 const CACHE_DIR = path.join(process.env.HOME || '', '.x-tools', 'search-cache');
@@ -29,6 +30,12 @@ async function ensureCacheDir(): Promise<void> {
  */
 export async function readFileLines(filePath: string): Promise<string[]> {
     try {
+        // 确保是可搜索的文本文件
+        if (!isTextableFile(filePath)) {
+            console.log(`文件 ${filePath} 不是可搜索的文本文件`);
+            return [];
+        }
+
         // 获取文件信息
         const stats = await fs.stat(filePath);
         const fileSize = stats.size;

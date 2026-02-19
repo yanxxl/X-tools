@@ -204,6 +204,15 @@ export function isAudioFile(name: string): boolean {
   return detectFileType(name) === 'audio';
 }
 
+/**
+ * 判断文件是否可搜索（文本文件、parser支持的文件、DOC文件）
+ * @param name 文件名或路径
+ */
+export function isSearchableFile(name: string): boolean {
+  return isTextFile(name) || isOfficeParserSupported(name) || isDocFile(name);
+}
+
+
 // =======================================
 // 路径处理
 // =======================================

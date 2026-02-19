@@ -18,8 +18,8 @@ interface ElectronAPI {
     // === 文件系统操作 ===
     selectDirectory: (defaultPath?: string) => Promise<string | null>;
     openFileDialog: (options?: any) => Promise<string[]>;
-    getFileTree: (path: string, deep?: boolean, includeHidden?: boolean) => Promise<FileNode>;
-    getDirectoryChildren: (dirPath: string, includeHidden?: boolean) => Promise<FileNode[]>;
+    getFileTree: (path: string, deep?: boolean, includeHidden?: boolean, includeTextSize?: boolean) => Promise<FileNode>;
+    getDirectoryChildren: (dirPath: string, includeHidden?: boolean, includeTextSize?: boolean) => Promise<FileNode[]>;
     getFileInfo: (filePath: string) => Promise<any>;
     fileExists: (filePath: string) => Promise<boolean>;
 
@@ -79,8 +79,8 @@ const electronAPI: ElectronAPI = {
     // 文件系统操作
     selectDirectory: (defaultPath?: string) => ipcRenderer.invoke('selectDirectory', defaultPath) as Promise<string | null>,
     openFileDialog: (options?: any) => ipcRenderer.invoke('openFileDialog', options) as Promise<string[]>,
-    getFileTree: (path: string, deep?: boolean, includeHidden?: boolean) => ipcRenderer.invoke('getFileTree', path, deep, includeHidden) as Promise<FileNode>,
-    getDirectoryChildren: (dirPath: string, includeHidden?: boolean) => ipcRenderer.invoke('getDirectoryChildren', dirPath, includeHidden) as Promise<FileNode[]>,
+    getFileTree: (path: string, deep?: boolean, includeHidden?: boolean, includeTextSize?: boolean) => ipcRenderer.invoke('getFileTree', path, deep, includeHidden, includeTextSize) as Promise<FileNode>,
+    getDirectoryChildren: (dirPath: string, includeHidden?: boolean, includeTextSize?: boolean) => ipcRenderer.invoke('getDirectoryChildren', dirPath, includeHidden, includeTextSize) as Promise<FileNode[]>,
     getFileInfo: (filePath: string) => ipcRenderer.invoke('getFileInfo', filePath),
     fileExists: (filePath: string) => ipcRenderer.invoke('fileExists', filePath) as Promise<boolean>,
 

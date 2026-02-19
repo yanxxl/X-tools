@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Space, Switch, Table, Typography, Empty, Spin, Statistic, Row, Col, Button, Checkbox, message, Modal } from 'antd';
-import { FileOutlined, FolderOutlined, DeleteOutlined, FolderOpenOutlined, FileTextOutlined } from '@ant-design/icons';
+import { FileOutlined, FolderOutlined, DeleteOutlined, FolderOpenOutlined, FileTextOutlined, BarChartOutlined } from '@ant-design/icons';
 import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from '../common/FileIcon';
@@ -10,12 +10,14 @@ interface FileStats {
     ext: string;
     count: number;
     totalSize: number;
+    totalTextSize: number;
 }
 
 interface FolderStats {
     totalFolders: number;
     totalFiles: number;
     totalSize: number;
+    totalTextSize: number;
     byExtension: FileStats[];
     fileList: FileNode[];
 }
@@ -35,6 +37,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     const [extensionPageSize, setExtensionPageSize] = useState(10);
     const [selectedExtension, setSelectedExtension] = useState<string | null>(null);
     const [selectedFileKeys, setSelectedFileKeys] = useState<React.Key[]>([]);
+    const [includeTextSize, setIncludeTextSize] = useState(false);
 
     const formatSize = (bytes: number): string => {
         if (bytes === 0) return '0 B';
@@ -133,23 +136,43 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
         }
     };
 
+    const handleCountText = () => {
+        if (selectedFileKeys.length === 0) {
+            message.warning('请先选择要统计字数的文件');
+            return;
+        }
+
+        if (!stats) {
+            message.warning('暂无统计数据');
+            return;
+        }
+
+        const selectedFiles = stats.fileList.filter(file => 
+            selectedFileKeys.includes(file.path)
+        );
+        
+        const totalTextSize = selectedFiles.reduce((sum, file) => sum + (file.textSize || 0), 0);
+        message.success(`所选 ${selectedFileKeys.length} 个文件总字数: ${totalTextSize.toLocaleString()}`);
+    };
+
     const isHiddenFile = (fileName: string): boolean => {
         return fileName.startsWith('.');
     };
 
-    const collectFileStats = (node: FileNode, includeSub: boolean, showHidden: boolean): { files: FileNode[], folders: FileNode[], stats: Map<string, { count: number, totalSize: number }> } => {
+    const collectFileStats = (node: FileNode, includeSub: boolean, showHidden: boolean): { files: FileNode[], folders: FileNode[], stats: Map<string, { count: number, totalSize: number, totalTextSize: number }> } => {
         const files: FileNode[] = [];
         const folders: FileNode[] = [];
-        const extStats = new Map<string, { count: number, totalSize: number }>();
+        const extStats = new Map<string, { count: number, totalSize: number, totalTextSize: number }>();
 
         const traverse = (currentNode: FileNode, isRoot = false) => {
             if (!currentNode.isDirectory) {
                 if (showHidden || !isHiddenFile(currentNode.name)) {
                     files.push(currentNode);
                     const ext = currentNode.name.includes('.') ? currentNode.name.split('.').pop()?.toLowerCase() || '(no extension)' : '(no extension)';
-                    const existing = extStats.get(ext) || { count: 0, totalSize: 0 };
+                    const existing = extStats.get(ext) || { count: 0, totalSize: 0, totalTextSize: 0 };
                     existing.count++;
                     existing.totalSize += currentNode.size || 0;
+                    existing.totalTextSize += currentNode.textSize || 0;
                     extStats.set(ext, existing);
                 }
             } else {
@@ -174,16 +197,18 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
 
         setLoading(true);
         try {
-            const tree = await window.electronAPI.getFileTree(targetFolder, includeSubfolders, showHiddenFiles);
+            const tree = await window.electronAPI.getFileTree(targetFolder, includeSubfolders, showHiddenFiles, includeTextSize);
 
             const { files, folders, stats: extStats } = collectFileStats(tree, includeSubfolders, showHiddenFiles);
 
             const totalSize = files.reduce((sum, file) => sum + (file.size || 0), 0);
+            const totalTextSize = files.reduce((sum, file) => sum + (file.textSize || 0), 0);
             const byExtension: FileStats[] = Array.from(extStats.entries())
                 .map(([ext, data]) => ({
                     ext,
                     count: data.count,
-                    totalSize: data.totalSize
+                    totalSize: data.totalSize,
+                    totalTextSize: data.totalTextSize
                 }))
                 .sort((a, b) => b.totalSize - a.totalSize);
 
@@ -191,6 +216,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                 totalFolders: folders.length,
                 totalFiles: files.length,
                 totalSize,
+                totalTextSize,
                 byExtension,
                 fileList: files
             });
@@ -204,7 +230,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     useEffect(() => {
         loadFolderStats();
         setSelectedExtension(null);
-    }, [targetFolder, showHiddenFiles, includeSubfolders]);
+    }, [targetFolder, showHiddenFiles, includeSubfolders, includeTextSize]);
 
     const columns = [
         {
@@ -239,6 +265,14 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             dataIndex: 'count',
             key: 'count',
             sorter: (a: FileStats, b: FileStats) => a.count - b.count
+        },
+        {
+            title: '字数统计',
+            dataIndex: 'totalTextSize',
+            key: 'totalTextSize',
+            align: 'right' as const,
+            render: (textSize: number) => textSize.toLocaleString(),
+            sorter: (a: FileStats, b: FileStats) => a.totalTextSize - b.totalTextSize
         },
         {
             title: '占用空间',
@@ -280,6 +314,20 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                 </Space>
             ),
             sorter: (a: FileNode, b: FileNode) => a.path.localeCompare(b.path)
+        },
+        {
+            title: '字数统计',
+            dataIndex: 'textSize',
+            key: 'textSize',
+            width: 120,
+            align: 'right' as const,
+            render: (textSize: number | undefined) => {
+                if (textSize === undefined || textSize === null) {
+                    return '-'
+                }
+                return textSize.toLocaleString();
+            },
+            sorter: (a: FileNode, b: FileNode) => (a.textSize || 0) - (b.textSize || 0)
         },
         {
             title: '占用空间',
@@ -326,6 +374,14 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                             onChange={setIncludeSubfolders}
                         />
                     </Space>
+                    <Space size="small">
+                        <Typography.Text style={{ fontSize: '12px' }}>包含字数统计</Typography.Text>
+                        <Switch
+                            size="small"
+                            checked={includeTextSize}
+                            onChange={setIncludeTextSize}
+                        />
+                    </Space>
                 </Space>
             }
             styles={{
@@ -341,24 +397,31 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             ) : stats ? (
                 <div>
                     <Row gutter={16} style={{ marginBottom: '24px' }}>
-                        <Col span={8}>
+                        <Col span={6}>
                             <Statistic
                                 title="文件夹数"
                                 value={stats.totalFolders}
                                 prefix={<FolderOutlined />}
                             />
                         </Col>
-                        <Col span={8}>
+                        <Col span={6}>
                             <Statistic
                                 title="文件数"
                                 value={stats.totalFiles}
                                 prefix={<FileOutlined />}
                             />
                         </Col>
-                        <Col span={8}>
+                        <Col span={6}>
                             <Statistic
                                 title="占用空间"
                                 value={formatSize(stats.totalSize)}
+                                valueStyle={{ fontSize: '20px' }}
+                            />
+                        </Col>
+                        <Col span={6}>
+                            <Statistic
+                                title="总字数"
+                                value={stats.totalTextSize.toLocaleString()}
                                 valueStyle={{ fontSize: '20px' }}
                             />
                         </Col>
@@ -445,6 +508,15 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                                 disabled={selectedFileKeys.length === 0}
                             >
                                 移动到
+                            </Button>
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<BarChartOutlined />}
+                                onClick={handleCountText}
+                                disabled={selectedFileKeys.length === 0}
+                            >
+                                字数统计
                             </Button>
                             <Button
                                 size="small"
