@@ -381,7 +381,7 @@ export const TitleBar: React.FC = () => {
                                     style={{ padding: 0, width: 20, height: 20, borderRadius: 2 }}
                                 />
                             </Tooltip>
-                            <span style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
+                            <div style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
                                 {currentFile ? basename(currentFile) : ''}
                                 {/* 循环播放按钮 - 仅在当前文件是支持的媒体文件时显示 */}
                                 {currentFile && (detectFileType(currentFile) === 'video' || detectFileType(currentFile) === 'audio') && (
@@ -398,7 +398,7 @@ export const TitleBar: React.FC = () => {
                                         />
                                     </Tooltip>
                                 )}
-                            </span>
+                            </div>
                         </div>
                     </div>
 

@@ -196,7 +196,7 @@ export function getFileInfo(targetPath: string): FileInfo | null {
       }
     } else {
       try {
-        isText = isTextFile(name) ? true : isTextFileByContent(targetPath);
+        isText = ext ? isTextFile(name) : isTextFileByContent(targetPath);
       } catch (error) {
         console.error('读取文件内容失败:', error);
       }
