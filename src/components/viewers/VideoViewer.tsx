@@ -9,6 +9,7 @@ import {
   getCurrentSubtitle,
 } from "../../utils/subtitleUtil";
 import { useAppContext } from "../../contexts/AppContext";
+import { storage, STORAGE_KEYS } from "../../utils/storage";
 
 interface VideoViewerProps {
   path: string;
@@ -276,7 +277,14 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   // 字幕显示控制状态
-  const [subtitleVisible, setSubtitleVisible] = useState(true);
+  const [subtitleVisible, setSubtitleVisible] = useState(() => {
+    return storage.get(STORAGE_KEYS.SUBTITLE_VISIBLE, true);
+  });
+
+  // 保存字幕显示状态到本地存储
+  useEffect(() => {
+    storage.set(STORAGE_KEYS.SUBTITLE_VISIBLE, subtitleVisible);
+  }, [subtitleVisible]);
 
   // 搜索功能状态
   const [searchVisible, setSearchVisible] = useState(false);
@@ -284,7 +292,14 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
   const [filteredSubtitles, setFilteredSubtitles] = useState<SubtitleItem[]>([]);
 
   // 字幕列表面板显示状态
-  const [subtitlePanelVisible, setSubtitlePanelVisible] = useState(true);
+  const [subtitlePanelVisible, setSubtitlePanelVisible] = useState(() => {
+    return storage.get(STORAGE_KEYS.SUBTITLE_PANEL_VISIBLE, true);
+  });
+
+  // 保存字幕面板显示状态到本地存储
+  useEffect(() => {
+    storage.set(STORAGE_KEYS.SUBTITLE_PANEL_VISIBLE, subtitlePanelVisible);
+  }, [subtitlePanelVisible]);
 
   // 视频可播放状态
   const [canPlay, setCanPlay] = useState(false);
