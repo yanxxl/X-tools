@@ -6,7 +6,7 @@ import { useAppContext } from '../../contexts/AppContext';
 import { FileInfo } from '../../types';
 import { ToolWindow } from './toolWindow';
 import { formatDate, formatFileSize, countText } from '../../utils/format';
-import { isTextFile } from '../../utils/fileCommonUtil';
+import { isTextFile, getExtension } from '../../utils/fileCommonUtil';
 import { SelectedTextPanel } from './SelectedTextPanel';
 
 const { Text } = Typography;
@@ -87,11 +87,23 @@ const FileInfoPanel: React.FC = () => {
         // 立即执行一次
         fetchFileInfo();
 
-        // 设置轮询间隔（每秒检查一次文件信息变化）
-        const intervalId = setInterval(fetchFileInfo, 1000);
+        // 检查是否为 Markdown 文件（扩展名为 .md 或 .markdown）
+        const isMarkdownFile = () => {
+            if (!currentFile) return false;
+            const ext = getExtension(currentFile);
+            return ext === 'md' || ext === 'markdown';
+        };
+
+        // 只有 Markdown 文件才设置轮询间隔（每秒检查一次文件信息变化）
+        let intervalId: NodeJS.Timeout | null = null;
+        if (isMarkdownFile()) {
+            intervalId = setInterval(fetchFileInfo, 1000);
+        }
 
         return () => {
-            clearInterval(intervalId);
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
         };
     }, [currentFile, currentFolder, fileInfo]);
 
