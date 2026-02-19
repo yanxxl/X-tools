@@ -12,11 +12,6 @@ import {isTextableFile} from './fileLocalUtil';
 async function searchFileContent(filePath: string, query: string, searchMode: 'content' | 'filename'): Promise<SearchResult | null> {
   const startTime = performance.now();
   try {
-    // 检查是否为可搜索文件（文本文件或officeparser支持的文件）
-    if (!isTextableFile(filePath)) {
-      return null;
-    }
-
     // 获取文件最后修改时间
     let lastModified: number | undefined;
     try {
@@ -40,6 +35,11 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
           searchTime
         };
       }
+      return null;
+    }
+
+    // 内容搜索：检查是否为可搜索文件（文本文件或officeparser支持的文件）
+    if (!isTextableFile(filePath)) {
       return null;
     }
 
