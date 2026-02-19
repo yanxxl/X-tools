@@ -10,6 +10,14 @@ export interface AppContextType {
     /** 设置当前文件 */
     setCurrentFile: (file: string | null) => void;
 
+    /** 历史文件导航 - 是否可以后退 */
+    canGoBack: boolean;
+    /** 历史文件导航 - 是否可以前进 */
+    canGoForward: boolean;
+    /** 后退到上一个文件 */
+    goBack: () => void;
+    /** 前进到下一个文件 */
+    goForward: () => void;
 
     autoPlay: boolean;
 
@@ -27,8 +35,6 @@ export interface AppContextType {
     searchPanelOpen: boolean;
     /** 设置搜索面板开关 */
     setSearchPanelOpen: (open: boolean) => void;
-
-
 
     /** 左侧面板是否可见 */
     leftPanelVisible: boolean;
@@ -54,6 +60,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const [searchPanelOpen, setSearchPanelOpen] = useState<boolean>(false);
     const [loopPlay, setLoopPlay] = useState<boolean>(false);
 
+    // 历史文件导航状态
+    const [fileHistory, setFileHistory] = useState<string[]>([]);
+    const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
     const [leftPanelVisible, setLeftPanelVisible] = useState<boolean>(() => {
         const saved = localStorage.getItem('leftPanelVisible');
         return saved !== null ? JSON.parse(saved) : true;
@@ -71,8 +81,47 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         // 每次文件改变时，重置循环播放状态为false
         setLoopPlay(false);
         fileHistoryManager.addFileAccess(file);
+        
+        // 更新历史记录
+        if (file) {
+            const newHistory = [...fileHistory];
+            // 如果当前有历史记录，删除当前索引之后的所有记录
+            if (historyIndex < newHistory.length - 1) {
+                newHistory.splice(historyIndex + 1);
+            }
+            // 添加新文件到历史记录
+            newHistory.push(file);
+            setFileHistory(newHistory);
+            setHistoryIndex(newHistory.length - 1);
+        }
+        
         setCurrentFile(file);
     };
+
+    // 后退到上一个文件
+    const goBack = () => {
+        if (historyIndex > 0) {
+            const newIndex = historyIndex - 1;
+            setHistoryIndex(newIndex);
+            setCurrentFile(fileHistory[newIndex]);
+            fileHistoryManager.addFileAccess(fileHistory[newIndex]);
+        }
+    };
+
+    // 前进到下一个文件
+    const goForward = () => {
+        if (historyIndex < fileHistory.length - 1) {
+            const newIndex = historyIndex + 1;
+            setHistoryIndex(newIndex);
+            setCurrentFile(fileHistory[newIndex]);
+            fileHistoryManager.addFileAccess(fileHistory[newIndex]);
+        }
+    };
+
+    // 检查是否可以后退
+    const canGoBack = historyIndex > 0;
+    // 检查是否可以前进
+    const canGoForward = historyIndex < fileHistory.length - 1;
 
 
 
@@ -143,6 +192,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         currentFolder,
         currentFile,
         setCurrentFile: handleSetCurrentFile,
+        canGoBack,
+        canGoForward,
+        goBack,
+        goForward,
         autoPlay: autoPlay.current,
         loopPlay,
         setLoopPlay,

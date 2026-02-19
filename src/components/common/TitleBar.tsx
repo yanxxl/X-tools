@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 
 // 第三方库导入
 import { Button, Divider, Dropdown, Flex, message, Modal, Tooltip } from "antd";
-import { BorderOutlined, CloseOutlined, DownOutlined, FolderOpenOutlined, MinusOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, RetweetOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ArrowRightOutlined, BorderOutlined, CloseOutlined, DownOutlined, FolderOpenOutlined, MinusOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, RetweetOutlined } from '@ant-design/icons';
 
 // 应用内部导入
 import { useAppContext } from '../../contexts/AppContext';
@@ -18,6 +18,10 @@ export const TitleBar: React.FC = () => {
     const {
         currentFolder,
         currentFile,
+        canGoBack,
+        canGoForward,
+        goBack,
+        goForward,
         titleBarVisible,
         setTitleBarVisible,
         setSearchPanelOpen,
@@ -188,6 +192,30 @@ export const TitleBar: React.FC = () => {
         });
     }, []);
 
+    // 监听键盘事件，支持 Alt+Left 和 Alt+Right 快捷键
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // 检查是否按下了 Alt 键和方向键
+            if (e.altKey) {
+                if (e.key === 'ArrowLeft' && canGoBack) {
+                    e.preventDefault();
+                    goBack();
+                } else if (e.key === 'ArrowRight' && canGoForward) {
+                    e.preventDefault();
+                    goForward();
+                }
+            }
+        };
+
+        // 添加全局键盘事件监听器
+        document.addEventListener('keydown', handleKeyDown);
+
+        // 清理函数
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [canGoBack, canGoForward, goBack, goForward]);
+
     return (
         <>
             {/* 顶部透明区域 - 用于捕捉鼠标靠近顶部的事件，当标题栏隐藏时显示 */}
@@ -324,24 +352,53 @@ export const TitleBar: React.FC = () => {
                     </div>
 
                     {/* 中间区域 - 当前文件名显示 */}
-                    <div style={{ flex: '1 3 auto', minWidth: 0 }}>
-                        <div className="one-line text-center">
-                            {currentFile ? basename(currentFile) : ''}
-                            {/* 循环播放按钮 - 仅在当前文件是支持的媒体文件时显示 */}
-                            {currentFile && (detectFileType(currentFile) === 'video' || detectFileType(currentFile) === 'audio') && (
-                                <Tooltip title={loopPlay ? "循环播放中" : "循环播放"}>
-                                    <Button 
-                                        ghost
-                                        type={loopPlay ? "primary" : "text"}
-                                        size="small"
-                                        icon={<RetweetOutlined />}
-                                        onClick={() => setLoopPlay(!loopPlay)}
-                                        style={{
-                                          marginLeft: 16,
-                                        }}
-                                    />
-                                </Tooltip>
-                            )}
+                    <div style={{ flex: '1 3 auto', minWidth: 0, display: 'flex', gap: 8 }}>
+                        <div className="one-line text-center" style={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 8
+                        }}>
+                            {/* 历史文件导航按钮 */}
+                            <Tooltip title="后退 (Alt+Left)">
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<ArrowLeftOutlined />}
+                                    onClick={goBack}
+                                    disabled={!canGoBack}
+                                    style={{ padding: 0, width: 20, height: 20, borderRadius: 2 }}
+                                />
+                            </Tooltip>
+                            <Tooltip title="前进 (Alt+Right)">
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<ArrowRightOutlined />}
+                                    onClick={goForward}
+                                    disabled={!canGoForward}
+                                    style={{ padding: 0, width: 20, height: 20, borderRadius: 2 }}
+                                />
+                            </Tooltip>
+                            <span style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
+                                {currentFile ? basename(currentFile) : ''}
+                                {/* 循环播放按钮 - 仅在当前文件是支持的媒体文件时显示 */}
+                                {currentFile && (detectFileType(currentFile) === 'video' || detectFileType(currentFile) === 'audio') && (
+                                    <Tooltip title={loopPlay ? "循环播放中" : "循环播放"}>
+                                        <Button
+                                            ghost
+                                            type={loopPlay ? "primary" : "text"}
+                                            size="small"
+                                            icon={<RetweetOutlined />}
+                                            onClick={() => setLoopPlay(!loopPlay)}
+                                            style={{
+                                                marginLeft: 8,
+                                            }}
+                                        />
+                                    </Tooltip>
+                                )}
+                            </span>
                         </div>
                     </div>
 
@@ -354,82 +411,90 @@ export const TitleBar: React.FC = () => {
                         alignItems: 'center',
                         gap: 12
                     }}>
-                        <Button
-                            type="text"
-                            icon={<SearchOutlined />}
-                            title="打开搜索"
-                            onClick={() => setSearchPanelOpen(true)}
-                            style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
-                        />
-                        <Button
-                            type="text"
-                            icon={<ReloadOutlined />}
-                            title="刷新，重新加载页面"
-                            onClick={() => window.location.reload()}
-                            style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
-                        />
+                        <Tooltip title="打开搜索">
+                            <Button
+                                type="text"
+                                icon={<SearchOutlined />}
+                                onClick={() => setSearchPanelOpen(true)}
+                                style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
+                            />
+                        </Tooltip>
+                        <Tooltip title="刷新，重新加载页面">
+                            <Button
+                                type="text"
+                                icon={<ReloadOutlined />}
+                                onClick={() => window.location.reload()}
+                                style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
+                            />
+                        </Tooltip>
                         <Divider vertical />
-                        <span
-                            className="span-icon"
-                            style={{ borderLeft: '4px solid gray' }}
-                            title="隐藏/显示左边栏"
-                            onClick={() => setLeftPanelVisible(!leftPanelVisible)}
-                        />
-                        <span
-                            className="span-icon"
-                            style={{ borderTop: '4px solid gray' }}
-                            title="隐藏/显示标题栏"
-                            onClick={() => setTitleBarVisible(!titleBarVisible)}
-                        />
-                        <span
-                            className="span-icon"
-                            style={{ borderRight: '4px solid gray' }}
-                            title="隐藏/显示右边栏"
-                            onClick={() => setRightPanelVisible(!rightPanelVisible)}
-                        />
+                        <Tooltip title="隐藏/显示左边栏">
+                            <span
+                                className="span-icon"
+                                style={{ borderLeft: '4px solid gray' }}
+                                onClick={() => setLeftPanelVisible(!leftPanelVisible)}
+                            />
+                        </Tooltip>
+                        <Tooltip title="隐藏/显示标题栏">
+                            <span
+                                className="span-icon"
+                                style={{ borderTop: '4px solid gray' }}
+                                onClick={() => setTitleBarVisible(!titleBarVisible)}
+                            />
+                        </Tooltip>
+                        <Tooltip title="隐藏/显示右边栏" placement="left">
+                            <span
+                                className="span-icon"
+                                style={{ borderRight: '4px solid gray' }}
+                                onClick={() => setRightPanelVisible(!rightPanelVisible)}
+                            />
+                        </Tooltip>
 
                         {/* Windows 窗口控制按钮 */}
                         {!isMac && (
                             <div style={{ display: 'flex', gap: 0, marginLeft: 8, marginRight: -14 }}>
                                 {/* 最小化按钮 */}
-                                <Button
-                                    type="text"
-                                    title="最小化"
-                                    onClick={handleMinimizeWindow}
-                                    style={{ padding: 0, width: 36, height: 36, borderRadius: 0 }}
-                                >
-                                    <MinusOutlined />
-                                </Button>
+                                <Tooltip title="最小化">
+                                    <Button
+                                        type="text"
+                                        onClick={handleMinimizeWindow}
+                                        style={{ padding: 0, width: 36, height: 36, borderRadius: 0 }}
+                                    >
+                                        <MinusOutlined />
+                                    </Button>
+                                </Tooltip>
 
                                 {/* 最大化/还原按钮 */}
-                                <Button
-                                    type="text"
-                                    title="最大化/还原"
-                                    onClick={handleToggleMaximizeWindow}
-                                    style={{ padding: 0, width: 36, height: 36, borderRadius: 0 }}
-                                >
-                                    <BorderOutlined />
-                                </Button>
+                                <Tooltip title="最大化/还原">
+                                    <Button
+                                        type="text"
+                                        onClick={handleToggleMaximizeWindow}
+                                        style={{ padding: 0, width: 36, height: 36, borderRadius: 0 }}
+                                    >
+                                        <BorderOutlined />
+                                    </Button>
+                                </Tooltip>
 
                                 {/* 关闭按钮 */}
-                                <Button
-                                    type="text"
-                                    title="关闭"
-                                    onClick={handleCloseWindow}
-                                    style={{ padding: 0, width: 36, height: 36, borderRadius: 0, color: '#000000' }}
-                                    onMouseEnter={(e) => {
-                                        const target = e.currentTarget;
-                                        target.style.backgroundColor = '#ff4d4f';
-                                        target.style.color = '#ffffff';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        const target = e.currentTarget;
-                                        target.style.backgroundColor = 'transparent';
-                                        target.style.color = '#000000';
-                                    }}
-                                >
-                                    <CloseOutlined />
-                                </Button>
+                                <Tooltip title="关闭" placement="left">
+                                    <Button
+                                        type="text"
+                                        onClick={handleCloseWindow}
+                                        style={{ padding: 0, width: 36, height: 36, borderRadius: 0, color: '#000000' }}
+                                        onMouseEnter={(e) => {
+                                            const target = e.currentTarget;
+                                            target.style.backgroundColor = '#ff4d4f';
+                                            target.style.color = '#ffffff';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            const target = e.currentTarget;
+                                            target.style.backgroundColor = 'transparent';
+                                            target.style.color = '#000000';
+                                        }}
+                                    >
+                                        <CloseOutlined />
+                                    </Button>
+                                </Tooltip>
                             </div>
                         )}
                     </div>
