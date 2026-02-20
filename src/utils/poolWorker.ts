@@ -38,11 +38,6 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
       return null;
     }
 
-    // 内容搜索：检查是否为可搜索文件（文本文件或officeparser支持的文件）
-    if (!isTextableFile(filePath)) {
-      return null;
-    }
-
     // 内容搜索 - 使用缓存的文件行列表
     const lines = await readFileLines(filePath);
     const matches: Array<{ line: number; content: string }> = [];
