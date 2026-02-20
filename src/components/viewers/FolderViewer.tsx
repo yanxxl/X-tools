@@ -233,6 +233,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
     useEffect(() => {
         loadFolderStats();
         setSelectedExtension(null);
+        setSelectedFileKeys([]);
     }, [targetFolder, showHiddenFiles, includeSubfolders, includeTextSize]);
 
     const columns = [
@@ -540,6 +541,17 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                                 Table.SELECTION_NONE,
                             ]
                         }}
+                        onRow={(record) => ({
+                            onClick: () => {
+                                const key = record.path;
+                                if (selectedFileKeys.includes(key)) {
+                                    setSelectedFileKeys(selectedFileKeys.filter(k => k !== key));
+                                } else {
+                                    setSelectedFileKeys([...selectedFileKeys, key]);
+                                }
+                            },
+                            style: { cursor: 'pointer' }
+                        })}
                         pagination={{
                             pageSize: fileListPageSize,
                             pageSizeOptions: [10, 20, 50, 100],
