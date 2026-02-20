@@ -1,16 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { toFileUrl, isElectronSupportedMedia, isVideoFile, isAudioFile } from "../../utils/fileCommonUtil";
-import { useAppContext } from "../../contexts/AppContext";
+import { toFileUrl, isVideoFile, isAudioFile, isImageFile } from "../../utils/fileCommonUtil";
 
 interface MediaPlayerProps {
   file: string;
   currentTime?: number;
 }
 
-export const MediaPlayer: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 }) => {
+export const GlobalSearchMedia: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 }) => {
   const [canPlay, setCanPlay] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { loopPlay } = useAppContext();
 
   const mediaRef = useRef<HTMLVideoElement | HTMLAudioElement | null>(null);
 
@@ -20,24 +17,6 @@ export const MediaPlayer: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 
 
   useEffect(() => {
     setCanPlay(false);
-
-    if (file) {
-      const isMedia = isVideoFile(file) || isAudioFile(file);
-
-      if (!isMedia) {
-        setError('该文件不是有效的媒体文件（视频或音频）');
-        return;
-      }
-
-      if (!isElectronSupportedMedia(file)) {
-        setError('该媒体文件格式不受支持，无法播放');
-        return;
-      }
-
-      setError(null);
-    } else {
-      setError('未选择媒体文件');
-    }
   }, [file]);
 
   useEffect(() => {
@@ -50,9 +29,9 @@ export const MediaPlayer: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 
     }
   }, [canPlay, currentTime]);
 
-  return (
-    <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
-      {error ? (
+  const renderContent = () => {
+    if (!file) {
+      return (
         <div style={{
           color: "#ff4d4f",
           textAlign: "center",
@@ -62,9 +41,24 @@ export const MediaPlayer: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 
           borderRadius: "4px",
           maxWidth: "80%"
         }}>
-          {error}
+          未选择媒体文件
         </div>
-      ) : isVideoFile(file) ? (
+      );
+    }
+
+    if (isImageFile(file)) {
+      return (
+        <img
+          src={toFileUrl(file)}
+          alt=""
+          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+        />
+      );
+    }
+
+
+    if (isVideoFile(file)) {
+      return (
         <video
           ref={mediaRef as React.RefObject<HTMLVideoElement>}
           width="100%"
@@ -74,20 +68,43 @@ export const MediaPlayer: React.FC<MediaPlayerProps> = ({ file, currentTime = 0 
           playsInline
           preload="auto"
           onCanPlay={handleCanPlay}
-          loop={loopPlay}
           style={{ maxWidth: "100%", maxHeight: "100%" }}
         />
-      ) : (
+      );
+    }
+    
+    if (isAudioFile(file)) {
+      return (
         <audio
           ref={mediaRef as React.RefObject<HTMLAudioElement>}
           src={toFileUrl(file)}
           controls
           preload="auto"
           onCanPlay={handleCanPlay}
-          loop={loopPlay}
           style={{ width: "100%" }}
         />
-      )}
+      );
+    }
+
+    // 默认显示不支持的文件格式提示
+    return (
+      <div style={{
+        color: "#ff4d4f",
+        textAlign: "center",
+        padding: "16px",
+        backgroundColor: "#fff2f0",
+        border: "1px solid #ffccc7",
+        borderRadius: "4px",
+        maxWidth: "80%"
+      }}>
+        该媒体文件格式不受支持，无法播放
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+      {renderContent()}
     </div>
   );
 };

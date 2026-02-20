@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Button, Empty, Skeleton, Select, Space } from 'antd';
 import { Center } from './Center';
 import { FileIcon } from './FileIcon';
-import { isTextFile, isOfficeParserSupported, isDocFile, isVideoFile, isElectronSupportedMedia } from '../../utils/fileCommonUtil';
+import { isTextFile, isOfficeParserSupported, isDocFile, isVideoFile, isElectronSupportedMedia, isImageFile } from '../../utils/fileCommonUtil';
 import { isSubtitleFile, findVideoFiles, timeToSeconds, isSubtitleTimeLine, extractTimeRange } from '../../utils/subtitleUtil';
-import { MediaPlayer } from '../viewers/MediaPlayer';
+import { GlobalSearchMedia } from './GlobalSearchMedia';
 import { useAppContext } from '../../contexts/AppContext';
 
 // 样式常量
@@ -153,9 +153,19 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             setPreviewLoading(true);
             setPreviewError(null);
 
-            // 如果是electron支持的视频文件
-            if (isElectronSupportedMedia(path)) {
-                setMediaFiles([path]); 
+            // 如果是electron支持的媒体文件或图片文件
+            if (isElectronSupportedMedia(path) || isImageFile(path)) {
+                setMediaFiles([path]);
+                setSelectedMediaIndex(0);
+                setLines([]);
+                setDisplayedLines([]);
+                setPreviewLoading(false);
+                return;
+            }
+
+            // 如果是图片文件
+            if (isImageFile(path)) {
+                setMediaFiles([path]);
                 setSelectedMediaIndex(0);
                 setLines([]);
                 setDisplayedLines([]);
@@ -239,6 +249,14 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
     };
 
     useEffect(() => {
+        setLines([]);
+        setDisplayedLines([]);
+        setPreviewError(null);
+        setMediaFiles([]);
+        setSelectedMediaIndex(0);
+        setTotalLines(0);
+        setCurrentStartLine(1);
+
         if (filePath) {
             // 如果是媒体文件，在loadFileContent中已经处理，不需要清空
             if (isSubtitleFile(filePath)) {
@@ -257,16 +275,8 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                 // 只有不是媒体文件的时候，才清空mediaFiles
                 setMediaFiles([]);
             }
-            
+
             loadFileContent(filePath);
-        } else {
-            setLines([]);
-            setDisplayedLines([]);
-            setPreviewError(null);
-            setMediaFiles([]);
-            setSelectedMediaIndex(0);
-            setTotalLines(0);
-            setCurrentStartLine(1);
         }
     }, [filePath]);
 
@@ -332,7 +342,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                         </div>
                     )}
                     <div style={{ flex: 1, padding: '8px', overflow: 'hidden', minHeight: 0 }}>
-                        <MediaPlayer
+                        <GlobalSearchMedia
                             file={mediaFiles[selectedMediaIndex] || ''}
                             currentTime={currentTime}
                         />
