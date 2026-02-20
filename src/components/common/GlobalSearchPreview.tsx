@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button, Empty, Skeleton, Select, Space } from 'antd';
 import { Center } from './Center';
 import { FileIcon } from './FileIcon';
-import { isTextFile, isOfficeParserSupported, isDocFile } from '../../utils/fileCommonUtil';
+import { isTextFile, isOfficeParserSupported, isDocFile, isVideoFile, isElectronSupportedMedia } from '../../utils/fileCommonUtil';
 import { isSubtitleFile, findVideoFiles, timeToSeconds, isSubtitleTimeLine, extractTimeRange } from '../../utils/subtitleUtil';
 import { MediaPlayer } from '../viewers/MediaPlayer';
 import { useAppContext } from '../../contexts/AppContext';
@@ -153,6 +153,16 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             setPreviewLoading(true);
             setPreviewError(null);
 
+            // 如果是electron支持的视频文件
+            if (isElectronSupportedMedia(path)) {
+                setMediaFiles([path]); 
+                setSelectedMediaIndex(0);
+                setLines([]);
+                setDisplayedLines([]);
+                setPreviewLoading(false);
+                return;
+            }
+
             if (!isTextFile(path) && !isOfficeParserSupported(path) && !isDocFile(path)) {
                 // 获取文件信息，判断是否是文本
                 const fileInfo = await window.electronAPI.getFileInfo(path);
@@ -230,8 +240,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
 
     useEffect(() => {
         if (filePath) {
-            loadFileContent(filePath);
-
+            // 如果是媒体文件，在loadFileContent中已经处理，不需要清空
             if (isSubtitleFile(filePath)) {
                 const findMediaFiles = async () => {
                     try {
@@ -244,9 +253,12 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                     }
                 };
                 findMediaFiles();
-            } else {
+            } else if (!isElectronSupportedMedia(filePath)) {
+                // 只有不是媒体文件的时候，才清空mediaFiles
                 setMediaFiles([]);
             }
+            
+            loadFileContent(filePath);
         } else {
             setLines([]);
             setDisplayedLines([]);
@@ -298,7 +310,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                 </div>
             </div>
 
-            {/* 媒体播放器 - 仅在字幕文件且有对应媒体文件时显示 */}
+            {/* 媒体播放器 - 有媒体文件时显示 */}
             {mediaFiles.length > 0 && (
                 <div style={{ height: '400px', borderBottom: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                     {/* 媒体文件选择器 */}
