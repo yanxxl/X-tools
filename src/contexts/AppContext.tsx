@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useRef, useState, useEffect } from 'react';
+import React, { createContext, ReactNode, useContext, useRef, useState, useEffect, RefObject } from 'react';
 import { fileHistoryManager } from '../utils/storage';
 import { detectFileType } from "../utils/fileCommonUtil";
 
@@ -19,7 +19,7 @@ export interface AppContextType {
     /** 前进到下一个文件 */
     goForward: () => void;
 
-    autoPlay: boolean;
+    autoPlay: RefObject<boolean>;
 
     /** 循环播放状态 */
     loopPlay: boolean;
@@ -76,12 +76,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     const autoPlay = useRef(true);
 
     const handleSetCurrentFile = (file: string | null) => {
+        console.log('handleSetCurrentFile:', file, 'autoPlay.current:', autoPlay.current);
         // 运行到这里，便不是第一个打开的文件了，恢复自动播放，人点击视频不就是为了看吗？
         if (!autoPlay.current) autoPlay.current = true;
         // 每次文件改变时，重置循环播放状态为false
         setLoopPlay(false);
         fileHistoryManager.addFileAccess(file);
-        
+
         // 更新历史记录
         if (file) {
             const newHistory = [...fileHistory];
@@ -94,7 +95,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
             setFileHistory(newHistory);
             setHistoryIndex(newHistory.length - 1);
         }
-        
+
         setCurrentFile(file);
     };
 
@@ -135,7 +136,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
                 if (currentFolder) {
                     console.log('设置当前文件夹:', currentFolder);
-                    
+
                     // 检查文件夹是否存在
                     try {
                         const folderExists = await window.electronAPI.fileExists(currentFolder);
@@ -147,7 +148,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                         console.error('检查文件夹存在性失败:', error);
                         return;
                     }
-                    
+
                     setCurrentFolder(currentFolder);
 
                     // 从文件历史记录中获取最近访问的文件
@@ -164,7 +165,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
                             console.error('检查文件存在性失败:', error);
                             return;
                         }
-                        
+
                         const fileName = lastFile.filePath.split(/[\\/]/).pop() || '';
                         if (detectFileType(fileName) == "video" || detectFileType(fileName) == "audio") autoPlay.current = false;
 
@@ -196,7 +197,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         canGoForward,
         goBack,
         goForward,
-        autoPlay: autoPlay.current,
+        autoPlay: autoPlay,
         loopPlay,
         setLoopPlay,
         titleBarVisible,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { ConfigProvider, message, Tree, Dropdown, type MenuProps, Flex, Space, Button, Input, Tooltip, Switch, Empty, Modal } from "antd";
+import { ConfigProvider, message, Tree, Dropdown, type MenuProps, Flex, Space, Button, Input, Tooltip, Empty, Modal } from "antd";
 import type { DataNode, TreeProps } from 'antd/es/tree';
 import {
     DownOutlined, FileOutlined, FolderOpenOutlined,
@@ -332,8 +332,8 @@ export const FileTree: React.FC = () => {
         }
     }
 
-    const resetTree = (filePath?: string) => {
-        console.log('resetTree', filePath);
+    const resetTree = () => {
+        console.log('FileTree.resetTree');
         if (currentFolder) {
             if (showRootFolder) {
                 const rootFileNode: FileNode = {
@@ -357,8 +357,6 @@ export const FileTree: React.FC = () => {
             setExpandedKeys([]);
             setLoadedKeys([]);
 
-            // 如果提供了文件路径，聚焦到该文件
-            if (filePath) setCurrentFile(filePath);
             setTimeout(() => {
                 handleFocusCurrent();
             }, 100);
@@ -521,7 +519,8 @@ export const FileTree: React.FC = () => {
             if (result.success && result.filePath) {
                 message.success('文件创建成功');
                 // 更新树结构并聚焦到新文件
-                resetTree(result.filePath);
+                resetTree();
+                setCurrentFile(result.filePath);
             } else {
                 message.error('创建失败');
             }
@@ -540,7 +539,8 @@ export const FileTree: React.FC = () => {
             if (result.success && result.folderPath) {
                 message.success('文件夹创建成功');
                 // 更新树结构
-                resetTree(result.folderPath);
+                resetTree();
+                setCurrentFile(result.folderPath);
             } else {
                 message.error('创建失败');
             }
@@ -560,7 +560,7 @@ export const FileTree: React.FC = () => {
         // 检查文件是否存在于树节点列表中，用于新建文件，重命名文件等情况
         const fileExists = isFileInNodeList(currentFile, dataNodeList);
         if (!fileExists) {
-            resetTree(currentFile);
+            resetTree();
             return;
         }
 

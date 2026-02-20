@@ -510,6 +510,8 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
     setFilteredSubtitles(filtered);
   }, [subtitles, searchKeyword]);
 
+  // console.log('video viewer autoPlay.current:', autoPlay.current);
+
   return (
     <div style={containerStyle}>
       <Splitter style={{ height: "100%" }} onResize={handleSplitterResize}>
@@ -537,7 +539,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
               onCanPlay={handleCanPlay}
               onTimeUpdate={handleTimeUpdate}
               loop={loopPlay}
-              autoPlay={autoPlay}
+              autoPlay={autoPlay.current}
             />
 
             {/* 当前字幕显示 */}
