@@ -391,7 +391,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                     )}
 
                     {/* 文件内容 */}
-                    <div style={{ padding: '16px' }}>
+                    <div>
                         {(() => {
                             const isSubtitle = isSubtitleFile(filePath || '');
                             return displayedLines.map((lineContent, index) => {
