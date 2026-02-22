@@ -28,8 +28,8 @@ export function countText(text: string): { chars: number; words: number; chinese
     return { chars: 0, words: 0, chineseChars: 0 };
   }
 
-  // 去除空白字符后的字符数
-  const chars = text.replace(/\s/g, '').length;
+  // 切行后每行trim再计算字符数
+  const chars = text.split('\n').map(line => line.trim()).join('').length;
 
   // 匹配中文字符
   const chineseChars = (text.match(/[\u4e00-\u9fa5]/g) || []).length;

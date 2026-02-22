@@ -10,7 +10,7 @@ import { isTextableFile } from './fileLocalUtil';
 const CACHE_DIR = path.join(process.env.HOME || '', '.x-tools', 'search-cache');
 
 // 缓存版本，当解析逻辑或格式发生变化时更新此版本号
-const CACHE_VERSION = '1.0';
+const CACHE_VERSION = '1.1';
 
 /**
  * 确保缓存目录存在
@@ -85,6 +85,9 @@ export async function readFileLines(filePath: string): Promise<string[]> {
             }
             lines = content.split('\n');
         }
+        
+        // 对每一行进行trim处理
+        lines = lines.map(line => line.trim());
         
         // 写入缓存
         await ensureCacheDir();
