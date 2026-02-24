@@ -12,7 +12,7 @@ import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from './FileIcon';
 import { storage } from '../../utils/storage';
-import { basename } from '../../utils/fileCommonUtil';
+import { basename, dirname } from '../../utils/fileCommonUtil';
 import { highlightText } from '../../utils/highlight';
 import { EditableFilePath } from './EditableFilePath';
 
@@ -32,11 +32,12 @@ export const FileTree: React.FC = () => {
     const [searchLoading, setSearchLoading] = useState<boolean>(false);
     const [searchResultCount, setSearchResultCount] = useState<number>(0);
     const [loadedKeys, setLoadedKeys] = useState<string[]>([]);
-    const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
 
     // 使用 ref 来避免闭包陷阱
     const currentFileRef = useRef<string | null>(null);
     currentFileRef.current = currentFile;
+
+    const isTreeDragging = useRef<boolean>(false);
 
     const getAllParentPaths = (filePath: string): string[] => {
         const parts = filePath.split(/[\\/]/).filter(part => part !== '');
@@ -269,6 +270,44 @@ export const FileTree: React.FC = () => {
                             e.preventDefault();
                             window.electronAPI.startDrag([node.path]);
                         }}
+                        onDragEnter={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('[外部拖拽onDragEnter] 进入拖拽区域');
+                            console.log('拖拽类型:', e.dataTransfer.types);
+                            console.log('拖拽数据:', e.dataTransfer);
+
+                            if (isTreeDragging.current) return;
+
+                            if (node.isDirectory) {
+                                (e.target as HTMLElement).style.backgroundColor = 'rgba(24, 144, 255, 0.1)';
+                            } else {
+                                (e.target as HTMLElement).style.borderBottom = '2px dashed #1890ff';
+                            }
+                        }}
+                        onDragLeave={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('[外部拖拽onDragLeave] 离开拖拽区域');
+
+                            if (isTreeDragging.current) return;
+
+                            if (node.isDirectory) {
+                                (e.target as HTMLElement).style.backgroundColor = '';
+                            } else {
+                                (e.target as HTMLElement).style.borderBottom = '';
+                            }
+                        }}
+                        onDrop={(e) => {
+
+                            if (node.isDirectory) {
+                                (e.target as HTMLElement).style.backgroundColor = '';
+                            } else {
+                                (e.target as HTMLElement).style.borderBottom = '';
+                            }
+
+                            handleExternalDrop(e as React.DragEvent<HTMLDivElement>, node.isDirectory ? node.path : dirname(node.path));
+                        }}
                         style={{ cursor: 'move', display: 'flex', alignItems: 'center' }}
                     >
                         <FileIcon
@@ -388,16 +427,57 @@ export const FileTree: React.FC = () => {
         setLoadedKeys(loadedKeysValue as string[]);
     };
 
-    const handleDrop: TreeProps<DataNode>['onDrop'] = async (info) => {
-        const { dragNode, node: dropNode, dropToGap } = info;
+    const handleDragStart: TreeProps<DataNode>['onDragStart'] = (info) => {
+        console.log('[Tree拖拽onDragStart] 开始拖拽');
+        console.log('拖拽节点:', info.node);
+        console.log('拖拽节点key:', info.node.key);
+        console.log('事件:', info.event);
+        isTreeDragging.current = true;
+    };
 
+    const handleDragEnd: TreeProps<DataNode>['onDragEnd'] = (info) => {
+        console.log('[Tree拖拽onDragEnd] 拖拽结束');
+        console.log('拖拽节点:', info.node);
+        console.log('事件:', info.event);
+        isTreeDragging.current = false;
+    };
+
+    const handleTreeDragEnter: TreeProps<DataNode>['onDragEnter'] = (info) => {
+        console.log('[Tree拖拽onDragEnter] 进入节点');
+        console.log('目标节点:', info.node);
+        console.log('展开的keys:', info.expandedKeys);
+    };
+
+    const handleTreeDragOver: TreeProps<DataNode>['onDragOver'] = (info) => {
+        console.log('[Tree拖拽onDragOver] 经过节点');
+        console.log('目标节点:', info.node);
+        console.log('事件:', info.event);
+    };
+
+    const handleTreeDragLeave: TreeProps<DataNode>['onDragLeave'] = (info) => {
+        console.log('[Tree拖拽onDragLeave] 离开节点');
+        console.log('目标节点:', info.node);
+        console.log('事件:', info.event);
+        console.log('Info:', info);
+    };
+
+    const handleDrop: TreeProps<DataNode>['onDrop'] = async (info) => {
+        isTreeDragging.current = false;
+
+        const { dragNode, node: dropNode, dropToGap, dragNodesKeys, dropPosition } = info;
         const dragPath = dragNode.key as string;
         const dropPath = dropNode.key as string;
 
-        console.log('dragPath', dragPath);
-        console.log('dropPath', dropPath);
-        console.log('dropToGap', dropToGap);
-        console.log('dropNode.isLeaf', dropNode.isLeaf);
+        console.log('[内部拖拽handleDrop] 触发');
+        console.log('拖拽节点:', dragNode);
+        console.log('目标节点:', dropNode);
+        console.log('拖拽节点路径:', dragPath);
+        console.log('目标节点路径:', dropPath);
+        console.log('是否拖拽到间隙:', dropToGap);
+        console.log('目标节点是否是叶子节点:', dropNode.isLeaf);
+        console.log('拖拽位置:', dropPosition);
+        console.log('所有拖拽节点key:', dragNodesKeys);
+
         try {
             // 确定目标路径
             let targetPath: string;
@@ -550,13 +630,98 @@ export const FileTree: React.FC = () => {
                 message.success('文件夹创建成功');
                 // 更新树结构
                 resetTree();
-                setCurrentFile(result.folderPath);
             } else {
                 message.error('创建失败');
             }
         } catch (error) {
             console.error('创建文件夹失败:', error);
             message.error('创建失败');
+        }
+    };
+
+    const handleExternalDrop = async (e: React.DragEvent<HTMLDivElement>, targetFolder: string = currentFolder) => {
+        if(isTreeDragging.current) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('[外部拖拽onDrop] 释放文件');
+        console.log('拖拽数据:', e.dataTransfer);
+        console.log('文件数量:', e.dataTransfer.files.length);
+        console.log('文件列表:', Array.from(e.dataTransfer.files).map(f => ({ name: f.name, size: f.size, type: f.type })));
+
+        const files = Array.from(e.dataTransfer.files);
+
+        // 拖入操作：从外部拖入
+        if (files.length === 0) return;
+        if (!targetFolder) {
+            message.error('没有打开的文件夹');
+            return;
+        }
+
+        try {
+            let fileCount = 0;
+            let folderCount = 0;
+            const errorMessages: string[] = [];
+
+            for (const file of files) {
+                // 使用 webUtils.getPathForFile 获取文件路径
+                const filePath = window.electronAPI.getFilePath(file);
+                if (!filePath) {
+                    errorMessages.push(`${file.name} 无法获取路径`);
+                    continue;
+                }
+
+                const result = await window.electronAPI.importFile(filePath, targetFolder);
+                if (result.success) {
+                    // 根据导入结果判断是文件还是文件夹
+                    if (result.targetPath) {
+                        try {
+                            const stats = await window.electronAPI.getFileInfo(result.targetPath);
+                            if (stats && stats.isDirectory) {
+                                folderCount++;
+                            } else {
+                                fileCount++;
+                            }
+                        } catch (error) {
+                            fileCount++; // 默认当作文件
+                        }
+                    } else {
+                        fileCount++;
+                    }
+                } else {
+                    errorMessages.push(result.error || `${file.name} 导入失败`);
+                }
+            }
+
+            if (fileCount > 0 || folderCount > 0) {
+                let messageText = '';
+                const parts: string[] = [];
+                if (folderCount > 0) {
+                    parts.push(`${folderCount} 个文件夹`);
+                }
+                if (fileCount > 0) {
+                    parts.push(`${fileCount} 个文件`);
+                }
+                messageText = parts.join(' 和 ') + ' 导入成功';
+
+                if (errorMessages.length > 0) {
+                    message.warning(`${messageText}，${errorMessages.length} 个失败`);
+                } else {
+                    message.success(messageText);
+                }
+                resetTree();
+
+                // 稍后展开文件夹，确保树结构更新完成
+                setTimeout(() => {
+                    const parentPaths = getAllParentPaths(targetFolder);
+                    setExpandedKeys(Array.from(new Set([...expandedKeys, ...parentPaths, targetFolder])));
+                }, 100);
+            } else if (errorMessages.length > 0) {
+                message.error(errorMessages[0]);
+            }
+        } catch (error) {
+            console.error('导入文件失败:', error);
+            message.error('导入文件失败');
         }
     };
 
@@ -838,139 +1003,13 @@ export const FileTree: React.FC = () => {
                 style={{
                     flex: 1,
                     overflowY: 'auto',
-                    overflowX: 'hidden',
-                    position: 'relative',
-                    backgroundColor: isDraggingOver ? 'rgba(24, 144, 255, 0.05)' : 'transparent',
-                    border: isDraggingOver ? '2px dashed #1890ff' : 'none',
-                    transition: 'all 0.2s ease',
-                    borderRadius: isDraggingOver ? '8px' : '0'
-                }}
-                onDragEnter={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsDraggingOver(true);
+                    overflowX: 'hidden'
                 }}
                 onDragOver={(e) => {
                     e.preventDefault();
-                    e.stopPropagation();
                 }}
-                onDragLeave={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    // 只在真正离开元素时才取消状态
-                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                        setIsDraggingOver(false);
-                    }
-                }}
-                onDrop={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsDraggingOver(false);
-
-                    const files = Array.from(e.dataTransfer.files);
-
-                    // 拖入操作：从外部拖入
-                    if (files.length === 0) return;
-
-                    // 默认拖到当前文件夹根目录
-                    const targetFolder = currentFolder;
-                    if (!targetFolder) {
-                        message.error('没有打开的文件夹');
-                        return;
-                    }
-
-                    try {
-                        let fileCount = 0;
-                        let folderCount = 0;
-                        const errorMessages: string[] = [];
-
-                        for (const file of files) {
-                            // 使用 webUtils.getPathForFile 获取文件路径
-                            const filePath = window.electronAPI.getFilePath(file);
-                            if (!filePath) {
-                                errorMessages.push(`${file.name} 无法获取路径`);
-                                continue;
-                            }
-
-                            const result = await window.electronAPI.importFile(filePath, targetFolder);
-                            if (result.success) {
-                                // 根据导入结果判断是文件还是文件夹
-                                if (result.targetPath) {
-                                    try {
-                                        const stats = await window.electronAPI.getFileInfo(result.targetPath);
-                                        if (stats && stats.isDirectory) {
-                                            folderCount++;
-                                        } else {
-                                            fileCount++;
-                                        }
-                                    } catch (error) {
-                                        fileCount++; // 默认当作文件
-                                    }
-                                } else {
-                                    fileCount++;
-                                }
-                            } else {
-                                errorMessages.push(result.error || `${file.name} 导入失败`);
-                            }
-                        }
-
-                        if (fileCount > 0 || folderCount > 0) {
-                            let messageText = '';
-                            const parts: string[] = [];
-                            if (folderCount > 0) {
-                                parts.push(`${folderCount} 个文件夹`);
-                            }
-                            if (fileCount > 0) {
-                                parts.push(`${fileCount} 个文件`);
-                            }
-                            messageText = parts.join(' 和 ') + ' 导入成功';
-
-                            if (errorMessages.length > 0) {
-                                message.warning(`${messageText}，${errorMessages.length} 个失败`);
-                            } else {
-                                message.success(messageText);
-                            }
-                            resetTree();
-                        } else if (errorMessages.length > 0) {
-                            message.error(errorMessages[0]);
-                        }
-                    } catch (error) {
-                        console.error('导入文件失败:', error);
-                        message.error('导入文件失败');
-                    }
-                }}
+                onDrop={(e) => handleExternalDrop(e as React.DragEvent<HTMLDivElement>, currentFolder)}
             >
-                {/* 拖入提示覆盖层 */}
-                {isDraggingOver && (
-                    <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: 'rgba(24, 144, 255, 0.1)',
-                        zIndex: 10,
-                        pointerEvents: 'none'
-                    }}>
-                        <div style={{
-                            padding: '20px 40px',
-                            backgroundColor: 'white',
-                            borderRadius: '8px',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                            textAlign: 'center'
-                        }}>
-                            <FolderAddOutlined style={{ fontSize: 48, color: '#1890ff', marginBottom: '12px' }} />
-                            <div style={{ fontSize: '16px', color: '#1890ff', fontWeight: 500 }}>
-                                释放以导入文件
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 <ConfigProvider theme={{ token: { colorBgContainer: 'transparent' } }}>
                     {initialLoading ? (
                         <Flex style={{ height: '100%' }} align="center" justify="center">
@@ -990,6 +1029,11 @@ export const FileTree: React.FC = () => {
                             loadData={onLoadData}
                             onLoad={handleLoadedKeys}
                             onDrop={handleDrop}
+                            onDragStart={handleDragStart}
+                            onDragEnd={handleDragEnd}
+                            onDragEnter={handleTreeDragEnter}
+                            onDragOver={handleTreeDragOver}
+                            onDragLeave={handleTreeDragLeave}
                             draggable={{ icon: false }}
                             expandAction="click"
                             style={{ padding: '8px 0' }}
