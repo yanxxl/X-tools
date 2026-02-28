@@ -21,8 +21,8 @@ import { ToolWindowsPane } from './components/windows/ToolWindowsPane';
 // 工具函数
 import { basename } from './utils/fileCommonUtil';
 
-// 常量定义
-const WINDOW_SIZE_KEY = 'x-tools-window-size';
+// 通用组件
+import { WindowSizeManager } from './components/common/WindowSizeManager';
 
 const AppContent: React.FC = () => {
     // 1. 上下文获取
@@ -41,34 +41,7 @@ const AppContent: React.FC = () => {
     const [sizes, setSizes] = useState<number[]>([320, undefined, 320]);
     const [drawerWidth, setDrawerWidth] = useState<number|string>('75%');
 
-    // 3. 辅助函数
-    /**
-     * 保存窗口大小到local storage
-     * @param width - 窗口宽度
-     * @param height - 窗口高度
-     */
-    const saveWindowSize = (width: number, height: number): void => {
-        try {
-            const windowSize = { width, height };
-            localStorage.setItem(WINDOW_SIZE_KEY, JSON.stringify(windowSize));
-        } catch (error) {
-            console.error('保存窗口大小失败:', error);
-        }
-    };
 
-    /**
-     * 从local storage读取窗口大小
-     * @returns 保存的窗口大小对象 {width, height}，如果没有保存则返回null
-     */
-    const getWindowSize = (): { width: number; height: number } | null => {
-        try {
-            const savedSize = localStorage.getItem(WINDOW_SIZE_KEY);
-            return savedSize ? JSON.parse(savedSize) : null;
-        } catch (error) {
-            console.error('读取窗口大小失败:', error);
-            return null;
-        }
-    };
 
     // 4. 事件处理函数
     /**
@@ -103,38 +76,11 @@ const AppContent: React.FC = () => {
     };
 
     // 5. 副作用
-    // 窗口大小相关的副作用
+    // 组件挂载时如果搜索面板打开，立即关闭
     useEffect(() => {
-        // 组件挂载时恢复窗口大小
-        const savedSize = getWindowSize();
-        if (savedSize && window.resizeTo) {
-            try {
-                window.resizeTo(savedSize.width, savedSize.height);
-            } catch (error) {
-                console.error('恢复窗口大小失败:', error);
-            }
-        }
-
-        /**
-         * 处理窗口大小变化事件
-         */
-        const handleResize = (): void => {
-            if (window.innerWidth && window.innerHeight) {
-                saveWindowSize(window.innerWidth, window.innerHeight);
-            }
-        };
-
-        window.addEventListener('resize', handleResize);
-
-        // 组件挂载时如果搜索面板打开，立即关闭
         if (searchPanelOpen) {
             setSearchPanelOpen(false);
         }
-
-        // 组件卸载时移除监听器
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
     }, []);
 
     // 面板可见性相关的副作用
@@ -162,6 +108,8 @@ const AppContent: React.FC = () => {
     // 6. 渲染
     return (
         <>
+            {/* 窗口大小管理 */}
+            <WindowSizeManager />
             {/* 标题栏 */}
             <TitleBar />
 
