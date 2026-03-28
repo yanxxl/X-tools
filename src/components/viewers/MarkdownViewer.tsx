@@ -17,7 +17,6 @@ import Speaker from "../common/Speaker";
 import PageSearch from "../common/PageSearch";
 import EditorSearch, { searchHighlightField } from "../common/EditorSearch";
 import { FontSizeAdjuster } from "../common/FontSizeAdjuster";
-import "../common/PageSearch.css";
 import "../common/EditorSearch.css";
 import { EditableFilePath } from '../common/EditableFilePath';
 import { useAppContext } from '../../contexts/AppContext';

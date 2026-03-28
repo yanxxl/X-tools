@@ -9,8 +9,29 @@ interface PageSearchProps {
     cssSelector: string; // CSS选择器，用于指定搜索范围
 }
 
+const STYLE_ID = 'page-search-highlight-style';
+if (!document.getElementById(STYLE_ID)) {
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+        .page-search-highlight {
+            background-color: #ffec99;
+        }
+        .page-search-highlight.current-result {
+            background-color: #ffd43b;
+            animation: page-search-pulse 1s infinite;
+        }
+        @keyframes page-search-pulse {
+            0% { background-color: #ffd43b; }
+            50% { background-color: #ffc000; }
+            100% { background-color: #ffd43b; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
-    // 常量定义
+
     const HIGHLIGHT_CLASS = 'page-search-highlight';
     const CURRENT_RESULT_CLASS = 'current-result';
     const SEARCH_DEBOUNCE = 300; // 搜索防抖时间，单位毫秒
