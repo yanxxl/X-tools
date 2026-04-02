@@ -16,6 +16,18 @@ import { basename, dirname, isTextFile } from '../../utils/fileCommonUtil';
 import { highlightText } from '../../utils/highlight';
 import { EditableFilePath } from './EditableFilePath';
 
+// 自定义旋转图标组件
+const RotatingSwitcherIcon: React.FC<{ expanded: boolean }> = ({ expanded }) => {
+    return (
+        <DownOutlined 
+            style={{
+                transition: 'transform 0.3s ease',
+                transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)'
+            }} 
+        />
+    );
+};
+
 export const FileTree: React.FC = () => {
     const { currentFolder, currentFile, setCurrentFile } = useAppContext();
 
@@ -1057,7 +1069,9 @@ export const FileTree: React.FC = () => {
                         treeData={dataNodeList}
                         blockNode
                         showLine
-                        switcherIcon={<DownOutlined />}
+                        switcherIcon={(nodeProps) => (
+                            <RotatingSwitcherIcon expanded={nodeProps.expanded} />
+                        )}
                         selectedKeys={selectedKeys}
                         expandedKeys={expandedKeys}
                         loadedKeys={loadedKeys}
