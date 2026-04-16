@@ -631,7 +631,7 @@ function registerIpcHandlers() {
     });
 
     // 打开终端
-    ipcMain.handle('openTerminal', async (event, directory?: string) => {
+    ipcMain.handle('openTerminal', async (event, directory?: string, command?: string) => {
         try {
             let targetDir = directory;
 
@@ -650,28 +650,71 @@ function registerIpcHandlers() {
                 targetDir = path.dirname(targetDir);
             }
 
-            // 根据不同平台打开终端
+            // 根据不同平台打开终端并执行命令
             const platform = process.platform;
             if (platform === 'darwin') {
-                // macOS: 直接用open命令打开Terminal并定位到目录
-                spawn('open', ['-a', 'Terminal', targetDir]);
+                // macOS: 使用 osascript 在 Terminal 中执行命令
+                if (command) {
+                    // 在命令末尾添加 read 让终端保持打开状态
+                    const commandWithPause = `${command}; exit`;
+                    
+                    // 转义 AppleScript 中的特殊字符（双引号、反斜杠等）
+                    const escapedCommand = commandWithPause
+                        .replace(/\\/g, '\\\\')  // 转义反斜杠
+                        .replace(/"/g, '\\"');   // 转义双引号
+                    
+                    // 使用 osascript 直接执行 AppleScript
+                    const script = `tell application "Terminal"\n    activate\n    do script "${escapedCommand}"\nend tell`;
+                    
+                    const child = spawn('osascript', ['-e', script], {
+                        stdio: ['pipe', 'pipe', 'pipe']
+                    });
+                    
+                    child.on('error', (err) => {
+                        console.error('执行 osascript 失败:', err);
+                    });
+                } else {
+                    spawn('open', ['-a', 'Terminal', targetDir]);
+                }
             } else if (platform === 'win32') {
-                // Windows: 优先打开PowerShell
-                try {
-                    spawn('powershell.exe', [], { cwd: targetDir, shell: true });
-                } catch (e) {
-                    // 如果PowerShell不可用，回退到cmd
-                    spawn('cmd.exe', ['/c', 'start', 'cmd.exe'], { cwd: targetDir, shell: true });
+                // Windows: 使用 PowerShell 或 cmd 执行命令
+                if (command) {
+                    const powershellCommand = `cd "${targetDir}"; ${command}`;
+                    spawn('powershell.exe', ['-Command', powershellCommand], { shell: true });
+                } else {
+                    try {
+                        spawn('powershell.exe', [], { cwd: targetDir, shell: true });
+                    } catch (e) {
+                        spawn('cmd.exe', ['/c', 'start', 'cmd.exe'], { cwd: targetDir, shell: true });
+                    }
                 }
             } else {
-                // Linux: 尝试打开常用终端
-                const terminals = ['gnome-terminal', 'konsole', 'xterm', 'xfce4-terminal'];
-                for (const term of terminals) {
-                    try {
-                        spawn(term, [], { cwd: targetDir });
-                        break;
-                    } catch (e) {
-                        continue;
+                // Linux: 尝试打开常用终端并执行命令
+                if (command) {
+                    const terminals = ['gnome-terminal', 'konsole', 'xterm', 'xfce4-terminal'];
+                    for (const term of terminals) {
+                        try {
+                            if (term === 'gnome-terminal') {
+                                spawn('gnome-terminal', ['--working-directory', targetDir, '--', 'bash', '-c', command]);
+                            } else if (term === 'konsole') {
+                                spawn('konsole', ['--workdir', targetDir, '-e', 'bash', '-c', command]);
+                            } else {
+                                spawn(term, ['-e', 'bash', '-c', `cd "${targetDir}" && ${command}`]);
+                            }
+                            break;
+                        } catch (e) {
+                            continue;
+                        }
+                    }
+                } else {
+                    const terminals = ['gnome-terminal', 'konsole', 'xterm', 'xfce4-terminal'];
+                    for (const term of terminals) {
+                        try {
+                            spawn(term, [], { cwd: targetDir });
+                            break;
+                        } catch (e) {
+                            continue;
+                        }
                     }
                 }
             }

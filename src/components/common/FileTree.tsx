@@ -6,13 +6,13 @@ import {
     HomeOutlined, FolderAddOutlined, FileAddOutlined,
     ExpandOutlined, CompressOutlined, SearchOutlined,
     AimOutlined, CloseOutlined, InfoCircleOutlined,
-    LoadingOutlined
+    LoadingOutlined, FileTextOutlined
 } from '@ant-design/icons';
 import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from './FileIcon';
 import { storage } from '../../utils/storage';
-import { basename, dirname, isTextFile } from '../../utils/fileCommonUtil';
+import { basename, dirname, isTextFile, isVideoFile } from '../../utils/fileCommonUtil';
 import { highlightText } from '../../utils/highlight';
 import { EditableFilePath } from './EditableFilePath';
 
@@ -45,11 +45,31 @@ export const FileTree: React.FC = () => {
     const [searchResultCount, setSearchResultCount] = useState<number>(0);
     const [loadedKeys, setLoadedKeys] = useState<string[]>([]);
 
+    // 字幕生成对话框状态
+    const [subtitleModalOpen, setSubtitleModalOpen] = useState<boolean>(false);
+    const [subtitleCommand, setSubtitleCommand] = useState<string>('');
+    const [subtitleTargetFile, setSubtitleTargetFile] = useState<string>('');
+
     // 使用 ref 来避免闭包陷阱
     const currentFileRef = useRef<string | null>(null);
     currentFileRef.current = currentFile;
 
     const isTreeDragging = useRef<boolean>(false);
+
+    // 获取平台特定的 Python 命令
+    const getPythonCommand = async (): Promise<string> => {
+        try {
+            const platform = await window.electronAPI.getPlatform();
+            if (platform === 'win32') {
+                return 'python'; // Windows 通常使用 python
+            } else {
+                return 'python3'; // macOS 和 Linux 通常使用 python3
+            }
+        } catch (error) {
+            console.error('获取平台信息失败，默认使用 python3:', error);
+            return 'python3'; // 默认使用 python3
+        }
+    };
 
     const getAllParentPaths = (filePath: string): string[] => {
         const parts = filePath.split(/[\\/]/).filter(part => part !== '');
@@ -213,6 +233,30 @@ export const FileTree: React.FC = () => {
             // 添加分隔线
             items.push({
                 key: 'divider-convert',
+                type: 'divider'
+            });
+        }
+        // 视频文件添加生成字幕功能
+        if (!node.isDirectory && isVideoFile(node.path)) {
+            items.push({
+                key: 'generate-subtitle',
+                icon: <FileTextOutlined />,
+                label: '生成字幕',
+                onClick: async (e) => {
+                    e.domEvent.stopPropagation();
+                    const videoPath = node.path;
+                    const vttPath = videoPath.replace(/\.[^/.]+$/, '') + '.vtt';
+                    const pythonCommand = await getPythonCommand();
+                    const defaultCommand = `${pythonCommand} -m whisper "${videoPath}" --output_format vtt --output_dir "${dirname(videoPath)}"`;
+                    setSubtitleTargetFile(videoPath);
+                    setSubtitleCommand(defaultCommand);
+                    setSubtitleModalOpen(true);
+                }
+            });
+
+            // 添加分隔线
+            items.push({
+                key: 'divider-subtitle',
                 type: 'divider'
             });
         }
@@ -1099,6 +1143,56 @@ export const FileTree: React.FC = () => {
                     </Flex>
                 )}
             </div>
+
+            {/* 字幕生成对话框 */}
+            <Modal
+                title="生成字幕"
+                open={subtitleModalOpen}
+                onCancel={() => setSubtitleModalOpen(false)}
+                onOk={async () => {
+                    try {
+                        const dirPath = dirname(subtitleTargetFile);
+                        const result = await window.electronAPI.openTerminal(dirPath, subtitleCommand);
+                        if (result.success) {
+                            message.success('终端已打开，命令正在执行中...');
+                        } else {
+                            message.error('打开终端失败: ' + (result.error || '未知错误'));
+                        }
+                    } catch (error) {
+                        console.error('打开终端失败:', error);
+                        message.error('打开终端失败');
+                    }
+                    setSubtitleModalOpen(false);
+                }}
+                okText="执行命令"
+                cancelText="取消"
+                width={600}
+            >
+                <div style={{ marginBottom: 16 }}>
+                    <p style={{ marginBottom: 8, color: '#666' }}>
+                        视频文件: <strong>{basename(subtitleTargetFile)}</strong>
+                    </p>
+                    <p style={{ marginBottom: 8, color: '#666', fontSize: 12 }}>
+                        字幕将生成在视频同目录下，文件名与视频相同，格式为 .vtt
+                    </p>
+                </div>
+                <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 500 }}>
+                        命令行 (可编辑):
+                    </label>
+                    <Input.TextArea
+                        value={subtitleCommand}
+                        onChange={(e) => setSubtitleCommand(e.target.value)}
+                        rows={4}
+                        placeholder="输入 whisper 命令..."
+                    />
+                </div>
+                <div style={{ marginTop: 16, padding: 12, backgroundColor: '#fff7e6', border: '1px solid #ffd591', borderRadius: 4 }}>
+                    <p style={{ margin: 0, fontSize: 12, color: '#fa8c16' }}>
+                        <strong>提示:</strong> 执行此命令需要本地已安装 Python 和 openai-whisper 库。
+                    </p>
+                </div>
+            </Modal>
         </div>
     );
 };

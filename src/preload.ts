@@ -65,7 +65,7 @@ interface ElectronAPI {
     threadPoolExecute: (functionName: string, args?: any[]) => Promise<{ success: boolean; result?: any; error?: string }>;
     
     // === 系统操作 ===
-    openTerminal: (directory?: string) => Promise<{ success: boolean; error?: string }>;
+    openTerminal: (directory?: string, command?: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 // 扩展Window接口，使electronAPI全局可用
@@ -136,7 +136,7 @@ const electronAPI: ElectronAPI = {
     threadPoolExecute: (functionName: string, args?: any[]) => ipcRenderer.invoke('threadPoolExecute', functionName, args || []) as Promise<{ success: boolean; result?: any; error?: string }>,
     
     // 系统操作
-    openTerminal: (directory?: string) => ipcRenderer.invoke('openTerminal', directory) as Promise<{ success: boolean; error?: string }>,
+    openTerminal: (directory?: string, command?: string) => ipcRenderer.invoke('openTerminal', directory, command) as Promise<{ success: boolean; error?: string }>,
 };
 
 // 暴露API给渲染进程
