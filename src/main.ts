@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, screen, shell } from 'electron';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
 import fs from 'fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
@@ -633,93 +633,62 @@ function registerIpcHandlers() {
     // 打开终端
     ipcMain.handle('openTerminal', async (event, directory?: string, command?: string) => {
         try {
-            let targetDir = directory;
+            let workingDirectory = directory;
 
-            // 如果还是没有目录，使用用户主目录
-            if (!targetDir) {
-                targetDir = app.getPath('home');
+            // 如果未提供目录，使用用户主目录
+            if (!workingDirectory) {
+                workingDirectory = app.getPath('home');
             }
 
             // 检查目录是否存在
-            if (!fs.existsSync(targetDir)) {
-                targetDir = app.getPath('home');
+            if (!fs.existsSync(workingDirectory)) {
+                workingDirectory = app.getPath('home');
             }
 
             // 文件若是目录，直接用，若是文件，取其目录
-            if (fs.statSync(targetDir).isFile()) {
-                targetDir = path.dirname(targetDir);
+            if (fs.statSync(workingDirectory).isFile()) {
+                workingDirectory = path.dirname(workingDirectory);
             }
 
             // 根据不同平台打开终端并执行命令
-            const platform = process.platform;
-            if (platform === 'darwin') {
-                // macOS: 使用 osascript 在 Terminal 中执行命令
+            let terminalCommand: string;
+
+            if (process.platform === 'darwin') { // macOS
                 if (command) {
-                    // 在命令末尾添加 read 让终端保持打开状态
-                    const commandWithPause = `${command}; exit`;
-                    
-                    // 转义 AppleScript 中的特殊字符（双引号、反斜杠等）
-                    const escapedCommand = commandWithPause
-                        .replace(/\\/g, '\\\\')  // 转义反斜杠
-                        .replace(/"/g, '\\"');   // 转义双引号
-                    
-                    // 使用 osascript 直接执行 AppleScript
-                    const script = `tell application "Terminal"\n    activate\n    do script "${escapedCommand}"\nend tell`;
-                    
-                    const child = spawn('osascript', ['-e', script], {
-                        stdio: ['pipe', 'pipe', 'pipe']
-                    });
-                    
-                    child.on('error', (err) => {
-                        console.error('执行 osascript 失败:', err);
-                    });
+                    // 使用 osascript 在终端中打开并执行命令
+                    const escapedCommand = command.replace(/"/g, '\\"');
+                    terminalCommand = `osascript -e 'tell application "Terminal" to do script "${escapedCommand}"'`;
                 } else {
-                    spawn('open', ['-a', 'Terminal', targetDir]);
+                    // 直接打开终端到指定目录
+                    terminalCommand = `open -a Terminal "${workingDirectory}"`;
                 }
-            } else if (platform === 'win32') {
-                // Windows: 使用 PowerShell 或 cmd 执行命令
+            } else if (process.platform === 'win32') { // Windows
                 if (command) {
-                    const powershellCommand = `cd "${targetDir}"; ${command}`;
-                    spawn('powershell.exe', ['-Command', powershellCommand], { shell: true });
+                    // 使用PowerShell设置工作目录并执行命令
+                    const escapedWorkingDirectory = workingDirectory.replace(/'/g, "''");
+                    const escapedCommand = command.replace(/'/g, "''");
+                    terminalCommand = `powershell -NoExit -Command "cd '${escapedWorkingDirectory}'; ${escapedCommand}; Write-Host '按任意键继续...'; $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') | Out-Null"`;
                 } else {
-                    try {
-                        spawn('powershell.exe', [], { cwd: targetDir, shell: true });
-                    } catch (e) {
-                        spawn('cmd.exe', ['/c', 'start', 'cmd.exe'], { cwd: targetDir, shell: true });
-                    }
+                    // 备用方法：使用cmd打开终端
+                    terminalCommand = `cmd /c start cmd /k "cd /d "${workingDirectory}""`;
                 }
-            } else {
-                // Linux: 尝试打开常用终端并执行命令
+            } else { // Linux
                 if (command) {
-                    const terminals = ['gnome-terminal', 'konsole', 'xterm', 'xfce4-terminal'];
-                    for (const term of terminals) {
-                        try {
-                            if (term === 'gnome-terminal') {
-                                spawn('gnome-terminal', ['--working-directory', targetDir, '--', 'bash', '-c', command]);
-                            } else if (term === 'konsole') {
-                                spawn('konsole', ['--workdir', targetDir, '-e', 'bash', '-c', command]);
-                            } else {
-                                spawn(term, ['-e', 'bash', '-c', `cd "${targetDir}" && ${command}`]);
-                            }
-                            break;
-                        } catch (e) {
-                            continue;
-                        }
-                    }
+                    // 使用 gnome-terminal 或 xterm
+                    terminalCommand = `gnome-terminal --working-directory="${workingDirectory}" -- bash -c "${command}; exec bash" || xterm -e "cd "${workingDirectory}" && ${command}; bash`;
                 } else {
-                    const terminals = ['gnome-terminal', 'konsole', 'xterm', 'xfce4-terminal'];
-                    for (const term of terminals) {
-                        try {
-                            spawn(term, [], { cwd: targetDir });
-                            break;
-                        } catch (e) {
-                            continue;
-                        }
-                    }
+                    // 直接打开终端到指定目录
+                    terminalCommand = `gnome-terminal --working-directory="${workingDirectory}" || konsole --workdir "${workingDirectory}" || xterm -e "cd "${workingDirectory}" && bash`;
                 }
             }
 
-            return { success: true };
+            // 执行打开终端的命令
+            const childProcess = exec(terminalCommand, {
+                cwd: workingDirectory
+            });
+
+            // 返回进程ID用于后续控制
+            return { success: true, pid: childProcess.pid };
         } catch (error) {
             console.error('打开终端失败:', error);
             return { success: false, error: (error as Error).message };
