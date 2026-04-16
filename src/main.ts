@@ -514,7 +514,7 @@ function registerIpcHandlers() {
             // 使用Electron的webContents.startDrag方法启动拖拽
             const firstFilePath = filePaths[0];
             const firstFileStats = fs.statSync(firstFilePath);
-            
+
             // 如果是文件，使用文件图标，如果是目录，使用默认图标
             let dragIcon: Electron.NativeImage | null = null;
             if (firstFileStats.isFile()) {
@@ -534,7 +534,7 @@ function registerIpcHandlers() {
                     icon: dragIcon // 拖拽时显示的图标
                 });
             }
-            
+
             return true;
         } catch (error) {
             console.error('启动文件拖拽失败:', error);
@@ -664,10 +664,7 @@ function registerIpcHandlers() {
                 }
             } else if (process.platform === 'win32') { // Windows
                 if (command) {
-                    // 使用PowerShell设置工作目录并执行命令
-                    const escapedWorkingDirectory = workingDirectory.replace(/'/g, "''");
-                    const escapedCommand = command.replace(/'/g, "''");
-                    terminalCommand = `powershell -NoExit -Command "cd '${escapedWorkingDirectory}'; ${escapedCommand}; Write-Host '按任意键继续...'; $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown') | Out-Null"`;
+                    terminalCommand = `cmd /c start cmd /k "${command} & pause"`;
                 } else {
                     // 备用方法：使用cmd打开终端
                     terminalCommand = `cmd /c start cmd /k "cd /d "${workingDirectory}""`;
@@ -711,7 +708,7 @@ function registerIpcHandlers() {
 
             // 读取文件内容并检测编码
             const buffer = fs.readFileSync(filePath);
-            
+
             // 使用chardet检测文件编码
             const detectedEncoding = chardet.detect(buffer);
             console.log(`检测到文件编码: ${detectedEncoding || 'unknown'}，路径: ${filePath}`);
@@ -719,7 +716,7 @@ function registerIpcHandlers() {
             // 检查是否已经是UTF-8编码
             const isUtf8 = detectedEncoding === 'UTF-8' || detectedEncoding === 'UTF-8-SIG';
             const hasUtf8Bom = buffer.length >= 3 && buffer[0] === 0xEF && buffer[1] === 0xBB && buffer[2] === 0xBF;
-            
+
             if (isUtf8 || hasUtf8Bom) {
                 console.log(`文件 ${filePath} 已经是 UTF-8 编码`);
                 return true;
@@ -757,12 +754,12 @@ function registerIpcHandlers() {
             const bom = Buffer.from([0xEF, 0xBB, 0xBF]);
             const contentBuffer = Buffer.from(content, 'utf8');
             const finalBuffer = Buffer.concat([bom, contentBuffer]);
-            
+
             fs.writeFileSync(newFilePath, finalBuffer);
-            
+
             console.log(`文件已成功转码为 UTF-8: ${filePath} -> ${newFilePath}`);
             console.log(`原编码: ${detectedEncoding || 'unknown'}, 新编码: UTF-8`);
-            
+
             return true;
         } catch (error) {
             console.error('转码文件失败:', error);
