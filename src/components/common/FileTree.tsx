@@ -8,6 +8,7 @@ import {
     AimOutlined, CloseOutlined, InfoCircleOutlined,
     LoadingOutlined, FileTextOutlined
 } from '@ant-design/icons';
+import * as OpenCC from 'opencc-js';
 import { FileNode } from '../../types';
 import { useAppContext } from '../../contexts/AppContext';
 import { FileIcon } from './FileIcon';
@@ -232,7 +233,80 @@ export const FileTree: React.FC = () => {
 
             // 添加分隔线
             items.push({
-                key: 'divider-convert',
+                key: 'divider-convert-utf8',
+                type: 'divider'
+            });
+        }
+
+        // 添加简体/繁体转码功能（仅对文本文件有效）
+        if (!node.isDirectory && isTextFile(node.path)) {
+            items.push({
+                key: 'convert-to-simplified',
+                icon: <FileOutlined />,
+                label: (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <span>转码为简体</span>
+                        <Tooltip title="转为简体中文，并保留原文件">
+                            <InfoCircleOutlined style={{ color: 'gray', fontSize: '12px', marginLeft: '8px' }} />
+                        </Tooltip>
+                    </div>
+                ),
+                onClick: async (e) => {
+                    e.domEvent.stopPropagation();
+                    try {
+                        const content = await window.electronAPI.readFile(node.path);
+                        const converter = OpenCC.Converter({ from: 'tw', to: 'cn' });
+                        const convertedContent = converter(content);
+                        const newPath = node.path.replace(/(\.[^/.]+)$/, '.simplified$1');
+                        const success = await window.electronAPI.writeFile(newPath, convertedContent);
+                        if (success) {
+                            message.success('文件已成功转码为简体中文');
+                            resetTree();
+                        } else {
+                            message.error('转码失败，请重试');
+                        }
+                    } catch (error) {
+                        console.error('转码为简体失败:', error);
+                        message.error('转码失败');
+                    }
+                }
+            });
+
+            items.push({
+                key: 'convert-to-traditional',
+                icon: <FileOutlined />,
+                label: (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <span>转码为繁体</span>
+                        <Tooltip title="转为繁体中文，并保留原文件">
+                            <InfoCircleOutlined style={{ color: 'gray', fontSize: '12px', marginLeft: '8px' }} />
+                        </Tooltip>
+                    </div>
+                ),
+                onClick: async (e) => {
+                    e.domEvent.stopPropagation();
+                    try {
+                        const content = await window.electronAPI.readFile(node.path);
+                        const converter = OpenCC.Converter({ from: 'cn', to: 'tw' });
+                        const convertedContent = converter(content);
+                        const newPath = node.path.replace(/(\.[^/.]+)$/, '.traditional$1');
+                        const success = await window.electronAPI.writeFile(newPath, convertedContent);
+                        if (success) {
+                            message.success('文件已成功转码为繁体中文');
+                            resetTree();
+                        } else {
+                            message.error('转码失败，请重试');
+                        }
+                    } catch (error) {
+                        console.error('转码为繁体失败:', error);
+                        message.error('转码失败');
+                    }
+                }
+            });
+
+            // 添加分隔线
+            items.push({
+                key: 'divider-convert-chinese',
                 type: 'divider'
             });
         }
