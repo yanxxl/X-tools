@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Card, Descriptions, message, Modal, Space, Tooltip, Typography } from 'antd';
-import { DeleteOutlined, ReloadOutlined, SettingOutlined, CodeOutlined, ConsoleSqlOutlined } from '@ant-design/icons';
+import { DeleteOutlined, ReloadOutlined, SettingOutlined, CodeOutlined, ConsoleSqlOutlined, DashboardOutlined } from '@ant-design/icons';
 import { clearAllLocalStorage, formatBytes, getLocalStorageInfo } from '../../utils/storageUtils';
 import { ToolWindow } from './toolWindow';
 import { useAppContext } from '../../contexts/AppContext';
@@ -227,27 +227,27 @@ const SettingsPanel: React.FC = () => {
                         用于调试和开发的高级工具
                     </Paragraph>
                 </div>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                    <Tooltip title="打开开发者工具（用于调试）">
-                        <Button
-                            size="small"
-                            icon={<CodeOutlined />}
-                            onClick={handleOpenDevTools}
-                            type="default"
-                            style={{ width: '100%' }}
-                        >
-                            打开开发者工具
-                        </Button>
-                    </Tooltip>
+                <Space direction="vertical" style={{ width: '100%' }}>                    
                     <Tooltip title="打开系统终端，以当前目录为工作目录">
                         <Button
                             size="small"
-                            icon={<ConsoleSqlOutlined />}
+                            icon={<CodeOutlined />}
                             onClick={handleOpenTerminal}
                             type="default"
                             style={{ width: '100%' }}
                         >
                             打开终端
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="打开开发者工具（用于调试）">
+                        <Button
+                            size="small"
+                            icon={<DashboardOutlined />}
+                            onClick={handleOpenDevTools}
+                            type="default"
+                            style={{ width: '100%' }}
+                        >
+                            打开开发者工具
                         </Button>
                     </Tooltip>
                 </Space>
