@@ -64,6 +64,76 @@ function generateAnchorId(text: string, existingIds: Set<string> = new Set()): s
 }
 
 /**
+ * rehype 插件：为代码块添加行号
+ * 将 <pre><code> 转换为带行号的表格结构
+ */
+function rehypeLineNumbers() {
+    return (tree: any) => {
+        visit(tree, 'element', (node: any, index: number, parent: any) => {
+            if (node.tagName === 'pre' && parent && Array.isArray(parent.children)) {
+                const codeChild = node.children.find((child: any) => child.tagName === 'code');
+                if (!codeChild || !codeChild.children) return;
+
+                // 提取代码文本内容并按行分割
+                const text = getTextContent(codeChild);
+                // split('\n') 在末尾换行时会产生多余空元素，如 "a\n" → ["a", ""]
+                const rawLines = text.split('\n');
+                const lines = text.endsWith('\n') ? rawLines.slice(0, -1) : rawLines;
+
+                // 构建带行号的 HTML 结构
+                const lineNumbersHtml = lines.map((_line: string, i: number) =>
+                    `<span class="code-line-number">${i + 1}</span>`
+                ).join('');
+                const codeLinesHtml = lines.map((line: string, i: number) => {
+                    const escaped = line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    // 空行用零宽空格占位，确保 span 有高度
+                    const content = escaped || '\u200B';
+                    return `<span class="code-line" data-line="${i + 1}">${content}</span>`;
+                }).join('');
+
+                // 替换原节点为包装结构
+                const newNode: any = {
+                    type: 'element',
+                    tagName: 'div',
+                    properties: { className: ['code-block-wrapper'] },
+                    children: [
+                        {
+                            type: 'element',
+                            tagName: 'div',
+                            properties: { className: ['code-line-numbers'] },
+                            children: [{ type: 'raw', value: lineNumbersHtml }]
+                        },
+                        {
+                            type: 'element',
+                            tagName: 'pre',
+                            properties: node.properties || {},
+                            children: [{
+                                type: 'raw',
+                                value: `<code class="${codeChild.properties?.className?.join(' ') || ''}">${codeLinesHtml}</code>`
+                            }]
+                        }
+                    ]
+                };
+
+                parent.children[index] = newNode;
+            }
+        });
+    };
+}
+
+/**
+ * 从 AST 节点提取文本内容
+ */
+function getTextContent(node: any): string {
+    if (!node) return '';
+    if (node.type === 'text') return node.value;
+    if (node.children) {
+        return node.children.map(getTextContent).join('');
+    }
+    return '';
+}
+
+/**
  * 解析 Markdown 文本并生成 HTML、大纲和 frontmatter 数据
  * 使用 remark.js 生态系统处理 Markdown，支持 frontmatter、GitHub 风格 Markdown 和代码高亮
  *
@@ -165,6 +235,7 @@ export async function parseMarkdown(markdown: string, filePath = ''): Promise<Ma
         })
         .use(remarkRehype, { allowDangerousHtml: true }) // 将 Markdown 转换为 HTML，允许危险 HTML
         .use(rehypeHighlight) // 添加代码高亮
+        .use(rehypeLineNumbers) // 添加代码行号
         .use(rehypeMermaid) // 渲染 Mermaid 图表
         .use(rehypeKatex) // 数学公式渲染
         .use(rehypeStringify, { allowDangerousHtml: true }); // 将结果序列化为 HTML 字符串，允许危险 HTML

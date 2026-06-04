@@ -134,7 +134,7 @@
     padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
-    /*background-color: rgba(27, 31, 35, 0.05);*/
+    background-color: rgba(27, 31, 35, 0.05);
     border-radius: 3px;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
@@ -145,7 +145,7 @@
     overflow: auto;
     font-size: 85%;
     line-height: var(--markdown-line-height);
-    /*background-color: #f6f8fa;*/
+    background-color: #f6f8fa;
     border-radius: 6px;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
@@ -211,6 +211,51 @@
 .markdown-content .hljs {
     background: #f6f8fa !important;
     color: #24292e;
+}
+
+/* 代码块行号样式 */
+.markdown-content .code-block-wrapper {
+    display: flex;
+    margin: 0 0 16px 0;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+    overflow: auto;
+}
+
+.markdown-content .code-line-numbers,
+.markdown-content .code-block-wrapper pre {
+    padding: 16px;
+    margin: 0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: calc(var(--markdown-font-size) * 0.85);
+    line-height: calc(var(--markdown-font-size) * 0.85 * 1.5);
+}
+
+.markdown-content .code-block-wrapper pre {
+    padding-left: 12px;
+    border-radius: 0;
+    flex: 1;
+    overflow: visible;
+    background-color: transparent;
+    white-space: pre;
+}
+
+.markdown-content .code-line-numbers {
+    background-color: #eaecef;
+    border-right: 1px solid #d0d7de;
+    text-align: right;
+    user-select: none;
+    flex-shrink: 0;
+    min-width: 40px;
+}
+
+.markdown-content .code-line-number {
+    display: block;
+    color: #6a737d;
+}
+
+.markdown-content .code-line {
+    display: block;
 }
 
 /* 滚动条样式 */
