@@ -66,6 +66,7 @@ function generateAnchorId(text: string, existingIds: Set<string> = new Set()): s
 /**
  * rehype 插件：为代码块添加行号
  * 将 <pre><code> 转换为带行号的表格结构
+ * 跳过 Mermaid 图表和 KaTeX 公式代码块
  */
 function rehypeLineNumbers() {
     return (tree: any) => {
@@ -73,6 +74,20 @@ function rehypeLineNumbers() {
             if (node.tagName === 'pre' && parent && Array.isArray(parent.children)) {
                 const codeChild = node.children.find((child: any) => child.tagName === 'code');
                 if (!codeChild || !codeChild.children) return;
+
+                // 检查是否为 Mermaid 或数学公式代码块，跳过这些特殊代码块
+                const classNames = codeChild.properties?.className || [];
+                const classList = Array.isArray(classNames) ? classNames : [classNames];
+                const isMermaid = classList.includes('language-mermaid') || classList.includes('mermaid');
+                const isMath = classList.some((c: string) =>
+                    c === 'language-math' ||
+                    c === 'language-latex' ||
+                    c === 'language-katex' ||
+                    c.startsWith('language-math-')
+                );
+
+                // 如果是 Mermaid 或数学公式，跳过处理
+                if (isMermaid || isMath) return;
 
                 // 提取代码文本内容并按行分割
                 const text = getTextContent(codeChild);
@@ -235,9 +250,9 @@ export async function parseMarkdown(markdown: string, filePath = ''): Promise<Ma
         })
         .use(remarkRehype, { allowDangerousHtml: true }) // 将 Markdown 转换为 HTML，允许危险 HTML
         .use(rehypeHighlight) // 添加代码高亮
+        .use(rehypeMermaid) // 渲染 Mermaid 图表（必须在 rehypeLineNumbers 之前）
+        .use(rehypeKatex) // 数学公式渲染（必须在 rehypeLineNumbers 之前）
         .use(rehypeLineNumbers) // 添加代码行号
-        .use(rehypeMermaid) // 渲染 Mermaid 图表
-        .use(rehypeKatex) // 数学公式渲染
         .use(rehypeStringify, { allowDangerousHtml: true }); // 将结果序列化为 HTML 字符串，允许危险 HTML
 
     // 处理 Markdown 内容
