@@ -6,6 +6,7 @@
 // 存储键名常量
 export const STORAGE_KEYS = {
   MARKDOWN_FONT_SIZE: 'markdown-viewer-font-size',
+  MARKDOWN_SIDEBAR_WIDTH: 'markdown-viewer-sidebar-width',
   FILE_ACCESS_HISTORY: 'file-access-history',
   MARKDOWN_SCROLL_POSITION: 'markdown-viewer-scroll-position',
   SUBTITLE_VISIBLE: 'video-viewer-subtitle-visible',
