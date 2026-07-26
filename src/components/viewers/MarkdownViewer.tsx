@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { MenuProps } from 'antd';
 import { Button, Dropdown, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typography } from 'antd';
 import { CodeOutlined, EditOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
@@ -38,6 +38,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
     const [viewMode, setViewMode] = useState<'rendered' | 'source'>('rendered');
     const [error, setError] = useState<string | null>(null);
     const [editorView, setEditorView] = useState<any>(null);
+    const [sidebarWidth, setSidebarWidth] = useState<number>(() =>
+        storage.get<number>(STORAGE_KEYS.MARKDOWN_SIDEBAR_WIDTH, 250)
+    );
 
 
     // ============================== Refs ==============================
@@ -46,11 +49,6 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
     const editorRef = useRef<any>(null);
     const previewContainerRef = useRef<HTMLDivElement>(null);
     const scrollPollingRef = useRef<NodeJS.Timeout | null>(null);
-
-    const savedSidebarWidth = useMemo(
-        () => storage.get<number>(STORAGE_KEYS.MARKDOWN_SIDEBAR_WIDTH, 250),
-        []
-    );
 
     // ============================== Keyboard Event Handlers ==============================
     useEffect(() => {
@@ -599,10 +597,11 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                     style={{ height: '100%' }}
                     onResize={(sizes) => {
                         storage.set(STORAGE_KEYS.MARKDOWN_SIDEBAR_WIDTH, sizes[0]);
+                        setSidebarWidth(sizes[0]);
                     }}
                 >
                     <Splitter.Panel
-                        defaultSize={savedSidebarWidth}
+                        size={sidebarWidth}
                         min={'10%'}
                         max={'50%'}
                         style={{ background: '#fff', padding: '16px 0px' }}
