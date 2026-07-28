@@ -7,13 +7,15 @@ import { Button, Card, Input, Modal, Select, Space, Tooltip, Typography, message
 // Ant Design icons
 import {
     DeleteOutlined,
-    DownOutlined,
     MessageOutlined,
     PlusOutlined,
     ReloadOutlined,
     SettingOutlined,
-    UpOutlined,
 } from '@ant-design/icons';
+
+// Drag & Drop
+import { DragDropProvider } from '@dnd-kit/react';
+import { useSortable, isSortable } from '@dnd-kit/react/sortable';
 
 // Project components
 import { ToolWindow } from './toolWindow';
@@ -75,6 +77,68 @@ function saveProviders(providers: AiChatProvider[]) {
 }
 
 // =========================================================================
+// Sortable Provider Item
+// =========================================================================
+interface SortableProviderItemProps {
+    provider: AiChatProvider;
+    index: number;
+    onDelete: (id: string) => void;
+}
+
+const SortableProviderItem: React.FC<SortableProviderItemProps> = ({ provider, index, onDelete }) => {
+    const { ref, handleRef, isDragSource } = useSortable({
+        id: provider.id,
+        index,
+        type: 'provider',
+        accept: 'provider',
+    });
+
+    return (
+        <div
+            ref={ref}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 8px',
+                borderRadius: 4,
+                background: isDragSource ? '#e6f4ff' : index % 2 === 0 ? '#fafafa' : '#fff',
+                opacity: isDragSource ? 0.6 : 1,
+                transition: 'background 0.2s',
+            }}
+        >
+            {/* 拖拽手柄 */}
+            <span
+                ref={handleRef}
+                style={{
+                    cursor: 'grab',
+                    userSelect: 'none',
+                    color: '#bbb',
+                    fontSize: 16,
+                    lineHeight: 1,
+                    padding: '0 2px',
+                }}
+            >
+                ⠿
+            </span>
+            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <Text strong>{provider.name}</Text>
+                <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
+                    {provider.url}
+                </Text>
+            </span>
+            <Button
+                type="text"
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => onDelete(provider.id)}
+            />
+        </div>
+    );
+};
+
+// =========================================================================
 // Configuration Modal Component
 // =========================================================================
 interface ConfigModalProps {
@@ -94,23 +158,12 @@ const ConfigModal: React.FC<ConfigModalProps> = ({ open, providers, onClose, onS
         setEditList(providers);
     }, [providers, open]);
 
-    const handleMoveUp = (index: number) => {
-        if (index <= 0) return;
-        const next = [...editList];
-        [next[index - 1], next[index]] = [next[index], next[index - 1]];
-        setEditList(next);
-    };
+    // 所有操作立即保存，不再需要保存/取消按钮
 
-    const handleMoveDown = (index: number) => {
-        if (index >= editList.length - 1) return;
-        const next = [...editList];
-        [next[index], next[index + 1]] = [next[index + 1], next[index]];
+    const handleDelete = (id: string) => {
+        const next = editList.filter(p => p.id !== id);
         setEditList(next);
-    };
-
-    const handleDelete = (index: number) => {
-        const next = editList.filter((_, i) => i !== index);
-        setEditList(next);
+        onSave(next);
     };
 
     const handleAdd = () => {
@@ -125,78 +178,56 @@ const ConfigModal: React.FC<ConfigModalProps> = ({ open, providers, onClose, onS
             return;
         }
         const id = `custom-${Date.now()}`;
-        setEditList([...editList, { id, name, url }]);
+        const newList = [...editList, { id, name, url }];
+        setEditList(newList);
+        onSave(newList);
         setNewName('');
         setNewUrl('');
     };
 
     const handleReset = () => {
         setEditList(DEFAULT_PROVIDERS);
+        onSave(DEFAULT_PROVIDERS);
         message.success('已重置为默认列表');
-    };
-
-    const handleOk = () => {
-        if (editList.length === 0) {
-            message.warning('至少保留一个 AI 服务');
-            return;
-        }
-        onSave(editList);
-        onClose();
     };
 
     return (
         <Modal
             title="AI Chat 配置"
             open={open}
-            onOk={handleOk}
             onCancel={onClose}
             width={480}
-            okText="保存"
-            cancelText="取消"
+            footer={null}
         >
             <Space orientation="vertical" style={{ width: '100%' }}>
-                {/* 服务列表 */}
-                {editList.map((p, index) => (
-                    <div
-                        key={p.id}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: '6px 8px',
-                            borderRadius: 4,
-                            background: index % 2 === 0 ? '#fafafa' : '#fff',
-                        }}
-                    >
-                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            <Text strong>{p.name}</Text>
-                            <Text type="secondary" style={{ marginLeft: 8, fontSize: 12 }}>
-                                {p.url}
-                            </Text>
-                        </span>
-                        <Button
-                            type="text"
-                            size="small"
-                            icon={<UpOutlined />}
-                            disabled={index === 0}
-                            onClick={() => handleMoveUp(index)}
-                        />
-                        <Button
-                            type="text"
-                            size="small"
-                            icon={<DownOutlined />}
-                            disabled={index === editList.length - 1}
-                            onClick={() => handleMoveDown(index)}
-                        />
-                        <Button
-                            type="text"
-                            size="small"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleDelete(index)}
-                        />
+                {/* 可拖放排序的服务列表 */}
+                <DragDropProvider
+                    onDragEnd={(event) => {
+                        if (event.canceled) return;
+                        const { source } = event.operation;
+                        if (isSortable(source)) {
+                            const { initialIndex, index } = source;
+                            if (initialIndex !== index) {
+                                const newItems = [...editList];
+                                const [removed] = newItems.splice(initialIndex, 1);
+                                newItems.splice(index, 0, removed);
+                                setEditList(newItems);
+                                onSave(newItems);
+                            }
+                        }
+                    }}
+                >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {editList.map((p, index) => (
+                            <SortableProviderItem
+                                key={p.id}
+                                provider={p}
+                                index={index}
+                                onDelete={handleDelete}
+                            />
+                        ))}
                     </div>
-                ))}
+                </DragDropProvider>
 
                 {/* 新增表单 */}
                 <div
