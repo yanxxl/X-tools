@@ -837,6 +837,8 @@ const createWindow = (folderPath?: string) => {
             // 安全设置：阻止外部链接加载
             contextIsolation: true,
             allowRunningInsecureContent: false,
+            // 启用 <webview> 标签，用于嵌入外部网页（如 AI 聊天）
+            webviewTag: true,
         },
         ...(process.platform === 'darwin' ? {
             // macOS specific settings

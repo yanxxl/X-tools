@@ -9,6 +9,8 @@ export const STORAGE_KEYS = {
   MARKDOWN_SIDEBAR_WIDTH: 'markdown-viewer-sidebar-width',
   FILE_ACCESS_HISTORY: 'file-access-history',
   MARKDOWN_SCROLL_POSITION: 'markdown-viewer-scroll-position',
+  AI_CHAT_PROVIDER: 'ai-chat-provider',
+  AI_CHAT_CONFIG: 'ai-chat-config',
   SUBTITLE_VISIBLE: 'video-viewer-subtitle-visible',
   SUBTITLE_PANEL_VISIBLE: 'video-viewer-subtitle-panel-visible'
 } as const;

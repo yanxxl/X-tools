@@ -8,6 +8,7 @@ import {fileInfoToolWindow} from './FileInfoToolWindow';
 import {fileHistoryToolWindow} from './FileHistoryToolWindow';
 import {settingsToolWindow} from './SettingsToolWindow';
 import {dictionaryToolWindow} from './DictionaryToolWindow';
+import {aiChatToolWindow} from './AiChatToolWindow';
 
 /**
  * 初始化并注册所有工具窗口
@@ -23,6 +24,9 @@ export const initializeToolWindows = () => {
     // 注册字典工具窗口
     toolWindowManager.register(dictionaryToolWindow);
     
+    // 注册 AI Chat 工具窗口，位于词典下方
+    toolWindowManager.register(aiChatToolWindow);
+    
     // 注册设置工具窗口
     toolWindowManager.register(settingsToolWindow);
     
@@ -30,6 +34,7 @@ export const initializeToolWindows = () => {
         fileInfoWindow: fileInfoToolWindow,
         fileHistoryWindow: fileHistoryToolWindow,
         dictionaryWindow: dictionaryToolWindow,
+        aiChatWindow: aiChatToolWindow,
         settingsWindow: settingsToolWindow,
     };
 };
