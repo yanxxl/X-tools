@@ -42,8 +42,6 @@ const DEFAULT_PROVIDERS: AiChatProvider[] = [
     { id: 'kimi', name: 'Kimi', url: 'https://kimi.moonshot.cn/' },
     { id: 'doubao', name: '豆包', url: 'https://www.doubao.com/chat/' },
     { id: 'yuanbao', name: '元宝', url: 'https://yuanbao.tencent.com/chat/' },
-    { id: 'tongyi', name: '通义千问', url: 'https://tongyi.aliyun.com/qianwen/' },
-    { id: 'metaso', name: '秘塔搜索', url: 'https://metaso.cn/' },
     { id: 'chatgpt', name: 'ChatGPT', url: 'https://chatgpt.com/' },
     { id: 'claude', name: 'Claude', url: 'https://claude.ai/' },
     { id: 'gemini', name: 'Gemini', url: 'https://gemini.google.com/' },
