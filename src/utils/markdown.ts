@@ -483,6 +483,7 @@ function preserveBlankLines(markdown: string): string {
     let fenceChar = '';
     let fenceLen = 0;
     let blankRun = 0; // 当前连续空行数（仅统计段间空行）
+    let lastWasBr = false; // 上一行是否为注入的保留空行 <br>
 
     const result: string[] = [];
 
@@ -500,6 +501,7 @@ function preserveBlankLines(markdown: string): string {
                 inFence = false;
             }
             blankRun = 0;
+            lastWasBr = false;
             result.push(line);
             continue;
         }
@@ -513,9 +515,20 @@ function preserveBlankLines(markdown: string): string {
         if (trimmed === '') {
             blankRun++;
             // 第 1 个空行是正常段落分隔（2 个换行），第 2 个起保留为空行
-            result.push(blankRun >= 2 ? '<br>' : '');
+            if (blankRun >= 2) {
+                result.push('<br>');
+                lastWasBr = true;
+            } else {
+                result.push('');
+            }
         } else {
             blankRun = 0;
+            // 保留的空行（<br>）之后必须补一个空行，否则紧随其后的内容会被
+            // remark 视为上一行的延续（吞并进 <br> 所在的块）而非独立段落
+            if (lastWasBr) {
+                result.push('');
+                lastWasBr = false;
+            }
             result.push(line);
         }
     }
