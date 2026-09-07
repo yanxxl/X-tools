@@ -7,6 +7,7 @@ import { clearCache, getCacheStats, readFileLines } from './fileCacheUtil';
 import { truncateTextWithQuery } from './format';
 import { SearchResult } from '../types';
 import {isTextableFile} from './fileLocalUtil';
+import {parseMarkdownBlocks} from './markdown';
 
 // 搜索文件内容
 async function searchFileContent(filePath: string, query: string, searchMode: 'content' | 'filename'): Promise<SearchResult | null> {
@@ -100,8 +101,24 @@ async function checkAndCleanExpiredCache(maxAgeMs: number = 7 * 24 * 60 * 60 * 1
   }
 }
 
+/**
+ * 解析 Markdown 为分块 HTML（在线程池中执行，避免阻塞渲染进程与主线程）
+ * @param markdown Markdown 原文
+ * @param filePath 文件路径，用于解析相对图片地址
+ * @param lite 是否使用精简模式
+ */
+async function parseMarkdown(markdown: string, filePath: string, lite?: boolean, idPrefix?: string) {
+  const startTime = performance.now();
+  const result = await parseMarkdownBlocks(markdown, filePath, lite, idPrefix || '');
+  return {
+    ...result,
+    parseTime: performance.now() - startTime
+  };
+}
+
 // 创建worker并注册公共函数
 workerpool.worker({
   searchFileContent: searchFileContent,
-  checkAndCleanExpiredCache: checkAndCleanExpiredCache
+  checkAndCleanExpiredCache: checkAndCleanExpiredCache,
+  parseMarkdown: parseMarkdown
 });

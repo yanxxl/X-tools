@@ -1,4 +1,5 @@
 import {unified} from 'unified';
+import {VFile} from 'vfile';
 import {dirname, join} from './fileCommonUtil';
 import remarkParse from 'remark-parse';
 import remarkRehype from 'remark-rehype';
@@ -10,7 +11,6 @@ import remarkMath from 'remark-math';
 import remarkBreaks from 'remark-breaks';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
-import rehypeMermaid from 'rehype-mermaid';
 import {visit} from 'unist-util-visit';
 import * as yaml from 'yaml';
 
@@ -36,20 +36,95 @@ export interface MarkdownParseResult {
 }
 
 /**
+ * 大文件阈值（字符数）
+ * 超过该阈值的文档自动进入"精简模式"：跳过代码高亮、代码行号与 Mermaid 渲染。
+ * 这三项在超大文档上会产生海量 DOM 节点（每个高亮 token 一个 span、每行代码两个 span），
+ * 是渲染卡死的主要原因。
+ */
+export const LARGE_FILE_THRESHOLD = 300 * 1024;
+
+/**
+ * 扁平标题项
+ * 超大文档会被分段解析，各段返回扁平标题列表，由调用方累积后统一构建大纲树，
+ * 这样跨段的层级关系仍然正确。
+ */
+export interface FlatHeading {
+    id: string;      // 标题锚点 ID
+    title: string;   // 标题文本
+    level: number;   // 标题级别 (1-6)
+}
+
+/**
+ * 分块解析结果
+ * chunks 为按顶层块（标题、段落、代码块、表格等）切分后的 HTML 片段数组，
+ * 渲染进程可以分批插入 DOM，避免一次性注入超大 HTML 造成的长时间冻结。
+ */
+export interface MarkdownBlocksResult {
+    chunks: string[];                  // 分块后的 HTML 片段列表
+    headings: FlatHeading[];           // 扁平标题列表（跨段累积后可构建完整大纲）
+    frontmatter?: Record<string, any>; // 文档的 frontmatter 数据（如果存在）
+}
+
+/**
+ * 由扁平标题列表构建大纲树
+ */
+export function buildOutline(headings: FlatHeading[]): OutlineItem[] {
+    const outline: OutlineItem[] = [];
+    const stack: OutlineItem[] = [];
+
+    for (const heading of headings) {
+        const item: OutlineItem = {
+            id: heading.id,
+            title: heading.title,
+            level: heading.level,
+            children: []
+        };
+
+        while (stack.length > 0 && stack[stack.length - 1].level >= item.level) {
+            stack.pop();
+        }
+
+        if (stack.length === 0) {
+            outline.push(item);
+        } else {
+            stack[stack.length - 1].children.push(item);
+        }
+
+        stack.push(item);
+    }
+
+    return outline;
+}
+
+/**
+ * 单次解析的上下文
+ * 通过 vfile.data 传入插件，使 processor 可以复用（单例）且不共享可变状态
+ */
+interface MarkdownContext {
+    filePath?: string;                  // 当前文件路径（用于解析相对图片地址）
+    idPrefix?: string;                  // 锚点 ID 前缀，保证分段解析时 ID 不冲突
+    headings: FlatHeading[];            // 输出：扁平标题列表
+    frontmatter?: Record<string, any>;  // 输出：frontmatter 数据
+}
+
+/**
  * 生成锚点 ID
  * 将标题文本转换为唯一的 HTML 锚点 ID
  * @param text 标题文本
  * @param existingIds 已存在的 ID 集合，用于确保 ID 唯一性
+ * @param prefix ID 前缀（分段解析时使用）
  * @returns 生成的唯一锚点 ID
  */
-function generateAnchorId(text: string, existingIds: Set<string> = new Set()): string {
-    const baseId = text
+function generateAnchorId(text: string, existingIds: Set<string> = new Set(), prefix = ''): string {
+    const rawId = text
             .toLowerCase()
             .replace(/[^\w\u4e00-\u9fa5\s-]/g, '')
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
             .replace(/^-|-$/g, '')
         || 'heading';
+
+    const baseId = prefix ? `${prefix}${rawId}` : rawId;
 
     // 确保 ID 唯一性
     let finalId = baseId;
@@ -149,19 +224,99 @@ function getTextContent(node: any): string {
 }
 
 /**
- * 解析 Markdown 文本并生成 HTML、大纲和 frontmatter 数据
- * 使用 remark.js 生态系统处理 Markdown，支持 frontmatter、GitHub 风格 Markdown 和代码高亮
- *
- * @param markdown 要解析的 Markdown 文本
- * @returns 包含 HTML、大纲和 frontmatter 的解析结果
+ * remark 插件：提取 frontmatter、处理图片路径、生成大纲与标题锚点
+ * 上下文通过 file.data.markdownContext 传入并回写，使 processor 可以复用为单例
  */
-export async function parseMarkdown(markdown: string, filePath = ''): Promise<MarkdownParseResult> {
-    const outline: OutlineItem[] = [];       // 存储文档大纲
-    const stack: OutlineItem[] = [];         // 用于构建大纲树结构的栈
-    const existingIds = new Set<string>();   // 用于存储已生成的锚点 ID，确保唯一性
-    let frontmatter: Record<string, any> | undefined; // 存储解析出的 frontmatter 数据
+function remarkMarkdownMeta() {
+    return (tree: any, file: any) => {
+        const ctx: MarkdownContext | undefined = file?.data?.markdownContext;
+        if (!ctx) return;
 
-    // 创建 remark 处理器，使用统一的管道处理 Markdown
+        const filePath = ctx.filePath || '';
+        const idPrefix = ctx.idPrefix || '';             // 分段解析时的锚点前缀
+        const headings = ctx.headings;                   // 输出：扁平标题列表
+        const existingIds = new Set<string>();           // 已生成的锚点 ID，确保唯一性
+
+        // 提取 frontmatter 内容
+        visit(tree, 'yaml', (node: any) => {
+            try {
+                ctx.frontmatter = yaml.parse(node.value);
+            } catch (error) {
+                console.error('解析 frontmatter 失败:', error);
+            }
+        });
+
+        // 图片地址处理，本地文件，加上完整路径
+        visit(tree, 'image', (node: any) => {
+            try {
+                if (typeof node.url === 'string' && !node.url.startsWith('http')) {
+                    if (filePath) {
+                        // 获取文件所在目录的绝对路径
+                        const dirPath = dirname(filePath);
+                        // 构造完整的文件路径
+                        const imagePath = join(dirPath, node.url);
+                        // 使用 new URL() 构造 file URL
+                        node.url = new URL(imagePath, 'file:').href;
+                    } else {
+                        // 如果没有文件路径，直接使用 file URL
+                        node.url = new URL(node.url, 'file:').href;
+                    }
+                }
+            } catch (error) {
+                console.error('解析 image 失败:', error);
+            }
+        });
+
+        // 处理标题并构建大纲
+        visit(tree, 'heading', (node: any) => {
+            const level = node.depth;
+            // 提取标题文本内容
+            const text = node.children
+                .map((child: any) => {
+                    if (child.type === 'text') return child.value;
+                    if (child.type === 'html') return child.value;
+                    if (child.type === 'strong' || child.type === 'emphasis') {
+                        return child.children.map((c: any) => {
+                            if (c.type === 'text') return c.value;
+                            if (c.type === 'html') return c.value;
+                            return '';
+                        }).join('');
+                    }
+                    return '';
+                })
+                .join('').trim();
+
+            const id = generateAnchorId(text, existingIds, idPrefix);
+            // 记录扁平标题，大纲树由调用方在累积全部标题后统一构建
+            headings.push({ id, title: text, level });
+
+            // 添加 id 属性到标题节点
+            node.data = node.data || {};
+            node.data.hProperties = node.data.hProperties || {};
+            node.data.hProperties.id = id;
+        });
+    };
+}
+
+/**
+ * Mermaid 渲染插件
+ * Mermaid 依赖浏览器环境，在主进程线程池中加载会直接崩溃，
+ * 因此不在本模块中静态引入，而是由渲染进程通过 setMermaidPlugin 注册
+ */
+let mermaidPlugin: any = null;
+
+/**
+ * 注册 Mermaid 渲染插件（仅渲染进程调用）
+ */
+export function setMermaidPlugin(plugin: any) {
+    mermaidPlugin = plugin;
+}
+
+/**
+ * 构建 remark/rehype 处理管道
+ * @param lite 是否为精简模式（跳过代码高亮、代码行号、Mermaid 渲染）
+ */
+function buildProcessor(lite: boolean) {
     const processor = unified()
         .use(remarkParse) // 解析 Markdown
         .use(remarkBreaks) // 支持单换行作为硬换行
@@ -169,101 +324,50 @@ export async function parseMarkdown(markdown: string, filePath = ''): Promise<Ma
         .use(remarkGfm) // 支持 GitHub 风格 Markdown（表格、删除线、任务列表、自动链接等）
         .use(remarkGemoji) // 支持 GitHub 表情符号
         .use(remarkMath) // 支持数学公式
-        .use(() => (tree: any) => {
-            // 提取 frontmatter 内容
-            visit(tree, 'yaml', (node) => {
-                try {
-                    frontmatter = yaml.parse(node.value);
-                } catch (error) {
-                    console.error('解析 frontmatter 失败:', error);
-                }
-            });
+        .use(remarkMarkdownMeta) // frontmatter / 图片路径 / 大纲与锚点
+        .use(remarkRehype, { allowDangerousHtml: true }); // 将 Markdown 转换为 HTML，允许危险 HTML
 
-            // 图片地址处理，本地文件，加上完整路径
-            visit(tree, 'image', (node) => {
-                try {
-                    console.log('image', node.url, filePath);
-                    if (!node.url.startsWith('http')) {
-                        if (filePath) {
-                            // 获取文件所在目录的绝对路径
-                            const dirPath = dirname(filePath);
-                            // 构造完整的文件路径
-                            const imagePath = join(dirPath, node.url);
-                            // 使用 new URL() 构造 file URL
-                            node.url = new URL(imagePath, 'file:').href;
-                        } else {
-                            // 如果没有文件路径，直接使用 file URL
-                            node.url = new URL(node.url, 'file:').href;
-                        }
-                    }
-                    console.log('image now', node);
-                } catch (error) {
-                    console.error('解析 image 失败:', error);
-                }
-            });
+    if (!lite) {
+        // 代码高亮：每个 token 生成一个 span；Mermaid：需要启动浏览器渲染。
+        // 两者在超大文档上开销极高，精简模式下跳过
+        processor.use(rehypeHighlight);
 
-            // 处理标题并构建大纲
-            visit(tree, 'heading', (node: any) => {
-                const level = node.depth;
-                // 提取标题文本内容
-                const text = node.children
-                    .map((child: any) => {
-                        if (child.type === 'text') return child.value;
-                        if (child.type === 'html') return child.value;
-                        if (child.type === 'strong' || child.type === 'emphasis') {
-                            return child.children.map((c: any) => {
-                                if (c.type === 'text') return c.value;
-                                if (c.type === 'html') return c.value;
-                                return '';
-                            }).join('');
-                        }
-                        return '';
-                    })
-                    .join('').trim();
+        // Mermaid 插件由渲染进程注册，主进程线程池中不可用
+        if (mermaidPlugin) {
+            processor.use(mermaidPlugin);
+        }
+    }
 
-                const id = generateAnchorId(text, existingIds);
-                const item: OutlineItem = {
-                    id,
-                    title: text,
-                    level,
-                    children: []
-                };
+    processor.use(rehypeKatex); // 数学公式渲染（必须在 rehypeLineNumbers 之前）
 
-                // 构建大纲树结构
-                while (stack.length > 0 && stack[stack.length - 1].level >= level) {
-                    stack.pop();
-                }
+    if (!lite) {
+        processor.use(rehypeLineNumbers); // 添加代码行号（每个代码行两个 span）
+    }
 
-                if (stack.length === 0) {
-                    outline.push(item);
-                } else {
-                    stack[stack.length - 1].children.push(item);
-                }
+    // 将结果序列化为 HTML 字符串，允许危险 HTML
+    return processor.use(rehypeStringify, { allowDangerousHtml: true }).freeze();
+}
 
-                stack.push(item);
+// processor 构建结果缓存（避免每次解析都重新组装管道）
+const processorCache: { full?: any; lite?: any } = {};
 
-                // 添加 id 属性到标题节点
-                node.data = node.data || {};
-                node.data.hProperties = node.data.hProperties || {};
-                node.data.hProperties.id = id;
-            });
-        })
-        .use(remarkRehype, { allowDangerousHtml: true }) // 将 Markdown 转换为 HTML，允许危险 HTML
-        .use(rehypeHighlight) // 添加代码高亮
-        .use(rehypeMermaid) // 渲染 Mermaid 图表（必须在 rehypeLineNumbers 之前）
-        .use(rehypeKatex) // 数学公式渲染（必须在 rehypeLineNumbers 之前）
-        .use(rehypeLineNumbers) // 添加代码行号
-        .use(rehypeStringify, { allowDangerousHtml: true }); // 将结果序列化为 HTML 字符串，允许危险 HTML
+/**
+ * 获取 processor 单例
+ */
+function getProcessor(lite: boolean) {
+    const key = lite ? 'lite' : 'full';
+    if (!processorCache[key]) {
+        processorCache[key] = buildProcessor(lite);
+    }
+    return processorCache[key];
+}
 
-    // 处理 Markdown 内容
-    const result = await processor.process(markdown);
-    let html = result.toString();
-
-    // 如果存在 frontmatter，将其以简单格式附加到正文开头
-    if (frontmatter) {
-        try {
-            // 创建简单的 frontmatter HTML 表格
-            const frontmatterHtml = `
+/**
+ * 生成 frontmatter 展示用的 HTML 表格
+ */
+function buildFrontmatterHtml(frontmatter: Record<string, any>): string {
+    try {
+        return `
         <div class="markdown-frontmatter">
           <h3 style="margin-bottom: 8px; color: #666; font-size: 14px; font-weight: normal;">文档信息</h3>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
@@ -276,16 +380,137 @@ export async function parseMarkdown(markdown: string, filePath = ''): Promise<Ma
           </table>
         </div>
       `;
-            html = frontmatterHtml + html;
-        } catch (error) {
-            console.error('格式化 frontmatter 失败:', error);
+    } catch (error) {
+        console.error('格式化 frontmatter 失败:', error);
+        return '';
+    }
+}
+
+/**
+ * 将超大 Markdown 切分为多段，用于分段解析（先出首屏，后续逐步追加）
+ * 切分点优先选在空行处并跳过围栏代码块内部，尽量避免破坏语法结构
+ *
+ * @param text Markdown 原文
+ * @param firstSegmentSize 首段目标大小（首段更小，尽快出内容）
+ * @param segmentSize 后续各段目标大小
+ */
+export function splitMarkdownSegments(text: string, firstSegmentSize: number, segmentSize: number): string[] {
+    const len = text.length;
+    if (len <= firstSegmentSize) return [text];
+
+    const segments: string[] = [];
+    let start = 0;
+    let target = firstSegmentSize;
+    let pos = 0;
+
+    // 围栏代码块状态（``` 或 ~~~）
+    let inFence = false;
+    let fenceChar = '';
+    let fenceLen = 0;
+
+    while (pos < len) {
+        const lineEnd = text.indexOf('\n', pos);
+        const end = lineEnd === -1 ? len : lineEnd;
+        const trimmedEnd = text.slice(pos, end).trim();
+
+        const fenceMatch = /^(```+|~~~+)/.exec(trimmedEnd);
+        if (fenceMatch) {
+            const marker = fenceMatch[1];
+            if (!inFence) {
+                inFence = true;
+                fenceChar = marker[0];
+                fenceLen = marker.length;
+            } else if (marker[0] === fenceChar && marker.length >= fenceLen) {
+                inFence = false;
+            }
+        }
+
+        if (!inFence) {
+            const currentSize = end - start;
+            // 优先在空行处切分；若一直遇不到空行则退化为按行边界切分，避免单段过大
+            if (trimmedEnd === '' ? currentSize >= target : currentSize >= target * 2) {
+                segments.push(text.slice(start, pos));
+                start = pos;
+                target = segmentSize;
+            }
+        }
+
+        pos = end + 1;
+    }
+
+    if (start < len) {
+        segments.push(text.slice(start));
+    }
+
+    return segments.length > 0 ? segments : [text];
+}
+
+/**
+ * 解析 Markdown 并输出分块 HTML、扁平标题和 frontmatter 数据
+ * 分块输出便于渲染进程渐进式挂载 DOM，避免一次性注入造成的长时间卡顿
+ *
+ * @param markdown 要解析的 Markdown 文本
+ * @param filePath 文件路径，用于解析相对图片地址
+ * @param lite 是否强制使用精简模式，默认按文档大小自动判断
+ * @param idPrefix 锚点 ID 前缀，分段解析时传入以保证跨段唯一
+ */
+export async function parseMarkdownBlocks(
+    markdown: string,
+    filePath = '',
+    lite?: boolean,
+    idPrefix = ''
+): Promise<MarkdownBlocksResult> {
+    // 未显式指定时，按文档大小自动降级为精简模式
+    const useLite = lite ?? markdown.length > LARGE_FILE_THRESHOLD;
+    const processor = getProcessor(useLite);
+
+    const ctx: MarkdownContext = { filePath, idPrefix, headings: [] };
+    const file = new VFile({ value: markdown, data: { markdownContext: ctx } });
+
+    // mdast -> hast（元数据插件在此阶段填充 ctx）
+    const tree = await processor.run(processor.parse(markdown), file);
+
+    // 按顶层块逐个序列化，得到可分批插入 DOM 的 HTML 片段
+    const chunks: string[] = [];
+    for (const child of (tree as any).children || []) {
+        const chunkHtml = processor.stringify(child, file);
+        if (chunkHtml) {
+            chunks.push(chunkHtml);
         }
     }
 
+    // frontmatter 表格置于正文开头
+    if (ctx.frontmatter) {
+        chunks.unshift(buildFrontmatterHtml(ctx.frontmatter));
+    }
+
     return {
-        html,
-        outline,
-        frontmatter
+        chunks,
+        headings: ctx.headings,
+        frontmatter: ctx.frontmatter
+    };
+}
+
+/**
+ * 解析 Markdown 文本并生成完整 HTML、大纲和 frontmatter 数据
+ * 适用于需要一次性拿到完整 HTML 的场景（如词典解析）；
+ * 大文档的界面渲染请使用 parseMarkdownBlocks，避免生成巨大的中间字符串
+ *
+ * @param markdown 要解析的 Markdown 文本
+ * @param filePath 文件路径，用于解析相对图片地址
+ * @param lite 是否强制使用精简模式，默认按文档大小自动判断
+ */
+export async function parseMarkdown(
+    markdown: string,
+    filePath = '',
+    lite?: boolean,
+    idPrefix = ''
+): Promise<MarkdownParseResult> {
+    const result = await parseMarkdownBlocks(markdown, filePath, lite, idPrefix);
+    return {
+        html: result.chunks.join(''),
+        outline: buildOutline(result.headings),
+        frontmatter: result.frontmatter
     };
 }
 

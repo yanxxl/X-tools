@@ -1,8 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { MenuProps } from 'antd';
-import { Button, Dropdown, Empty, Flex, Menu, message, Skeleton, Space, Splitter, Typography } from 'antd';
+import { Button, Dropdown, Empty, Flex, Menu, message, Space, Spin, Splitter, Tag, Tooltip, Typography } from 'antd';
 import { CodeOutlined, EditOutlined, EyeOutlined, FileTextOutlined } from '@ant-design/icons';
-import { OutlineItem, parseMarkdown } from '../../utils/markdown';
+import rehypeMermaid from 'rehype-mermaid';
+import {
+    buildOutline,
+    FlatHeading,
+    LARGE_FILE_THRESHOLD,
+    MarkdownBlocksResult,
+    OutlineItem,
+    parseMarkdownBlocks,
+    setMermaidPlugin,
+    splitMarkdownSegments
+} from '../../utils/markdown';
 import { storage, STORAGE_KEYS } from '../../utils/storage';
 import 'highlight.js/styles/github.css';
 import './MarkdownViewer.css';
@@ -27,17 +37,39 @@ interface MarkdownViewerProps {
     initialLine?: number;
 }
 
+// Mermaid 渲染依赖浏览器环境，在主进程线程池中无法使用，这里注册给渲染进程侧的解析兜底路径
+setMermaidPlugin(rehypeMermaid);
+
+/** 大纲最大渲染条数：超大文档可能有上万标题，全量渲染会拖垮界面 */
+const MAX_OUTLINE_ITEMS = 1000;
+
+/** 每帧用于插入 DOM 的时间预算（毫秒），保证渐进渲染期间界面不冻结 */
+const RENDER_FRAME_BUDGET = 12;
+
+/** 分段解析时首段的目标大小（字符）：首段更小，尽快渲染出首屏内容 */
+const FIRST_SEGMENT_SIZE = 24 * 1024;
+
+/** 分段解析时后续各段的目标大小（字符） */
+const SEGMENT_SIZE = 384 * 1024;
+
+/** 分段解析的并发度：允许多段同时解析，缩短整体完成时间 */
+const PARSE_CONCURRENCY = 2;
+
 export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileName, initialLine }) => {
     const { setCurrentFile } = useAppContext();
 
     // ============================== State Management ==============================
-    const [loading, setLoading] = useState(true);
-    const [content, setContent] = useState('');
-    const [html, setHtml] = useState('');
+    const [loading, setLoading] = useState(true);          // 文件读取中
+    const [stage, setStage] = useState<'reading' | 'parsing' | 'done'>('reading');
+    const [parseDone, setParseDone] = useState(0);         // 已解析并追加的段数
+    const [parseTotal, setParseTotal] = useState(0);       // 总段数（大文件分段解析）
+    const [firstPaint, setFirstPaint] = useState(false);   // 首屏内容是否已出现
+    const [content, setContent] = useState('');            // 编辑器内容（仅在需要时更新）
     const [outline, setOutline] = useState<OutlineItem[]>([]);
     const [viewMode, setViewMode] = useState<'rendered' | 'source'>('rendered');
     const [error, setError] = useState<string | null>(null);
     const [editorView, setEditorView] = useState<any>(null);
+    const [liteMode, setLiteMode] = useState(false);       // 大文件精简模式
     const [sidebarWidth, setSidebarWidth] = useState<number>(() =>
         storage.get<number>(STORAGE_KEYS.MARKDOWN_SIDEBAR_WIDTH, 250)
     );
@@ -48,7 +80,33 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
     const lastSavedContentRef = useRef<string>('');
     const editorRef = useRef<any>(null);
     const previewContainerRef = useRef<HTMLDivElement>(null);
-    const scrollPollingRef = useRef<NodeJS.Timeout | null>(null);
+    const contentRef = useRef<string>('');        // 当前原文（避免大字符串反复进 state）
+    const queueRef = useRef<{ items: string[]; index: number }>({ items: [], index: 0 }); // 待挂载的 HTML 分片队列
+    const allChunksRef = useRef<string[]>([]);    // 已解析的全部分片，用于切回预览模式时重建 DOM
+    const headingsRef = useRef<FlatHeading[]>([]); // 累积的扁平标题，用于构建大纲
+    const mountedCountRef = useRef(0);            // 已挂载的分片数量
+    const parseDoneRef = useRef(false);           // 所有段是否解析完成
+    const firstPaintRef = useRef(false);          // 首屏是否已挂载（避免重复 setState）
+    const renderTokenRef = useRef(0);             // 渲染令牌，用于丢弃过期的解析/渲染任务
+    const rafRef = useRef<number | null>(null);   // 渐进渲染的动画帧
+    const pendingScrollTopRef = useRef<number | null>(null); // 渲染完成后要恢复的滚动位置
+    const dirtyRef = useRef(false);               // 编辑后预览是否需要刷新
+    const isLargeRef = useRef(false);             // 当前文档是否为大文件
+    const viewModeRef = useRef(viewMode);         // 供防抖回调读取最新视图模式
+
+    // ============================== View Mode Switching ==============================
+    // 切到编辑模式：若内容已修改，先把最新内容同步给编辑器，避免重新挂载后丢失改动
+    const showSource = () => {
+        if (dirtyRef.current) {
+            setContent(contentRef.current);
+        }
+        setViewMode('source');
+    };
+
+    // 切到预览模式：若内容已修改，会在视图模式变化的副作用中重新解析
+    const showRendered = () => {
+        setViewMode('rendered');
+    };
 
     // ============================== Keyboard Event Handlers ==============================
     useEffect(() => {
@@ -56,7 +114,11 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
             // Ctrl+E 或 Cmd+E 切换预览/编辑模式
             if (event.key === 'e' && (event.ctrlKey || event.metaKey)) {
                 event.preventDefault();
-                setViewMode(prev => prev === 'rendered' ? 'source' : 'rendered');
+                if (viewModeRef.current === 'rendered') {
+                    showSource();
+                } else {
+                    showRendered();
+                }
             }
         };
 
@@ -67,40 +129,299 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
         };
     }, []);
 
+    // ============================== Markdown Parsing ==============================
+    /**
+     * 解析 Markdown：优先交给主进程线程池执行，避免渲染进程被长时间阻塞
+     */
+    const parseMarkdownRemote = async (text: string, path: string, lite: boolean, idPrefix = '') => {
+        if (window.electronAPI?.parseMarkdownBlocks) {
+            try {
+                return await window.electronAPI.parseMarkdownBlocks(text, path, lite, idPrefix);
+            } catch (err) {
+                console.error('后台解析 Markdown 失败，回退到渲染进程解析:', err);
+            }
+        }
+        // 浏览器环境或线程池不可用时的兜底
+        return await parseMarkdownBlocks(text, path, lite, idPrefix);
+    };
+
+    /**
+     * 累积一批解析结果：合并标题并更新大纲
+     */
+    const applyResult = (result: MarkdownBlocksResult) => {
+        const headings = result.headings;
+        if (headings && headings.length > 0) {
+            for (const heading of headings) {
+                headingsRef.current.push(heading);
+            }
+            setOutline(buildOutline(headingsRef.current));
+        }
+
+        if (result.chunks && result.chunks.length > 0) {
+            for (const chunk of result.chunks) {
+                allChunksRef.current.push(chunk);
+            }
+        }
+    };
+
+    /**
+     * 把新一批 HTML 分片加入渲染队列，并驱动渐进挂载
+     */
+    const enqueueChunks = (chunks: string[], token: number) => {
+        if (chunks.length === 0) return;
+        const queue = queueRef.current;
+        for (const chunk of chunks) {
+            queue.items.push(chunk);
+        }
+        pumpRender(token);
+    };
+
+    /**
+     * 渐进挂载：每帧只插入时间预算内的分片，保证界面不冻结
+     * 队列由分段解析持续喂入，因此首屏内容可以尽早出现
+     */
+    const pumpRender = (token: number) => {
+        if (rafRef.current !== null) return; // 已有渲染循环在运行
+
+        const step = () => {
+            if (token !== renderTokenRef.current) return; // 已切换到其他文件，丢弃本次渲染
+            const container = previewContainerRef.current;
+            const queue = queueRef.current;
+            if (!container) {
+                rafRef.current = null;
+                return;
+            }
+
+            const start = performance.now();
+            // do...while 保证至少插入一个分片，避免单个超大分片造成空转
+            do {
+                container.insertAdjacentHTML('beforeend', queue.items[queue.index++]);
+                mountedCountRef.current++;
+            } while (queue.index < queue.items.length && performance.now() - start < RENDER_FRAME_BUDGET);
+
+            // 压缩已消费部分，避免队列数组无限增长
+            if (queue.index > 512) {
+                queue.items = queue.items.slice(queue.index);
+                queue.index = 0;
+            }
+
+            // 首屏内容出现后取消占位提示（只触发一次重渲染）
+            if (!firstPaintRef.current) {
+                firstPaintRef.current = true;
+                setFirstPaint(true);
+            }
+
+            // 可滚动高度一旦足够就立即恢复滚动位置，不必等全部渲染完成
+            const pending = pendingScrollTopRef.current;
+            if (pending !== null) {
+                const maxScroll = Math.max(container.scrollHeight - container.clientHeight, 0);
+                if (maxScroll >= pending || (parseDoneRef.current && queue.index >= queue.items.length)) {
+                    container.scrollTop = Math.min(pending, maxScroll);
+                    pendingScrollTopRef.current = null;
+                }
+            }
+
+            if (queue.index < queue.items.length) {
+                rafRef.current = requestAnimationFrame(step);
+                return;
+            }
+
+            rafRef.current = null;
+            if (parseDoneRef.current) {
+                setStage('done');
+            }
+        };
+
+        rafRef.current = requestAnimationFrame(step);
+    };
+
+    /**
+     * 解析并渲染 Markdown 内容
+     * 超大文档按段解析：首段更小，解析完立即挂载，后续段落边解析边追加，
+     * 避免"等整个文件解析完才出现内容"的长时间空白
+     */
+    const parseAndRender = async (text: string, path: string) => {
+        const token = ++renderTokenRef.current;
+        const lite = text.length > LARGE_FILE_THRESHOLD;
+        isLargeRef.current = lite;
+        setLiteMode(lite);
+        setStage('parsing');
+        setParseDone(0);
+        setParseTotal(0);
+        setFirstPaint(false);
+
+        const container = previewContainerRef.current;
+        if (container) {
+            container.innerHTML = '';
+        }
+        queueRef.current = { items: [], index: 0 };
+        allChunksRef.current = [];
+        mountedCountRef.current = 0;
+        headingsRef.current = [];
+        firstPaintRef.current = false;
+        parseDoneRef.current = false;
+        setOutline([]);
+
+        try {
+            if (text.length <= LARGE_FILE_THRESHOLD) {
+                // 小文件一次解析即可
+                const result = await parseMarkdownRemote(text, path, lite);
+                if (token !== renderTokenRef.current) return;
+
+                applyResult(result);
+                parseDoneRef.current = true;
+                setParseTotal(1);
+                setParseDone(1);
+                enqueueChunks(result.chunks || [], token);
+                return;
+            }
+
+            // 大文件分段解析：首段较小以尽快出内容，后续段落并发解析
+            const segments = splitMarkdownSegments(text, FIRST_SEGMENT_SIZE, SEGMENT_SIZE);
+            setParseTotal(segments.length);
+
+            const results: (MarkdownBlocksResult | null)[] = new Array(segments.length).fill(null);
+            let nextIndex = 0;
+            let flushIndex = 0;
+
+            const runParser = async () => {
+                for (;;) {
+                    if (token !== renderTokenRef.current) return;
+                    const index = nextIndex++;
+                    if (index >= segments.length) return;
+
+                    // 各段使用不同前缀，保证标题锚点 ID 不冲突
+                    const result = await parseMarkdownRemote(segments[index], path, true, `s${index}_`);
+                    if (token !== renderTokenRef.current) return;
+                    results[index] = result;
+
+                    // 按段落顺序追加，保证正文顺序正确
+                    while (flushIndex < segments.length && results[flushIndex]) {
+                        const current = results[flushIndex] as MarkdownBlocksResult;
+                        applyResult(current);
+                        enqueueChunks(current.chunks || [], token);
+                        flushIndex++;
+                        setParseDone(flushIndex);
+                    }
+                }
+            };
+
+            await Promise.all(Array.from({ length: PARSE_CONCURRENCY }, runParser));
+            if (token !== renderTokenRef.current) return;
+
+            parseDoneRef.current = true;
+            if (queueRef.current.index >= queueRef.current.items.length) {
+                setStage('done');
+            }
+        } catch (err) {
+            if (token !== renderTokenRef.current) return;
+            console.error('解析 Markdown 失败:', err);
+            setError('解析 Markdown 内容失败');
+            setStage('done');
+        }
+    };
+
+    // 视图模式变化：中断未完成的渐进渲染；切回预览时重建或重新解析内容
+    useEffect(() => {
+        viewModeRef.current = viewMode;
+
+        if (viewMode === 'source') {
+            if (rafRef.current !== null) {
+                cancelAnimationFrame(rafRef.current);
+                rafRef.current = null;
+            }
+            return;
+        }
+
+        // 从编辑模式切回预览：DOM 已被卸载，需要重新挂载
+        const container = previewContainerRef.current;
+        if (!container || container.childNodes.length > 0) return;
+
+        if (dirtyRef.current) {
+            dirtyRef.current = false;
+            void parseAndRender(contentRef.current, filePath);
+            return;
+        }
+
+        if (allChunksRef.current.length > 0) {
+            const token = renderTokenRef.current;
+            queueRef.current = { items: [...allChunksRef.current], index: 0 };
+            firstPaintRef.current = false;
+            setFirstPaint(false);
+            setStage('parsing');
+            pumpRender(token);
+        }
+    }, [viewMode, filePath]);
+
 
 
     // ============================== File Loading ==============================
-    // 加载 Markdown 文件内容
+    // 加载 Markdown 文件内容并触发解析渲染
     useEffect(() => {
+        let cancelled = false;
+
         const loadMarkdownFile = async () => {
             try {
                 setLoading(true);
                 setError(null);
+                setOutline([]);
+                setFirstPaint(false);
+                setStage('reading');
+                allChunksRef.current = [];
+                queueRef.current = { items: [], index: 0 };
+                headingsRef.current = [];
+                dirtyRef.current = false;
+                firstPaintRef.current = false;
+                parseDoneRef.current = false;
+                renderTokenRef.current++; // 作废上一个文件的解析/渲染任务
 
+                let fileContent: string;
                 if (window.electronAPI) {
                     // Electron 环境下读取文件
-                    const fileContent = await window.electronAPI.readFile(filePath);
-                    setContent(fileContent);
+                    fileContent = await window.electronAPI.readFile(filePath);
+                    lastSavedContentRef.current = fileContent;
                 } else {
                     // 浏览器环境下的模拟（实际使用中需要适配）
                     const response = await fetch(filePath);
                     if (response.ok) {
-                        const fileContent = await response.text();
-                        setContent(fileContent);
+                        fileContent = await response.text();
                         lastSavedContentRef.current = fileContent;
                     } else {
                         throw new Error(`无法加载文件: ${response.statusText}`);
                     }
                 }
+
+                if (cancelled) return;
+
+                contentRef.current = fileContent;
+                dirtyRef.current = false;
+                setContent(fileContent);
+
+                // 计算渲染完成后需要恢复的滚动位置
+                const key = `${STORAGE_KEYS.MARKDOWN_SCROLL_POSITION}_${filePath}`;
+                const savedScrollTop = storage.get<number>(key, 0);
+                pendingScrollTopRef.current = initialLine && initialLine > 0
+                    ? (initialLine - 1) * 24 // 预览模式无行号，按估算行高换算
+                    : (savedScrollTop > 0 ? savedScrollTop : null);
+
+                void parseAndRender(fileContent, filePath);
             } catch (err) {
                 console.error('加载 Markdown 文件失败:', err);
-                setError(err instanceof Error ? err.message : '加载文件失败');
+                if (!cancelled) {
+                    setError(err instanceof Error ? err.message : '加载文件失败');
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
         };
 
         loadMarkdownFile();
+
+        return () => {
+            cancelled = true;
+        };
     }, [filePath]);
 
     // ============================== Auto Save ==============================
@@ -118,117 +439,92 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
         }
     };
 
-    // 处理编辑器内容变化 防抖处理，1.5 秒后自动保存及更新内容
+    // 处理编辑器内容变化：防抖 1.5 秒后自动保存
+    // 小文件顺带刷新预览；大文件留到切回预览模式时再解析，避免每次停顿都全量重解析
     const handleEditorChange = (value: string) => {
+        contentRef.current = value;
+        dirtyRef.current = true;
+
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
         saveTimeoutRef.current = setTimeout(() => {
-            setContent(value);
             saveFile(value);
+            if (viewModeRef.current === 'rendered' && !isLargeRef.current) {
+                dirtyRef.current = false;
+                void parseAndRender(value, filePath);
+            }
         }, 1500);
     };
 
     // ============================== Scroll Position ==============================
-    // 设置轮询保存滚动位置
+    // 监听滚动，节流后防抖保存滚动位置（替代固定间隔轮询，避免无意义的同步写入）
     useEffect(() => {
-        // 只有在预览模式下才启动轮询
-        if (viewMode === 'rendered') {
-            // 每1秒保存一次滚动位置
-            scrollPollingRef.current = setInterval(() => {
-                if (previewContainerRef.current) {
-                    const scrollTop = previewContainerRef.current.scrollTop;
-                    // 使用文件路径作为键的一部分，确保不同文件有不同的滚动位置
-                    const key = `${STORAGE_KEYS.MARKDOWN_SCROLL_POSITION}_${filePath}`;
-                    storage.set(key, scrollTop);
-                }
-            }, 1000);
-        }
+        if (viewMode !== 'rendered') return;
+        const container = previewContainerRef.current;
+        if (!container) return;
+
+        let ticking = false;
+        let writeTimer: NodeJS.Timeout | null = null;
+        // 使用文件路径作为键的一部分，确保不同文件有不同的滚动位置
+        const key = `${STORAGE_KEYS.MARKDOWN_SCROLL_POSITION}_${filePath}`;
+
+        const onScroll = () => {
+            if (ticking) return;
+            ticking = true;
+            requestAnimationFrame(() => {
+                ticking = false;
+                const scrollTop = container.scrollTop;
+                if (writeTimer) clearTimeout(writeTimer);
+                writeTimer = setTimeout(() => storage.set(key, scrollTop), 800);
+            });
+        };
+
+        container.addEventListener('scroll', onScroll, { passive: true });
 
         return () => {
-            if (scrollPollingRef.current) {
-                clearInterval(scrollPollingRef.current);
-            }
+            container.removeEventListener('scroll', onScroll);
+            if (writeTimer) clearTimeout(writeTimer);
         };
-    }, [viewMode, filePath]);
+    }, [viewMode, filePath, firstPaint]);
 
-    // 在文件加载完成后处理滚动位置或初始行跳转
+    // 原文模式下跳转到指定行
     useEffect(() => {
-        if (!loading && !error) {
-            // 延迟设置滚动位置，确保DOM已经完全渲染
-            setTimeout(() => {
-                // 如果有初始行要求，优先跳转到指定行
-                if (initialLine && initialLine > 0) {
-                    if (viewMode === 'rendered') {
-                        // 预览模式下跳转到指定行
-                        // 由于渲染后的HTML没有行号信息，我们通过行数近似估算
-                        if (previewContainerRef.current) {
-                            const lineHeight = 24; // 估算行高
-                            previewContainerRef.current.scrollTop = (initialLine - 1) * lineHeight;
-                        }
-                    } else {
-                        // 原文模式下使用CodeMirror跳转到指定行
-                        if (editorRef.current) {
-                            const editor = editorRef.current;
-                            const view = editor.view;
-                            const doc = view.state.doc;
+        if (loading || error || viewMode !== 'source') return;
+        if (!initialLine || initialLine <= 0) return;
 
-                            if (initialLine <= doc.lines) {
-                                const lineObj = doc.line(initialLine);
-                                const targetPos = lineObj.from;
+        // 延迟跳转，确保 CodeMirror 已经完成渲染
+        const timer = setTimeout(() => {
+            if (!editorRef.current) return;
+            const view = editorRef.current.view;
+            const doc = view.state.doc;
 
-                                view.dispatch({
-                                    selection: { anchor: targetPos },
-                                    effects: [
-                                        EditorView.scrollIntoView(targetPos, { y: 'start' })
-                                    ]
-                                });
-                            }
-                        }
-                    }
-                } else {
-                    // 否则恢复之前的滚动位置
-                    if (viewMode === 'rendered') {
-                        const key = `${STORAGE_KEYS.MARKDOWN_SCROLL_POSITION}_${filePath}`;
-                        const savedScrollTop = storage.get<number>(key, 0);
+            if (initialLine <= doc.lines) {
+                const targetPos = doc.line(initialLine).from;
+                view.dispatch({
+                    selection: { anchor: targetPos },
+                    effects: [
+                        EditorView.scrollIntoView(targetPos, { y: 'start' })
+                    ]
+                });
+            }
+        }, 200);
 
-                        if (previewContainerRef.current && savedScrollTop > 0) {
-                            previewContainerRef.current.scrollTop = savedScrollTop;
-                        }
-                    }
-                }
-            }, 200);
-        }
+        return () => clearTimeout(timer);
     }, [loading, viewMode, error, filePath, initialLine]);
 
-    // 组件卸载时清理定时器
+    // 组件卸载时清理定时器与未完成的渐进渲染
     useEffect(() => {
         return () => {
             if (saveTimeoutRef.current) {
                 clearTimeout(saveTimeoutRef.current);
             }
-            if (scrollPollingRef.current) {
-                clearInterval(scrollPollingRef.current);
+            if (rafRef.current !== null) {
+                cancelAnimationFrame(rafRef.current);
+                rafRef.current = null;
             }
         };
     }, []);
-
-    // ============================== Markdown Parsing ==============================
-    // 解析 Markdown 内容
-    useEffect(() => {
-        const parseContent = async () => {
-            try {
-                const result = await parseMarkdown(content, filePath);
-                setHtml(result.html);
-                setOutline(result.outline);
-            } catch (err) {
-                console.error('解析 Markdown 失败:', err);
-                setError('解析 Markdown 内容失败');
-            }
-        };
-
-        parseContent();
-    }, [content]);
 
     // ============================== Link Handling ==============================
     // 处理链接点击
@@ -409,7 +705,13 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
             return result;
         };
 
-        return flattenItems(items).map(item => ({
+        const allItems = flattenItems(items);
+        // 超大文档可能有上万个标题，全量渲染会拖垮界面，这里只渲染前若干项
+        const visibleItems = allItems.length > MAX_OUTLINE_ITEMS
+            ? allItems.slice(0, MAX_OUTLINE_ITEMS)
+            : allItems;
+
+        const menu: NonNullable<MenuProps['items']> = visibleItems.map(item => ({
             key: `${item.id}-${item.level}`,
             label: (
                 <div
@@ -424,6 +726,20 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                 </div>
             ),
         }));
+
+        if (allItems.length > visibleItems.length) {
+            menu.push({
+                key: '__outline_truncated__',
+                disabled: true,
+                label: (
+                    <div style={{ paddingLeft: 16, fontSize: 12, color: '#999' }}>
+                        仅显示前 {MAX_OUTLINE_ITEMS} 项（共 {allItems.length} 项）
+                    </div>
+                )
+            });
+        }
+
+        return menu;
     };
 
     const menuItems = generateMenuItems(outline);
@@ -458,7 +774,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
             const text = highlightedElement.textContent || '';
             
             if (text) {
-                setViewMode('source');
+                showSource();
                 
                 setTimeout(() => {
                     if (editorRef.current) {
@@ -517,12 +833,24 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
         },
     ];
 
+    // ============================== Placeholder ==============================
+    // 首屏内容出现前显示解析进度，避免长时间空白且无反馈
+    const showPlaceholder = !firstPaint && stage !== 'done';
+    const placeholderText = stage === 'reading'
+        ? '正在读取文件…'
+        : parseTotal > 1
+            ? `正在解析第 ${Math.min(parseDone + 1, parseTotal)}/${parseTotal} 段…`
+            : '正在解析…';
+
     // ============================== Loading & Error States ==============================
     if (loading) {
         return (
-            <div style={{ padding: 24 }}>
-                <Skeleton active paragraph={{ rows: 3 }} />
-            </div>
+            <Center>
+                <Space direction="vertical" align="center" size="middle">
+                    <Spin />
+                    <span style={{ fontSize: 13, color: '#888' }}>正在读取文件…</span>
+                </Space>
+            </Center>
         );
     }
 
@@ -555,6 +883,18 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                 </div>
 
                 <Space size="large">
+                    {stage === 'parsing' && (
+                        <span style={{ fontSize: 12, color: '#888' }}>
+                            {parseTotal > 1 ? `解析中 ${parseDone}/${parseTotal} 段` : '解析中…'}
+                        </span>
+                    )}
+
+                    {stage === 'done' && liteMode && (
+                        <Tooltip title="大文件精简模式：为保证流畅度，暂不渲染代码高亮、代码行号与 Mermaid 图表">
+                            <Tag color="orange" style={{ marginInlineEnd: 0 }}>精简模式</Tag>
+                        </Tooltip>
+                    )}
+
                     {viewMode === 'rendered' && (
                         <>
                             <PageSearch cssSelector={'.markdown-content'} />
@@ -573,7 +913,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                         <Button
                             type={viewMode === 'rendered' ? 'primary' : 'default'}
                             icon={<EyeOutlined />}
-                            onClick={() => setViewMode('rendered')}
+                            onClick={showRendered}
                             size="small"
                             title="预览模式 (Ctrl+E / Cmd+E)"
                         >
@@ -582,7 +922,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                         <Button
                             type={viewMode === 'source' ? 'primary' : 'default'}
                             icon={<CodeOutlined />}
-                            onClick={() => setViewMode('source')}
+                            onClick={showSource}
                             size="small"
                             title="编辑模式 (Ctrl+E / Cmd+E)"
                         >
@@ -617,14 +957,37 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                         <div className={'markdown-container'} style={{ height: '100%' }}>
                             {viewMode === 'rendered' ? (
                                 <Dropdown menu={{ items: contextMenuItems }} trigger={['contextMenu']} onOpenChange={handleMenuOpenChange}>
-                                    <div
-                                        ref={previewContainerRef}
-                                        className="markdown-content"
-                                        style={{ overflowY: 'auto', height: '100%' }}
-                                        dangerouslySetInnerHTML={{ __html: html }}
-                                        onClick={handleLinkClick}
-                                        onContextMenu={handleContextMenu}
-                                    />
+                                    <div style={{ position: 'relative', height: '100%' }}>
+                                        {/* 内容由渐进渲染直接写入 DOM：
+                                            大文档一次性注入会导致长时间冻结，且 HTML 字符串不宜保存在 state 中 */}
+                                        <div
+                                            ref={previewContainerRef}
+                                            className="markdown-content"
+                                            style={{ overflowY: 'auto', height: '100%' }}
+                                            onClick={handleLinkClick}
+                                            onContextMenu={handleContextMenu}
+                                        />
+
+                                        {/* 首屏内容出现前的占位提示，避免长时间空白无反馈 */}
+                                        {showPlaceholder && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                background: '#fff'
+                                            }}>
+                                                <Space direction="vertical" align="center" size="middle">
+                                                    <Spin />
+                                                    <span style={{ fontSize: 13, color: '#888' }}>{placeholderText}</span>
+                                                </Space>
+                                            </div>
+                                        )}
+                                    </div>
                                  </Dropdown>
                             ) : (
                                 <div

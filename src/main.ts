@@ -251,6 +251,14 @@ function registerIpcHandlers() {
         }
     });
 
+    // 解析 Markdown 为分块 HTML（在线程池执行，避免渲染进程长时间冻结）
+    ipcMain.handle('parseMarkdownBlocks', async (event, markdown: string, filePath: string, lite?: boolean, idPrefix?: string) => {
+        if (!pool) {
+            throw new Error('线程池未初始化，无法解析 Markdown');
+        }
+        return await pool.exec('parseMarkdown', [markdown, filePath, lite, idPrefix]);
+    });
+
     // 读取二进制文件内容
     ipcMain.handle('readFileBinary', async (event, filePath: string) => {
         try {

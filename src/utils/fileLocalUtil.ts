@@ -7,6 +7,12 @@ import { getExtension, isTextFile, isOfficeParserSupported, isSearchableFile } f
 import { readFileLines } from './fileCacheUtil';
 import { parseOfficeDocument, astToText } from './office';
 
+/**
+ * 编码检测采样大小（字节）
+ * 编码检测不需要全量扫描，几 MB 的文件全量检测会明显拖慢读取速度
+ */
+const ENCODING_SAMPLE_SIZE = 64 * 1024;
+
 // =======================================
 // 文件树相关功能
 // =======================================
@@ -239,8 +245,9 @@ export async function readFileText(filePath: string): Promise<string | null> {
   try {
     // 先以buffer形式读取文件
     const buffer = await fs.promises.readFile(filePath);
-    // 检测文件编码
-    const detectedEncoding = chardet.detect(buffer);
+    // 检测文件编码：只取前 64KB 采样，超大文件全量检测代价很高
+    const sample = buffer.length > ENCODING_SAMPLE_SIZE ? buffer.subarray(0, ENCODING_SAMPLE_SIZE) : buffer;
+    const detectedEncoding = chardet.detect(sample);
     console.log(`检测到文件编码: ${detectedEncoding || 'unknown'}，路径: ${filePath}`);
 
     // 如果检测到编码，则使用iconv-lite转换为utf-8
@@ -281,9 +288,10 @@ export async function writeFileText(filePath: string, content: string): Promise<
       // 检查文件是否存在
       await fs.promises.access(filePath);
 
-      // 文件存在，读取文件以检测编码
+      // 文件存在，读取文件以检测编码（仅采样前 64KB）
       const buffer = await fs.promises.readFile(filePath);
-      const detectedEncoding = chardet.detect(buffer);
+      const sample = buffer.length > ENCODING_SAMPLE_SIZE ? buffer.subarray(0, ENCODING_SAMPLE_SIZE) : buffer;
+      const detectedEncoding = chardet.detect(sample);
 
       if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
         fileEncoding = detectedEncoding;

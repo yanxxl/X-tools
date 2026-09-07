@@ -2,6 +2,7 @@
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { FileNode, OfficeJsonData } from './types/index';
+import type { MarkdownBlocksResult } from './utils/markdown';
 import { Config } from './utils/config';
 import { OfficeParserConfig } from './office/types';
 
@@ -37,6 +38,7 @@ interface ElectronAPI {
     readFile: (filePath: string) => Promise<string>;
     readFileBinary: (filePath: string) => Promise<Buffer>;
     readFileLines: (filePath: string) => Promise<string[]>; // 这个搜索预览时用
+    parseMarkdownBlocks: (markdown: string, filePath: string, lite?: boolean, idPrefix?: string) => Promise<MarkdownBlocksResult & { parseTime?: number }>; // 在线程池中解析 Markdown，返回分块 HTML
     writeFile: (filePath: string, content: string) => Promise<boolean>;
     openExternal: (url: string) => Promise<void>;
     addFile: (directoryPath: string) => Promise<{ success: boolean; filePath?: string }>;
@@ -105,6 +107,8 @@ const electronAPI: ElectronAPI = {
     readFile: (filePath: string) => ipcRenderer.invoke('readFile', filePath) as Promise<string>,
     readFileBinary: (filePath: string) => ipcRenderer.invoke('readFileBinary', filePath) as Promise<Buffer>,
     readFileLines: (filePath: string) => ipcRenderer.invoke('readFileLines', filePath) as Promise<string[]>,
+    parseMarkdownBlocks: (markdown: string, filePath: string, lite?: boolean, idPrefix?: string) =>
+        ipcRenderer.invoke('parseMarkdownBlocks', markdown, filePath, lite, idPrefix) as Promise<MarkdownBlocksResult & { parseTime?: number }>,
     writeFile: (filePath: string, content: string) => ipcRenderer.invoke('writeFile', filePath, content) as Promise<boolean>,
     openExternal: (url: string) => ipcRenderer.invoke('openExternal', url) as Promise<void>,
     addFile: (directoryPath: string) => ipcRenderer.invoke('addFile', directoryPath) as Promise<{ success: boolean; filePath?: string }>,
