@@ -1,4 +1,5 @@
-import { parseMarkdown } from './markdown';
+import { parseDictionaryContent } from './dictionaryParserCore';
+import type { DictionaryEntryData } from './dictionaryParserCore';
 
 /**
  * 词典接口
@@ -9,148 +10,71 @@ export interface Dictionary {
     filePath: string;
     entries: DictionaryEntry[];
     enabled: boolean;
+    entryCount?: number; // 词条总数（由后端解析得到，渲染进程不一定持有全部词条）
     error?: string; // 错误信息，可选
 }
 
 /**
  * 词条接口
+ * definition 保存释义的 Markdown 原文片段（渲染时才转换为 HTML），
+ * 因此词典数据可以在线程池中生成并跨进程传输
  */
 export interface DictionaryEntry {
     term: string;
     terms: string[];
-    definition: Element[];
+    definition: string[];
     catalog: string[];
-    header: HTMLElement;
+}
+
+/**
+ * 把线程池返回的词条数据转换为渲染进程使用的数据结构
+ */
+function toEntries(entries: DictionaryEntryData[]): DictionaryEntry[] {
+    return (entries || []).map(entry => ({
+        term: entry.term,
+        terms: entry.terms,
+        definition: entry.definition,
+        catalog: entry.catalog
+    }));
 }
 
 /**
  * 解析Markdown文件为词典
+ * 优先交给主进程线程池处理（读文件 + 解析都在后台完成），
+ * 大词典不会卡住渲染进程；线程池不可用时回退到渲染进程本地解析
+ *
  * @param filePath 文件路径
  * @returns 词典对象
  */
 export async function parseMarkdownToDictionary(filePath: string): Promise<Dictionary> {
     const fileName = filePath.split('/').pop() || filePath;
+
+    if (window.electronAPI?.parseDictionary) {
+        try {
+            const summary = await window.electronAPI.parseDictionary(filePath);
+            // 词条数据由后端（主进程）持有，渲染进程只保留轻量元数据，避免大词典卡顿
+            return {
+                id: summary.id || filePath,
+                name: summary.name || fileName,
+                filePath,
+                entries: [],
+                enabled: true,
+                entryCount: summary.entryCount
+            };
+        } catch (error) {
+            console.error(`线程池解析词典失败，回退到渲染进程解析: ${filePath}`, error);
+        }
+    }
+
+    // 兜底：渲染进程本地解析（不依赖 DOM，逻辑与线程池完全一致）
     const content = await window.electronAPI.readFile(filePath);
-    
-    // Parse markdown to HTML
-    const result = await parseMarkdown(content, filePath);
-    
-    // Use DOM parser to extract headers and their content
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(result.html, 'text/html');
-    
-    // Get all header elements
-    const headers = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
-    
-    // 构建header层次结构栈
-    const headerStack: { level: number; element: HTMLElement; text: string }[] = [];
-    const entries: DictionaryEntry[] = [];
-    
-    headers.forEach((headerElement) => {
-        const header = headerElement as HTMLElement;
-        const level = parseInt(header.tagName.charAt(1));
-        const textContent = header.textContent?.trim() || '';
-        
-        // 使用非字符分割词条
-        const terms = splitTerm(textContent);
-        
-        // 更新header层次栈
-        updateHeaderStack(headerStack, level, header, textContent);
-        
-        // 获取当前词条的目录路径（所有更高层级的header文本）
-        const catalog = headerStack.slice(0, -1).map(item => item.text);
-        
-        // Get content between this header and the next one
-        let nextElement = header.nextElementSibling;
-        const definition: Element[] = [];
-        
-        while (nextElement && !nextElement.tagName.match(/^H[1-6]$/)) {
-            definition.push(nextElement.cloneNode(true) as Element);
-            nextElement = nextElement.nextElementSibling;
-        }
-        
-        // If no content found, look for child headers
-        if (definition.length === 0 && nextElement) {
-            const currentLevel = parseInt(header.tagName.charAt(1));
-            const childHeaders: HTMLElement[] = [];
-            
-            // Collect all child headers (headers with higher level than current)
-            let siblingElement = nextElement;
-            while (siblingElement) {
-                if (siblingElement.tagName.match(/^H[1-6]$/)) {
-                    const siblingLevel = parseInt(siblingElement.tagName.charAt(1));
-                    if (siblingLevel > currentLevel) {
-                        childHeaders.push(siblingElement as HTMLElement);
-                    } else if (siblingLevel <= currentLevel) {
-                        // Stop when we reach a header with same or lower level
-                        break;
-                    }
-                }
-                siblingElement = siblingElement.nextElementSibling;
-            }
-            
-            // If we found child headers, create a paragraph with them
-            if (childHeaders.length > 0) {
-                const paragraph = doc.createElement('p');
-                paragraph.innerHTML = childHeaders.map(child => 
-                    `<strong>${child.textContent || ''}</strong>`
-                ).join('、');
-                definition.push(paragraph);
-            }
-        }
-        
-        // 创建一个条目，包含所有分割后的词条
-        if (terms.length > 0) {
-            entries.push({
-                term: terms[0], // 使用第一个词条作为主要词条
-                terms, // 存储所有分割后的词条
-                definition,
-                catalog,
-                header
-            });
-        }
-    });
-    
+    const data = parseDictionaryContent(content, filePath, fileName);
+
     return {
-        id: filePath,
-        name: fileName,
+        id: data.id,
+        name: data.name,
         filePath,
-        entries,
+        entries: toEntries(data.entries),
         enabled: true
     };
-}
-
-/**
- * 使用非字符分割词条
- * @param text 要分割的文本
- * @returns 分割后的词条数组
- */
-function splitTerm(text: string): string[] {
-    // 使用非字符（如空格、标点等）分割文本
-    // 使用更兼容的方式匹配中文字符、字母和数字
-    return text
-        .split(/[^\w\u4e00-\u9fa5]/) // 匹配非字母、数字和中文字符
-        .filter(term => term.trim() !== ''); // 过滤空字符串
-}
-
-/**
- * 更新header层次栈
- * @param stack 当前header栈
- * @param level 当前header级别
- * @param header 当前header元素
- * @param text 当前header文本
- */
-function updateHeaderStack(
-    stack: { level: number; element: HTMLElement; text: string }[],
-    level: number,
-    header: HTMLElement,
-    text: string
-): void {
-    // 移除栈中级别大于等于当前级别的header
-    while (stack.length > 0 && stack[stack.length - 1].level >= level) {
-        stack.pop();
-    }
-    
-    // 添加当前header到栈中
-    stack.push({ level, element: header, text });
 }

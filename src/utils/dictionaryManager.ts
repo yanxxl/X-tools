@@ -1,4 +1,5 @@
 import { Dictionary, DictionaryEntry, parseMarkdownToDictionary } from './dictionaryParser';
+import { searchDictionaries } from './dictionaryParserCore';
 import { saveDictionariesToStorage, loadDictionariesFromStorage } from './storageUtils';
 
 /**
@@ -11,7 +12,7 @@ export interface DictionaryManager {
     toggleDictionaryEnabled: (dictionaryId: string) => void;
     moveDictionaryUp: (dictionaryId: string) => void;
     moveDictionaryDown: (dictionaryId: string) => void;
-    search: (term: string) => DictionaryEntry[];
+    search: (term: string) => Promise<DictionaryEntry[]>;
     getEnabledDictionaries: () => Dictionary[];
     loadFromStorage: (force?: boolean) => Promise<void>;
     saveToStorage: () => void;
@@ -142,6 +143,11 @@ export function createDictionaryManager(): DictionaryManager {
      */
     const removeDictionary = (dictionaryId: string): void => {
         if (dictionaries.delete(dictionaryId)) {
+            // 通知后端释放该词典的数据，避免内存泄漏
+            if (window.electronAPI?.removeDictionary) {
+                window.electronAPI.removeDictionary(dictionaryId)
+                    .catch(err => console.error('通知后端移除词典失败:', err));
+            }
             // 保存到本地存储
             saveToStorage();
 
@@ -222,81 +228,42 @@ export function createDictionaryManager(): DictionaryManager {
     };
 
     /**
-     * 判断搜索词是否为英文（不包含中文）
-     * @param term 搜索词
-     * @returns 是否为英文
-     */
-    const isEnglishSearchTerm = (term: string): boolean => {
-        // 如果不包含中文，就算英文
-        return !/[\u4e00-\u9fa5]/.test(term);
-    };
-
-    /**
      * 搜索所有启用的词典
+     *
+     * 查词的重活（扫描全部词条）完全交给后端（主进程）执行：
+     * 渲染进程只把搜索词 + 已启用词典路径发过去，后端在持有的词典数据中检索，
+     * 只回传命中的少数条目，因此即使词典有数万条也不会卡住界面。
+     *
      * @param term 搜索词
      * @returns 匹配的词条数组
      */
-    const search = (term: string): DictionaryEntry[] => {
+    const search = async (term: string): Promise<DictionaryEntry[]> => {
         if (!term.trim()) {
             return [];
         }
 
         const enabledDictionaries = getEnabledDictionaries();
-        const results: DictionaryEntry[] = [];
+        const dictPaths = enabledDictionaries.map(d => d.filePath);
 
-        const searchTerm = term.toLowerCase().trim();
-        const isEnglish = isEnglishSearchTerm(term);
-
-        // 首先查找完全匹配的词条（term或terms中的任何一个）
-        enabledDictionaries.forEach(dictionary => {
-            const exactMatches = dictionary.entries.filter(entry =>
-                entry.term.toLowerCase() === searchTerm ||
-                entry.terms.some(t => t.toLowerCase() === searchTerm)
-            );
-            results.push(...exactMatches);
-        });
-
-        // 如果没有完全匹配的结果，再查找包含搜索词的词条（term或terms中的任何一个）
-        if (results.length === 0) {
-            enabledDictionaries.forEach(dictionary => {
-                const partialMatches = dictionary.entries.filter(entry =>
-                    entry.term.toLowerCase().includes(searchTerm) ||
-                    entry.terms.some(t => t.toLowerCase().includes(searchTerm))
-                );
-                results.push(...partialMatches);
-            });
+        // 优先走后端检索
+        if (window.electronAPI?.searchDictionary) {
+            try {
+                const results = await window.electronAPI.searchDictionary(term, dictPaths);
+                // 后端返回的是 DictionaryEntryData，与渲染进程 DictionaryEntry 结构一致
+                return results as DictionaryEntry[];
+            } catch (error) {
+                console.error('后端查词失败，回退到本地检索:', error);
+            }
         }
 
-        // 如果没有包含词的，根据语言类型应用不同的匹配规则
-        if (results.length === 0) {
-            enabledDictionaries.forEach(dictionary => {
-                let matchingEntries;
-                
-                if (isEnglish) {
-                    // 英文搜索：搜索词包含词条的全词匹配
-                    matchingEntries = dictionary.entries.filter(entry => {
-                        const entryTerm = entry.term.toLowerCase().trim();
-                        const wordBoundary = new RegExp(`\\b${entryTerm}\\b`, 'i');
-                        return wordBoundary.test(searchTerm) ||
-                               entry.terms.some(t => {
-                                   const term = t.toLowerCase().trim();
-                                   const wordBoundary = new RegExp(`\\b${term}\\b`, 'i');
-                                   return wordBoundary.test(searchTerm);
-                               });
-                    });
-                } else {
-                    // 中文搜索：搜索词包含词条的包含匹配
-                    matchingEntries = dictionary.entries.filter(entry =>
-                        searchTerm.includes(entry.term.toLowerCase().trim()) ||
-                        entry.terms.some(t => searchTerm.includes(t.toLowerCase().trim()))
-                    );
-                }
-                
-                results.push(...matchingEntries);
-            });
-        }
-
-        return results;
+        // 兜底：无后端时由渲染进程本地扫描（仅在本地确实持有词条数据的场景）
+        const dicts = enabledDictionaries.map(d => ({
+            id: d.id,
+            name: d.name,
+            filePath: d.filePath,
+            entries: d.entries
+        }));
+        return searchDictionaries(term, dicts) as DictionaryEntry[];
     };
 
     /**

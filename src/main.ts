@@ -13,6 +13,8 @@ import { OfficeParserConfig } from './office/types';
 import workerpool from 'workerpool';
 import { astToJson, astToText, parseOfficeDocument } from './utils/office';
 import log, { configureLogger } from './utils/logger';
+import { searchDictionaries } from './utils/dictionaryParserCore';
+import type { DictionaryData, DictionaryEntryData, DictionarySummary } from './utils/dictionaryParserCore';
 
 // 添加环境变量声明
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -257,6 +259,44 @@ function registerIpcHandlers() {
             throw new Error('线程池未初始化，无法解析 Markdown');
         }
         return await pool.exec('parseMarkdown', [markdown, filePath, lite, idPrefix]);
+    });
+
+    // 解析词典文件（在线程池执行，大词典不会卡住渲染进程）
+    // 解析后的全部词条数据由主进程持有（dictionaryStore），只向渲染进程返回轻量摘要，
+    // 查词时再由主进程在后端检索并返回命中的少数条目，避免渲染进程持有/扫描海量数据
+    const dictionaryStore = new Map<string, DictionaryData>();
+
+    ipcMain.handle('parseDictionary', async (event, filePath: string): Promise<DictionarySummary & { parseTime?: number }> => {
+        if (!pool) {
+            throw new Error('线程池未初始化，无法解析词典');
+        }
+        const data = await pool.exec('parseDictionary', [filePath]) as DictionaryData & { parseTime?: number };
+        // 后端持有真实词条数据，供后续查词使用
+        dictionaryStore.set(filePath, data);
+        return {
+            id: data.id || filePath,
+            name: data.name,
+            filePath: data.filePath,
+            entryCount: data.entries.length,
+            parseTime: data.parseTime
+        };
+    });
+
+    // 从后端词典数据中移除某个词典（词典被删除时由渲染进程调用，避免内存泄漏）
+    ipcMain.handle('removeDictionary', async (event, filePath: string) => {
+        dictionaryStore.delete(filePath);
+        return { success: true };
+    });
+
+    // 在后端已加载的词典中检索词条，仅返回命中的条目
+    // dictPaths 为渲染进程传入的"已启用且按顺序排列"的词典路径列表
+    ipcMain.handle('searchDictionary', async (event, query: string, dictPaths: string[]): Promise<DictionaryEntryData[]> => {
+        const dictionaries: DictionaryData[] = [];
+        for (const p of dictPaths) {
+            const d = dictionaryStore.get(p);
+            if (d) dictionaries.push(d);
+        }
+        return searchDictionaries(query, dictionaries);
     });
 
     // 读取二进制文件内容

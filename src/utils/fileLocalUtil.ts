@@ -6,12 +6,7 @@ import { FileNode, FileInfo } from '../types';
 import { getExtension, isTextFile, isOfficeParserSupported, isSearchableFile } from './fileCommonUtil';
 import { readFileLines } from './fileCacheUtil';
 import { parseOfficeDocument, astToText } from './office';
-
-/**
- * 编码检测采样大小（字节）
- * 编码检测不需要全量扫描，几 MB 的文件全量检测会明显拖慢读取速度
- */
-const ENCODING_SAMPLE_SIZE = 64 * 1024;
+import { decodeBuffer, detectEncoding } from './fileTextUtil';
 
 // =======================================
 // 文件树相关功能
@@ -246,26 +241,11 @@ export async function readFileText(filePath: string): Promise<string | null> {
     // 先以buffer形式读取文件
     const buffer = await fs.promises.readFile(filePath);
     // 检测文件编码：只取前 64KB 采样，超大文件全量检测代价很高
-    const sample = buffer.length > ENCODING_SAMPLE_SIZE ? buffer.subarray(0, ENCODING_SAMPLE_SIZE) : buffer;
-    const detectedEncoding = chardet.detect(sample);
+    const detectedEncoding = detectEncoding(buffer);
     console.log(`检测到文件编码: ${detectedEncoding || 'unknown'}，路径: ${filePath}`);
 
-    // 如果检测到编码，则使用iconv-lite转换为utf-8
-    // 如果无法检测到编码或编码不支持，尝试使用utf-8
-    let content: string;
-    if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
-      content = iconv.decode(buffer, detectedEncoding);
-    } else {
-      // 尝试直接使用utf-8
-      try {
-        content = buffer.toString('utf-8');
-      } catch (e) {
-        // 如果utf-8解码失败，尝试使用gbk作为备选
-        content = iconv.decode(buffer, 'gbk');
-      }
-    }
-
-    return content;
+    // 按检测到的编码解码，失败时回退 utf-8 / gbk
+    return decodeBuffer(buffer, detectedEncoding);
   } catch (error) {
     // 忽略解码失败的文件
     console.error('读取文件失败:', error);
@@ -290,8 +270,7 @@ export async function writeFileText(filePath: string, content: string): Promise<
 
       // 文件存在，读取文件以检测编码（仅采样前 64KB）
       const buffer = await fs.promises.readFile(filePath);
-      const sample = buffer.length > ENCODING_SAMPLE_SIZE ? buffer.subarray(0, ENCODING_SAMPLE_SIZE) : buffer;
-      const detectedEncoding = chardet.detect(sample);
+      const detectedEncoding = detectEncoding(buffer);
 
       if (detectedEncoding && iconv.encodingExists(detectedEncoding)) {
         fileEncoding = detectedEncoding;

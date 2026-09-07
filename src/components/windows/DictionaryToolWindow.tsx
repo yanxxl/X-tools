@@ -1,5 +1,5 @@
 // React hooks
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 // Ant Design components
 import { Button, Card, Input, Empty, Space, Typography, message, Checkbox, Tooltip, List, Flex } from 'antd';
@@ -21,9 +21,28 @@ import { ToolWindow } from './toolWindow';
 // Project utils
 import { createDictionaryManager } from '../../utils/dictionaryManager';
 import { nameWithoutExtension } from '../../utils/fileCommonUtil';
+import type { DictionaryEntry } from '../../utils/dictionaryParser';
+
+// Markdown -> HTML（词条释义保存的是 Markdown 原文，展示时才转换）
+import { marked } from 'marked';
 
 // 创建全局词典管理器实例
 const dictionaryManager = createDictionaryManager();
+
+/**
+ * 把词条释义的 Markdown 原文转换为 HTML
+ * 词典加载时不做转换，只有实际展示的少量条目才需要渲染，因此这里按需转换
+ */
+const renderDefinition = (markdown: string): string => {
+    if (!markdown) return '';
+    try {
+        const html = marked.parse(markdown, { async: false, breaks: true }) as string;
+        return typeof html === 'string' ? html : '';
+    } catch (error) {
+        console.error('词条释义渲染失败:', error);
+        return markdown;
+    }
+};
 
 
 /**
@@ -43,6 +62,8 @@ const DictionaryPanel: React.FC = () => {
     // =========================================================================
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState<string>('');
+    const [searchResults, setSearchResults] = useState<DictionaryEntry[]>([]);
+    const [searching, setSearching] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
     const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
     const [dictionaries, setDictionaries] = useState<Array<{ id: string; name: string; filePath: string; enabled: boolean; error?: string }>>([]);
@@ -92,12 +113,39 @@ const DictionaryPanel: React.FC = () => {
     // =========================================================================
     // Other functions
     // =========================================================================
-    // 搜索结果（使用useMemo优化）
-    const searchResults = useMemo(() => {
-        if (!debouncedSearchTerm.trim()) {
-            return [];
+    // 异步查词：搜索请求发给后端（主进程），由后端在持有的词典数据中检索，
+    // 只回传命中条目，渲染进程不再持有/扫描海量词条，因此大词典也不会卡
+    useEffect(() => {
+        const term = debouncedSearchTerm.trim();
+        if (!term) {
+            setSearchResults([]);
+            setSearching(false);
+            return;
         }
-        return dictionaryManager.search(debouncedSearchTerm.trim());
+
+        let cancelled = false;
+        setSearching(true);
+        dictionaryManager.search(term)
+            .then(results => {
+                if (!cancelled) {
+                    setSearchResults(results);
+                }
+            })
+            .catch(err => {
+                console.error('查词失败:', err);
+                if (!cancelled) {
+                    setSearchResults([]);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setSearching(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [debouncedSearchTerm, dictionaryManager]);
 
     // =========================================================================
@@ -323,7 +371,7 @@ const DictionaryPanel: React.FC = () => {
                     <div style={{ marginBottom: 8 }}>
                         <Text type="secondary">
                             {debouncedSearchTerm.trim() ?
-                                `找到 ${searchResults.length} 条结果` :
+                                (searching ? '搜索中…' : `找到 ${searchResults.length} 条结果`) :
                                 `已启用 ${dictionaryManager.getEnabledDictionaries().length}/${dictionaryManager.dictionaries.size} 个词典`
                             }
                         </Text>
@@ -357,10 +405,14 @@ const DictionaryPanel: React.FC = () => {
                                         </Title>
                                     </div>
 
-                                    {/* 直接引用元素，保持原汁原味 */}
+                                    {/* 释义保存的是 Markdown 原文，展示时转换为 HTML */}
                                     <div>
-                                        {entry.definition.map((element, defIndex) => (
-                                            <div className="dictionary-text-content" key={defIndex} dangerouslySetInnerHTML={{ __html: element.outerHTML }} />
+                                        {entry.definition.map((markdown, defIndex) => (
+                                            <div
+                                                className="dictionary-text-content"
+                                                key={defIndex}
+                                                dangerouslySetInnerHTML={{ __html: renderDefinition(markdown) }}
+                                            />
                                         ))}
                                     </div>
                                 </List.Item>

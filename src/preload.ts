@@ -3,6 +3,7 @@
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
 import { FileNode, OfficeJsonData } from './types/index';
 import type { MarkdownBlocksResult } from './utils/markdown';
+import type { DictionaryData, DictionarySummary, DictionaryEntryData } from './utils/dictionaryParserCore';
 import { Config } from './utils/config';
 import { OfficeParserConfig } from './office/types';
 
@@ -39,6 +40,9 @@ interface ElectronAPI {
     readFileBinary: (filePath: string) => Promise<Buffer>;
     readFileLines: (filePath: string) => Promise<string[]>; // 这个搜索预览时用
     parseMarkdownBlocks: (markdown: string, filePath: string, lite?: boolean, idPrefix?: string) => Promise<MarkdownBlocksResult & { parseTime?: number }>; // 在线程池中解析 Markdown，返回分块 HTML
+    parseDictionary: (filePath: string) => Promise<DictionarySummary & { parseTime?: number }>; // 在线程池中解析词典文件，返回摘要（词条数据由后端持有）
+    searchDictionary: (query: string, dictPaths: string[]) => Promise<DictionaryEntryData[]>; // 在后端已加载的词典中检索，仅返回命中条目
+    removeDictionary: (filePath: string) => Promise<{ success: boolean }>; // 通知后端释放某个词典的内存数据
     writeFile: (filePath: string, content: string) => Promise<boolean>;
     openExternal: (url: string) => Promise<void>;
     addFile: (directoryPath: string) => Promise<{ success: boolean; filePath?: string }>;
@@ -109,6 +113,9 @@ const electronAPI: ElectronAPI = {
     readFileLines: (filePath: string) => ipcRenderer.invoke('readFileLines', filePath) as Promise<string[]>,
     parseMarkdownBlocks: (markdown: string, filePath: string, lite?: boolean, idPrefix?: string) =>
         ipcRenderer.invoke('parseMarkdownBlocks', markdown, filePath, lite, idPrefix) as Promise<MarkdownBlocksResult & { parseTime?: number }>,
+    parseDictionary: (filePath: string) => ipcRenderer.invoke('parseDictionary', filePath) as Promise<DictionarySummary & { parseTime?: number }>,
+    searchDictionary: (query: string, dictPaths: string[]) => ipcRenderer.invoke('searchDictionary', query, dictPaths) as Promise<DictionaryEntryData[]>,
+    removeDictionary: (filePath: string) => ipcRenderer.invoke('removeDictionary', filePath) as Promise<{ success: boolean }>,
     writeFile: (filePath: string, content: string) => ipcRenderer.invoke('writeFile', filePath, content) as Promise<boolean>,
     openExternal: (url: string) => ipcRenderer.invoke('openExternal', url) as Promise<void>,
     addFile: (directoryPath: string) => ipcRenderer.invoke('addFile', directoryPath) as Promise<{ success: boolean; filePath?: string }>,

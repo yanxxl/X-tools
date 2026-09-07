@@ -8,6 +8,8 @@ import { truncateTextWithQuery } from './format';
 import { SearchResult } from '../types';
 import {isTextableFile} from './fileLocalUtil';
 import {parseMarkdownBlocks} from './markdown';
+import {parseDictionaryContent} from './dictionaryParserCore';
+import {readTextFile} from './fileTextUtil';
 
 // 搜索文件内容
 async function searchFileContent(filePath: string, query: string, searchMode: 'content' | 'filename'): Promise<SearchResult | null> {
@@ -116,9 +118,24 @@ async function parseMarkdown(markdown: string, filePath: string, lite?: boolean,
   };
 }
 
+/**
+ * 解析词典文件（读取 + Markdown 解析 + 条目提取都在线程池中完成）
+ * @param filePath 词典文件路径
+ */
+async function parseDictionary(filePath: string) {
+  const startTime = performance.now();
+  const content = await readTextFile(filePath);
+  const result = parseDictionaryContent(content, filePath);
+  return {
+    ...result,
+    parseTime: performance.now() - startTime
+  };
+}
+
 // 创建worker并注册公共函数
 workerpool.worker({
   searchFileContent: searchFileContent,
   checkAndCleanExpiredCache: checkAndCleanExpiredCache,
-  parseMarkdown: parseMarkdown
+  parseMarkdown: parseMarkdown,
+  parseDictionary: parseDictionary
 });

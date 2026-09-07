@@ -454,12 +454,21 @@ export function splitMarkdownSegments(text: string, firstSegmentSize: number, se
  * @param lite 是否强制使用精简模式，默认按文档大小自动判断
  * @param idPrefix 锚点 ID 前缀，分段解析时传入以保证跨段唯一
  */
-export async function parseMarkdownBlocks(
+/**
+ * 解析 Markdown 得到 hast 语法树（不产生完整 HTML 字符串）
+ * 适用于需要在 AST 层面做二次处理的场景（如词典解析），避免额外的序列化与 DOM 解析开销
+ *
+ * @param markdown 要解析的 Markdown 文本
+ * @param filePath 文件路径，用于解析相对图片地址
+ * @param lite 是否强制使用精简模式，默认按文档大小自动判断
+ * @param idPrefix 锚点 ID 前缀
+ */
+export async function parseMarkdownHast(
     markdown: string,
     filePath = '',
     lite?: boolean,
     idPrefix = ''
-): Promise<MarkdownBlocksResult> {
+): Promise<{ tree: any; headings: FlatHeading[]; frontmatter?: Record<string, any>; stringify: (node: any) => string }> {
     // 未显式指定时，按文档大小自动降级为精简模式
     const useLite = lite ?? markdown.length > LARGE_FILE_THRESHOLD;
     const processor = getProcessor(useLite);
@@ -470,24 +479,40 @@ export async function parseMarkdownBlocks(
     // mdast -> hast（元数据插件在此阶段填充 ctx）
     const tree = await processor.run(processor.parse(markdown), file);
 
+    return {
+        tree,
+        headings: ctx.headings,
+        frontmatter: ctx.frontmatter,
+        stringify: (node: any) => processor.stringify(node, file)
+    };
+}
+
+export async function parseMarkdownBlocks(
+    markdown: string,
+    filePath = '',
+    lite?: boolean,
+    idPrefix = ''
+): Promise<MarkdownBlocksResult> {
+    const { tree, headings, frontmatter, stringify } = await parseMarkdownHast(markdown, filePath, lite, idPrefix);
+
     // 按顶层块逐个序列化，得到可分批插入 DOM 的 HTML 片段
     const chunks: string[] = [];
     for (const child of (tree as any).children || []) {
-        const chunkHtml = processor.stringify(child, file);
+        const chunkHtml = stringify(child);
         if (chunkHtml) {
             chunks.push(chunkHtml);
         }
     }
 
     // frontmatter 表格置于正文开头
-    if (ctx.frontmatter) {
-        chunks.unshift(buildFrontmatterHtml(ctx.frontmatter));
+    if (frontmatter) {
+        chunks.unshift(buildFrontmatterHtml(frontmatter));
     }
 
     return {
         chunks,
-        headings: ctx.headings,
-        frontmatter: ctx.frontmatter
+        headings,
+        frontmatter
     };
 }
 
