@@ -8,7 +8,6 @@ import remarkFrontmatter from 'remark-frontmatter';
 import remarkGfm from 'remark-gfm';
 import remarkGemoji from 'remark-gemoji';
 import remarkMath from 'remark-math';
-import remarkBreaks from 'remark-breaks';
 import rehypeHighlight from 'rehype-highlight';
 import rehypeKatex from 'rehype-katex';
 import {visit} from 'unist-util-visit';
@@ -319,7 +318,6 @@ export function setMermaidPlugin(plugin: any) {
 function buildProcessor(lite: boolean) {
     const processor = unified()
         .use(remarkParse) // 解析 Markdown
-        .use(remarkBreaks) // 支持单换行作为硬换行
         .use(remarkFrontmatter) // 支持 frontmatter
         .use(remarkGfm) // 支持 GitHub 风格 Markdown（表格、删除线、任务列表、自动链接等）
         .use(remarkGemoji) // 支持 GitHub 表情符号
@@ -463,6 +461,68 @@ export function splitMarkdownSegments(text: string, firstSegmentSize: number, se
  * @param lite 是否强制使用精简模式，默认按文档大小自动判断
  * @param idPrefix 锚点 ID 前缀
  */
+
+/**
+ * 保留空行预处理
+ * 标准 Markdown 会把段间多余的空行折叠成一个段落间距，作者敲出的空行在预览中不可见。
+ * 这里把「3 个及以上连续换行」产生的多余空行还原为独立的 <br> 块，
+ * 使预览中的空行数与源码一致：
+ *   - 2 个连续换行（1 个空行）  -> 普通段落分隔，正常折叠
+ *   - 3 个连续换行（2 个空行）  -> 段落分隔 + 1 个保留的空行
+ *   - 4 个连续换行（3 个空行）  -> 段落分隔 + 2 个保留的空行，依此类推
+ * 注意：<br> 单独成行会被 remark 识别为 HTML 块而原样输出，因此只把第 3 个及以上的换行替换为 <br>。
+ * 围栏代码块（``` 或 ~~~）内部不处理，避免破坏代码原文的空行。
+ *
+ * @param markdown 原始 Markdown 文本
+ * @returns 处理后的 Markdown 文本
+ */
+function preserveBlankLines(markdown: string): string {
+    const lines = markdown.split('\n');
+
+    let inFence = false;
+    let fenceChar = '';
+    let fenceLen = 0;
+    let blankRun = 0; // 当前连续空行数（仅统计段间空行）
+
+    const result: string[] = [];
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        const fenceMatch = /^(```+|~~~+)/.exec(trimmed);
+
+        if (fenceMatch) {
+            const marker = fenceMatch[1];
+            if (!inFence) {
+                inFence = true;
+                fenceChar = marker[0];
+                fenceLen = marker.length;
+            } else if (marker[0] === fenceChar && marker.length >= fenceLen) {
+                inFence = false;
+            }
+            blankRun = 0;
+            result.push(line);
+            continue;
+        }
+
+        // 围栏代码块内部不做任何处理
+        if (inFence) {
+            result.push(line);
+            continue;
+        }
+
+        if (trimmed === '') {
+            blankRun++;
+            // 第 1 个空行是正常段落分隔（2 个换行），第 2 个起保留为空行
+            result.push(blankRun >= 2 ? '<br>' : '');
+        } else {
+            blankRun = 0;
+            result.push(line);
+        }
+    }
+
+    return result.join('\n');
+}
+
 export async function parseMarkdownHast(
     markdown: string,
     filePath = '',
@@ -473,11 +533,14 @@ export async function parseMarkdownHast(
     const useLite = lite ?? markdown.length > LARGE_FILE_THRESHOLD;
     const processor = getProcessor(useLite);
 
+    // 保留 3 个及以上连续换行产生的空行（2 个换行仍按段落分隔处理）
+    const processedMarkdown = preserveBlankLines(markdown);
+
     const ctx: MarkdownContext = { filePath, idPrefix, headings: [] };
-    const file = new VFile({ value: markdown, data: { markdownContext: ctx } });
+    const file = new VFile({ value: processedMarkdown, data: { markdownContext: ctx } });
 
     // mdast -> hast（元数据插件在此阶段填充 ctx）
-    const tree = await processor.run(processor.parse(markdown), file);
+    const tree = await processor.run(processor.parse(processedMarkdown), file);
 
     return {
         tree,
