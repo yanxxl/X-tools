@@ -356,7 +356,7 @@ const DictionaryPanel: React.FC = () => {
 
                 {/* Search Input */}
                 <Input
-                    placeholder="输入要搜索的术语..."
+                    placeholder="输入要搜索的术语（? 单个字符，* 多个字符，$ 结束）"
                     prefix={<SearchOutlined />}
                     value={searchTerm}
                     onChange={(e) => {

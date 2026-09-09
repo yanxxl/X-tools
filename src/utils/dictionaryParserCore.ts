@@ -162,10 +162,77 @@ export function parseDictionaryContent(content: string, filePath: string, name?:
     };
 }
 
+// =========================================================================
+// 通配符（简易正则）检索
+// =========================================================================
+
+/** 通配符元字符：? / ？ 匹配单个字符；* 匹配任意多个字符；$ / ￥ 表示结束 */
+const WILDCARD_CHARS = /[?？*$￥]/;
+
+/** 通配符检索最多返回的条目数，避免过宽的模式（如 *）一次性灌满列表 */
+const WILDCARD_MAX_RESULTS = 500;
+
+/**
+ * 判断搜索词是否为通配符（简易正则）查询
+ *
+ * 只要含有 ?/？、*、$/￥ 中任意一个，即按正则方式检索，
+ * 不再执行后续的模糊（包含/放宽）匹配。
+ */
+export function isWildcardQuery(term: string): boolean {
+    return WILDCARD_CHARS.test(term);
+}
+
+/**
+ * 把通配符模式编译成正则表达式
+ *
+ * - `?` / `？`：匹配单个字符
+ * - `*`：匹配任意多个字符（含零个）
+ * - `$` / `￥`：出现在末尾表示"到此结束"（结尾锚定），出现在中间按普通字符处理
+ * - 其余字符一律转义，保证任何输入都能得到合法正则
+ *
+ * @param term 用户输入的搜索词
+ * @returns 编译好的正则（忽略大小写），模式为空时返回 null
+ */
+export function buildWildcardRegExp(term: string): RegExp | null {
+    const pattern = term.trim();
+    if (!pattern) {
+        return null;
+    }
+
+    let source = '';
+    let anchorEnd = false;
+
+    for (let i = 0; i < pattern.length; i++) {
+        const ch = pattern[i];
+        switch (ch) {
+            case '?':
+            case '？':
+                source += '.';
+                break;
+            case '*':
+                source += '[\\s\\S]*';
+                break;
+            case '$':
+            case '￥':
+                if (i === pattern.length - 1) {
+                    anchorEnd = true;
+                } else {
+                    source += '\\$';
+                }
+                break;
+            default:
+                source += ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+    }
+
+    return new RegExp(`${source}${anchorEnd ? '$' : ''}`, 'i');
+}
+
 /**
  * 在多个词典中搜索词条
  *
  * 检索逻辑（与旧版渲染进程逻辑保持一致）：
+ *   0) 搜索词含 ?/？、*、$/￥ 时走通配符（简易正则）检索，命中即返回，不再做模糊匹配；
  *   1) 先找 term / terms 完全匹配的条目；
  *   2) 没有完全匹配时，再找包含搜索词的条目；
  *   3) 仍没有时，按语言类型放宽：
@@ -187,6 +254,24 @@ export function searchDictionaries(term: string, dictionaries: DictionaryData[])
     const searchTerm = term.toLowerCase().trim();
     const isEnglish = !/[\u4e00-\u9fa5]/.test(term);
     const results: DictionaryEntryData[] = [];
+
+    // 0. 通配符（简易正则）检索：命中即返回，不再走下面的模糊匹配
+    if (isWildcardQuery(searchTerm)) {
+        const regex = buildWildcardRegExp(searchTerm);
+        if (!regex) {
+            return [];
+        }
+        for (const dictionary of dictionaries) {
+            for (const entry of dictionary.entries) {
+                if (regex.test(entry.term) || entry.terms.some(t => regex.test(t))) {
+                    results.push(entry);
+                }
+            }
+        }
+        // 短词条通常更贴近用户输入的模式，排在前面
+        results.sort((a, b) => a.term.length - b.term.length);
+        return results.length > WILDCARD_MAX_RESULTS ? results.slice(0, WILDCARD_MAX_RESULTS) : results;
+    }
 
     // 1. 完全匹配
     for (const dictionary of dictionaries) {
