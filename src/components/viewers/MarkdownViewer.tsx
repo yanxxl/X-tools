@@ -95,9 +95,11 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
     const viewModeRef = useRef(viewMode);         // 供防抖回调读取最新视图模式
 
     // ============================== View Mode Switching ==============================
-    // 切到编辑模式：若内容已修改，先把最新内容同步给编辑器，避免重新挂载后丢失改动
+    // 切到编辑模式：把最新原文同步给编辑器，避免重新挂载后显示编辑前的内容。
+    // 注意：这里不能只在 dirty 时同步——dirty 标记会在切回预览时被消费掉，
+    // 否则"编辑 → 预览 → 再编辑"时编辑器会挂载出编辑前的旧内容。
     const showSource = () => {
-        if (dirtyRef.current) {
+        if (viewModeRef.current === 'rendered') {
             setContent(contentRef.current);
         }
         setViewMode('source');
@@ -450,7 +452,8 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
         }
         saveTimeoutRef.current = setTimeout(() => {
             saveFile(value);
-            if (viewModeRef.current === 'rendered' && !isLargeRef.current) {
+            // 仅在改动尚未被渲染时重解析，避免与切回预览时那次解析重复执行
+            if (viewModeRef.current === 'rendered' && !isLargeRef.current && dirtyRef.current) {
                 dirtyRef.current = false;
                 void parseAndRender(value, filePath);
             }
