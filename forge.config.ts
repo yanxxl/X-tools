@@ -12,8 +12,8 @@ import path from 'path';
 const config: ForgeConfig = {
     packagerConfig: {
         asar: true,
-        name: 'X-tools',
-        executableName: 'X-tools',
+        name: 'X-Tools',
+        executableName: 'X-Tools',
         // 为不同平台设置不同的图标
         // Electron Packager will automatically select the appropriate icon file for each platform
         // based on the file extension (ico for Windows, icns for macOS, png for Linux)
@@ -24,11 +24,11 @@ const config: ForgeConfig = {
         // Windows特定配置：隐藏控制台窗口
         // 注意：不要设置 appCopyright，否则会显示控制台窗口
         win32metadata: {
-            CompanyName: 'X-tools',
-            FileDescription: 'X-tools',
-            OriginalFilename: 'X-tools.exe',
-            ProductName: 'X-tools',
-            InternalName: 'X-tools'
+            CompanyName: 'X-Tools',
+            FileDescription: 'X-Tools',
+            OriginalFilename: 'X-Tools.exe',
+            ProductName: 'X-Tools',
+            InternalName: 'X-Tools'
         }
     },
     rebuildConfig: {},
