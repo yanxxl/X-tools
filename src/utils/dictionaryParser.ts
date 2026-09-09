@@ -21,7 +21,6 @@ export interface Dictionary {
  */
 export interface DictionaryEntry {
     term: string;
-    terms: string[];
     definition: string[];
     catalog: string[];
 }
@@ -32,7 +31,6 @@ export interface DictionaryEntry {
 function toEntries(entries: DictionaryEntryData[]): DictionaryEntry[] {
     return (entries || []).map(entry => ({
         term: entry.term,
-        terms: entry.terms,
         definition: entry.definition,
         catalog: entry.catalog
     }));

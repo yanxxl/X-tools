@@ -2,8 +2,7 @@
  * 词典解析核心（纯逻辑，不依赖 DOM / Node，可同时被渲染进程与线程池复用）
  */
 export interface DictionaryEntryData {
-    term: string;         // 主词条
-    terms: string[];      // 标题拆分出的所有词条
+    term: string;         // 词条（标题原文）
     definition: string[]; // 释义内容，Markdown 原文片段（渲染时才转成 HTML）
     catalog: string[];    // 所属目录（各级父标题）
 }
@@ -36,17 +35,6 @@ interface HeadingInfo {
     level: number;
     text: string;
     lineIndex: number;
-}
-
-/**
- * 使用非字符分割词条
- * @param text 要分割的文本
- * @returns 分割后的词条数组
- */
-function splitTerm(text: string): string[] {
-    return text
-        .split(/[^\w\u4e00-\u9fa5]/) // 匹配非字母、数字和中文字符
-        .filter(term => term.trim() !== '');
 }
 
 /**
@@ -117,9 +105,9 @@ export function parseDictionaryContent(content: string, filePath: string, name?:
         }
 
         const catalog = stack.map(item => item.title);
-        const terms = splitTerm(heading.text);
+        const term = heading.text.trim();
 
-        if (terms.length > 0) {
+        if (term) {
             // 标题到下一个标题之间的内容即释义
             const start = heading.lineIndex + 1;
             const end = i + 1 < headings.length ? headings[i + 1].lineIndex : lines.length;
@@ -144,8 +132,7 @@ export function parseDictionaryContent(content: string, filePath: string, name?:
             }
 
             entries.push({
-                term: terms[0],
-                terms,
+                term,
                 definition,
                 catalog
             });
@@ -233,8 +220,8 @@ export function buildWildcardRegExp(term: string): RegExp | null {
  *
  * 检索逻辑（与旧版渲染进程逻辑保持一致）：
  *   0) 搜索词含 ?/？、*、$/￥ 时走通配符（简易正则）检索，命中即返回，不再做模糊匹配；
- *   1) 先找 term / terms 完全匹配的条目；
- *   2) 没有完全匹配时，再找包含搜索词的条目；
+ *   1) 先找词条完全匹配的条目；
+ *   2) 没有完全匹配时，再找词条包含搜索词的条目；
  *   3) 仍没有时，按语言类型放宽：
  *      - 英文：搜索词包含词条的"整词"（词边界）匹配；
  *      - 中文：搜索词包含词条（子串）匹配。
@@ -263,7 +250,7 @@ export function searchDictionaries(term: string, dictionaries: DictionaryData[])
         }
         for (const dictionary of dictionaries) {
             for (const entry of dictionary.entries) {
-                if (regex.test(entry.term) || entry.terms.some(t => regex.test(t))) {
+                if (regex.test(entry.term)) {
                     results.push(entry);
                 }
             }
@@ -276,10 +263,7 @@ export function searchDictionaries(term: string, dictionaries: DictionaryData[])
     // 1. 完全匹配
     for (const dictionary of dictionaries) {
         for (const entry of dictionary.entries) {
-            if (
-                entry.term.toLowerCase() === searchTerm ||
-                entry.terms.some(t => t.toLowerCase() === searchTerm)
-            ) {
+            if (entry.term.toLowerCase() === searchTerm) {
                 results.push(entry);
             }
         }
@@ -289,10 +273,7 @@ export function searchDictionaries(term: string, dictionaries: DictionaryData[])
     // 2. 包含匹配
     for (const dictionary of dictionaries) {
         for (const entry of dictionary.entries) {
-            if (
-                entry.term.toLowerCase().includes(searchTerm) ||
-                entry.terms.some(t => t.toLowerCase().includes(searchTerm))
-            ) {
+            if (entry.term.toLowerCase().includes(searchTerm)) {
                 results.push(entry);
             }
         }
@@ -302,15 +283,12 @@ export function searchDictionaries(term: string, dictionaries: DictionaryData[])
     // 3. 按语言类型放宽匹配
     for (const dictionary of dictionaries) {
         for (const entry of dictionary.entries) {
+            const entryTerm = entry.term.toLowerCase().trim();
             let matched = false;
             if (isEnglish) {
-                matched =
-                    new RegExp(`\\b${entry.term.toLowerCase().trim()}\\b`, 'i').test(searchTerm) ||
-                    entry.terms.some(t => new RegExp(`\\b${t.toLowerCase().trim()}\\b`, 'i').test(searchTerm));
+                matched = new RegExp(`\\b${entryTerm}\\b`, 'i').test(searchTerm);
             } else {
-                matched =
-                    searchTerm.includes(entry.term.toLowerCase().trim()) ||
-                    entry.terms.some(t => searchTerm.includes(t.toLowerCase().trim()));
+                matched = searchTerm.includes(entryTerm);
             }
             if (matched) {
                 results.push(entry);

@@ -392,14 +392,6 @@ const DictionaryPanel: React.FC = () => {
                                                 </Text>
                                             </div>
                                         )}
-                                        {/* 显示相关词条 */}
-                                        {entry.terms.length > 1 && (
-                                            <div>
-                                                <Text type="secondary" style={{ fontSize: '12px' }}>
-                                                    {entry.terms.filter(t => t !== entry.term).join(' ')}
-                                                </Text>
-                                            </div>
-                                        )}
                                         <Title level={5} style={{ marginTop: 4, marginBottom: 4 }}>
                                             {entry.term}
                                         </Title>

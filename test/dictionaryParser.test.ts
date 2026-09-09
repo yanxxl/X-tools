@@ -80,31 +80,26 @@ describe('dictionaryParser.ts 测试', () => {
             // 验证每个条目
             expect(result.entries[0]).toEqual(expect.objectContaining({
                 term: '第一章',
-                terms: ['第一章'],
                 catalog: [],
             }));
 
             expect(result.entries[1]).toEqual(expect.objectContaining({
                 term: '词条1',
-                terms: ['词条1'],
                 catalog: ['第一章'],
             }));
 
             expect(result.entries[2]).toEqual(expect.objectContaining({
                 term: '词条2',
-                terms: ['词条2', '别名2'],
                 catalog: ['第一章'],
             }));
 
             expect(result.entries[3]).toEqual(expect.objectContaining({
                 term: '第二章',
-                terms: ['第二章'],
                 catalog: [],
             }));
 
             expect(result.entries[4]).toEqual(expect.objectContaining({
                 term: '词条3',
-                terms: ['词条3'],
                 catalog: ['第二章'],
             }));
 
@@ -301,9 +296,8 @@ describe('dictionaryParser.ts 测试', () => {
         });
     });
 
-    describe('splitTerm（内部函数）', () => {
-        it('应该正确分割包含中文和英文的词条', () => {
-            // 由于 splitTerm 是内部函数，我们需要通过 parseMarkdownToDictionary 间接测试
+    describe('词条拆分（已移除同义词机制）', () => {
+        it('词条应完整保留标题原文（中英文混排）', () => {
             mockReadFile.mockResolvedValue(`# 词条
 
 ## 测试词条 Test Term
@@ -319,16 +313,13 @@ describe('dictionaryParser.ts 测试', () => {
             });
 
             return parseMarkdownToDictionary('/test/path/test.md').then(result => {
-                expect(result.entries).toHaveLength(2); // 2个条目：词条, 测试词条 Test Term
-                expect(result.entries[0].term).toBe('词条'); // 一级标题
-                expect(result.entries[0].terms).toEqual(['词条']);
-                expect(result.entries[1].term).toBe('测试词条'); // 二级标题分割后的第一个词条
-                expect(result.entries[1].terms).toEqual(['测试词条', 'Test', 'Term']);
+                expect(result.entries).toHaveLength(2);
+                expect(result.entries[0].term).toBe('词条');
+                expect(result.entries[1].term).toBe('测试词条 Test Term'); // 标题原文，不再拆分
             });
         });
 
-        it('应该正确分割包含标点符号的词条', () => {
-            // 由于 splitTerm 是内部函数，我们需要通过 parseMarkdownToDictionary 间接测试
+        it('词条应完整保留含标点的标题原文', () => {
             mockReadFile.mockResolvedValue(`# 词条
 
 ## 词条1,词条2;词条3-词条4
@@ -345,15 +336,11 @@ describe('dictionaryParser.ts 测试', () => {
 
             return parseMarkdownToDictionary('/test/path/test.md').then(result => {
                 expect(result.entries).toHaveLength(2);
-                expect(result.entries[0].term).toBe('词条'); // 一级标题
-                expect(result.entries[0].terms).toEqual(['词条']);
-                expect(result.entries[1].term).toBe('词条1'); // 二级标题分割后的第一个词条
-                expect(result.entries[1].terms).toEqual(['词条1', '词条2', '词条3', '词条4']);
+                expect(result.entries[1].term).toBe('词条1,词条2;词条3-词条4');
             });
         });
 
-        it('应该正确分割包含数字的词条', () => {
-            // 由于 splitTerm 是内部函数，我们需要通过 parseMarkdownToDictionary 间接测试
+        it('词条应完整保留含数字的标题原文', () => {
             mockReadFile.mockResolvedValue(`# 词条
 
 ## 词条123 测试456
@@ -370,10 +357,7 @@ describe('dictionaryParser.ts 测试', () => {
 
             return parseMarkdownToDictionary('/test/path/test.md').then(result => {
                 expect(result.entries).toHaveLength(2);
-                expect(result.entries[0].term).toBe('词条'); // 一级标题
-                expect(result.entries[0].terms).toEqual(['词条']);
-                expect(result.entries[1].term).toBe('词条123'); // 二级标题分割后的第一个词条
-                expect(result.entries[1].terms).toEqual(['词条123', '测试456']);
+                expect(result.entries[1].term).toBe('词条123 测试456');
             });
         });
     });
