@@ -72,6 +72,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
     const [error, setError] = useState<string | null>(null);
     const [editorView, setEditorView] = useState<any>(null);
     const [liteMode, setLiteMode] = useState(false);       // 大文件精简模式
+    const [emptyDoc, setEmptyDoc] = useState(false);       // 文档没有任何可渲染内容（空文件/纯空白）
     const [sidebarWidth, setSidebarWidth] = useState<number>(() =>
         storage.get<number>(STORAGE_KEYS.MARKDOWN_SIDEBAR_WIDTH, 250)
     );
@@ -253,6 +254,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
         setParseDone(0);
         setParseTotal(0);
         setFirstPaint(false);
+        setEmptyDoc(false);
 
         const container = previewContainerRef.current;
         if (container) {
@@ -276,7 +278,16 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                 parseDoneRef.current = true;
                 setParseTotal(1);
                 setParseDone(1);
-                enqueueChunks(result.chunks || [], token);
+
+                const chunks = result.chunks || [];
+                if (chunks.length === 0) {
+                    // 空文件或纯空白内容没有任何分片，渐进渲染不会被启动，
+                    // 必须在这里直接收尾，否则会一直停留在“正在解析”状态
+                    setEmptyDoc(true);
+                    setStage('done');
+                    return;
+                }
+                enqueueChunks(chunks, token);
                 return;
             }
 
@@ -315,6 +326,9 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
 
             parseDoneRef.current = true;
             if (queueRef.current.index >= queueRef.current.items.length) {
+                if (allChunksRef.current.length === 0) {
+                    setEmptyDoc(true);
+                }
                 setStage('done');
             }
         } catch (err) {
@@ -370,6 +384,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                 setError(null);
                 setOutline([]);
                 setFirstPaint(false);
+                setEmptyDoc(false);
                 setStage('reading');
                 allChunksRef.current = [];
                 queueRef.current = { items: [], index: 0 };
@@ -841,6 +856,8 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
     // ============================== Placeholder ==============================
     // 首屏内容出现前显示解析进度，避免长时间空白且无反馈
     const showPlaceholder = !firstPaint && stage !== 'done';
+    // 解析已结束但没有任何内容（空文件/纯空白）：显示空状态而不是一直转圈
+    const showEmptyState = !showPlaceholder && emptyDoc;
     const placeholderText = stage === 'reading'
         ? '正在读取文件…'
         : parseTotal > 1
@@ -990,6 +1007,26 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                                                     <Spin />
                                                     <span style={{ fontSize: 13, color: 'var(--xt-text-tertiary)' }}>{placeholderText}</span>
                                                 </Space>
+                                            </div>
+                                        )}
+
+                                        {/* 空文档提示：解析完成但没有任何内容 */}
+                                        {showEmptyState && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: 0,
+                                                left: 0,
+                                                right: 0,
+                                                bottom: 0,
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                pointerEvents: 'none'
+                                            }}>
+                                                <Empty
+                                                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                                    description="文件内容为空"
+                                                />
                                             </div>
                                         )}
                                     </div>
