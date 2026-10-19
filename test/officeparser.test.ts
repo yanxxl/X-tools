@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import {OfficeParser} from "../src/office/OfficeParser";
-import {astToText, astToJson, defaultToText, parseOfficeDocument} from "../src/utils/office";
+import {OfficeParser} from "../src/main/office/OfficeParser";
+import {astToText, astToJson, defaultToText, parseOfficeDocument} from "../src/main/utils/office";
 
 async function testOfficeParser() {
     console.log('测试 officeparser 库的能力...\n');

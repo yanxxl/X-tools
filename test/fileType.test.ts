@@ -18,7 +18,7 @@ import {
   truncateText,
   isHiddenFile,
   getFileTypeDisplayName
-} from '../src/utils/fileCommonUtil';
+} from '../src/shared/utils/fileCommonUtil';
 
 describe('fileCommonUtil.ts 测试', () => {
   describe('文件类型检测', () => {

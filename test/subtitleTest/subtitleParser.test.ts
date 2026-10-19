@@ -6,7 +6,7 @@ import {
   parseAssSubtitle,
   parseSubSubtitle,
   SubtitleItem
-} from '../../src/utils/subtitleUtil';
+} from '../../src/renderer/utils/subtitleUtil';
 
 // 模拟window.electronAPI类型
 declare global {

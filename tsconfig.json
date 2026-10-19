@@ -8,6 +8,11 @@
     "noImplicitAny": false,
     "sourceMap": true,
     "baseUrl": ".",
+    "paths": {
+      "@main/*": ["src/main/*"],
+      "@renderer/*": ["src/renderer/*"],
+      "@shared/*": ["src/shared/*"]
+    },
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,

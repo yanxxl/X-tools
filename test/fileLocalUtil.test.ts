@@ -1,7 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getFileInfo } from '../src/utils/fileLocalUtil';
+import { getFileInfo } from '../src/main/utils/fileLocalUtil';
 
 describe('fileLocalUtil.ts 测试', () => {
   describe('getFileInfo 函数', () => {

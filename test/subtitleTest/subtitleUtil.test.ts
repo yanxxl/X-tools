@@ -6,7 +6,7 @@ import {
   parseVttSubtitle,
   parseAssSubtitle,
   parseSubSubtitle
-} from '../../src/utils/subtitleUtil';
+} from '../../src/renderer/utils/subtitleUtil';
 
 // 测试数据目录
 const testDir = __dirname;

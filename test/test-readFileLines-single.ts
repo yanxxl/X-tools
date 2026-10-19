@@ -1,4 +1,4 @@
-import { readFileLines, clearCache } from '../src/utils/fileCacheUtil';
+import { readFileLines, clearCache } from '../src/main/utils/fileCacheUtil';
 
 // 在这里设置要测试的文件路径
 const TEST_FILE_PATH = '/Users/yan/资料/医学/倪海厦笔记/倪海厦/人纪-1-针灸/倪海厦人纪系列之针灸教程.pdf'; // 请更改为你想要测试的文件路径

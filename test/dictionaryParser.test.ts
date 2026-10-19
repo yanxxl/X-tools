@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { parseMarkdownToDictionary } from '../src/utils/dictionaryParser';
-import { parseMarkdown } from '../src/utils/markdown';
+import { parseMarkdownToDictionary } from '../src/renderer/utils/dictionaryParser';
+import { parseMarkdown } from '../src/shared/utils/markdown';
 import { JSDOM } from 'jsdom';
 
 // 使用jsdom创建浏览器环境
