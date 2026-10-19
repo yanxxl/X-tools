@@ -124,7 +124,7 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
             // 保存原始样式
             originalStylesRef.current.set(element, element.style.backgroundColor);
             // 设置高亮样式
-            element.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
+            element.style.backgroundColor = 'var(--xt-highlight-bg)';
         }
     };
 
@@ -324,7 +324,7 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
     }
 
     return (
-        <Space size="small" style={{ border: '1px solid #eee', padding: '2px' }}>
+        <Space size="small" style={{ border: '1px solid var(--xt-border-secondary)', padding: '2px' }}>
             <Tooltip title={isPlaying ? '暂停' : '播放'}>
                 <Button
                     type="primary"
@@ -337,7 +337,7 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
             </Tooltip>
 
             {selectedText
-                ? <span style={{ backgroundColor: 'lightgray', padding: '4px' }}>{selectedText.substring(0, 2)}...</span>
+                ? <span style={{ backgroundColor: 'var(--xt-bg-hover-strong)', padding: '4px' }}>{selectedText.substring(0, 2)}...</span>
                 : (
                     <>
                         {/* 上一个按钮 */}
@@ -351,7 +351,7 @@ const Speaker: React.FC<TextToSpeechProps> = ({ cssSelector }) => {
                         </Tooltip>
 
                         {/* 当前播放信息 */}
-                        <span style={{ fontSize: '12px', color: '#666', minWidth: '80px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--xt-text-secondary)', minWidth: '80px', textAlign: 'center' }}>
                             {currentIndex >= 0 ? currentIndex + 1 : 1} / {elements.length}
                         </span>
 

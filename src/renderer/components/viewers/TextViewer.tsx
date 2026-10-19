@@ -127,11 +127,11 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
         <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
             <div style={{
                 padding: '8px 16px',
-                borderBottom: '1px solid #f0f0f0',
+                borderBottom: '1px solid var(--xt-border-light)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                background: '#fafafa'
+                background: 'var(--xt-bg-subtle)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8,flex: '1',marginRight: 16 }}>
                     <FileTextOutlined />
@@ -145,7 +145,7 @@ export const TextViewer: React.FC<TextViewerProps> = ({filePath, fileName}) => {
                 </Space>
             </div>
 
-            <div style={{flex: 1, overflow: 'auto', padding: '32px', backgroundColor: 'white'}} className={'text-content'} ref={scrollContainerRef}>
+            <div style={{flex: 1, overflow: 'auto', padding: '32px', backgroundColor: 'var(--xt-bg-container)'}} className={'text-content'} ref={scrollContainerRef}>
                 {/* 将文本内容按行分割并转换为HTML段落 */}
                 {content.split('\n').map((line, index) => (
                     <div

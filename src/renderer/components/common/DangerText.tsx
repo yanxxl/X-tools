@@ -18,7 +18,7 @@ export const DangerText: React.FC<DangerTextProps> = ({
     return (
         <span
             style={{
-                color: '#8c8c8c',
+                color: 'var(--xt-text-tertiary)',
                 fontSize: '14px',
                 fontWeight: 300,
                 cursor: onClick ? 'pointer' : 'default',
@@ -26,11 +26,11 @@ export const DangerText: React.FC<DangerTextProps> = ({
                 ...style
             }}
             onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#ff4d4f';
+                e.currentTarget.style.color = 'var(--xt-color-danger)';
                 e.currentTarget.style.fontWeight = '400';
             }}
             onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#8c8c8c';
+                e.currentTarget.style.color = 'var(--xt-text-tertiary)';
                 e.currentTarget.style.fontWeight = '300';
             }}
             onClick={onClick}

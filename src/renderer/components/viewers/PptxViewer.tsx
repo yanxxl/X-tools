@@ -128,7 +128,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                                                     {row.map((cell, cellIndex) => (
                                                         <td key={cellIndex} style={{
                                                             padding: '8px 12px',
-                                                            border: '1px solid #d9d9d9',
+                                                            border: '1px solid var(--xt-border)',
                                                             textAlign: 'left',
                                                             verticalAlign: 'top'
                                                         }}>
@@ -176,7 +176,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                                                 maxHeight: '300px',
                                                 height: 'auto',
                                                 borderRadius: '4px',
-                                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                                                boxShadow: 'var(--xt-shadow)',
                                                 objectFit: 'contain'
                                             }}
                                         />
@@ -184,7 +184,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                                             <div style={{
                                                 marginTop: '8px',
                                                 fontSize: '14px',
-                                                color: '#666',
+                                                color: 'var(--xt-text-secondary)',
                                                 fontStyle: 'italic'
                                             }}>
                                                 {imageAttachment.altText}
@@ -198,11 +198,11 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                             return (
                                 <div key={index} style={{
                                     padding: '20px',
-                                    backgroundColor: '#f5f5f5',
+                                    backgroundColor: 'var(--xt-bg-subtle)',
                                     borderRadius: '4px',
                                     textAlign: 'center',
                                     marginBottom: '16px',
-                                    border: '1px dashed #d9d9d9'
+                                    border: '1px dashed var(--xt-border)'
                                 }}>
                                     [图片] - {element.content as string}
                                 </div>
@@ -259,7 +259,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#f5f5f5'
+                backgroundColor: 'var(--xt-bg-subtle)'
             }}>
                 <div>加载中...</div>
             </div>
@@ -273,7 +273,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#f5f5f5'
+                backgroundColor: 'var(--xt-bg-subtle)'
             }}>
                 <div>无法解析演示文稿内容</div>
             </div>
@@ -288,8 +288,8 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
             {/* 顶部控制栏 */}
             <div style={{
                 padding: '12px 16px',
-                borderBottom: '1px solid #e8e8e8',
-                backgroundColor: '#fafafa',
+                borderBottom: '1px solid var(--xt-border-secondary)',
+                backgroundColor: 'var(--xt-bg-subtle)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center'
@@ -347,7 +347,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                 flex: 1,
                 overflow: 'auto',
                 padding: '20px',
-                backgroundColor: '#f0f2f5',
+                backgroundColor: 'var(--xt-bg-body)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -366,9 +366,9 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                         style={{
                             transform: `scale(${zoomLevel / 100})`,
                             transformOrigin: 'center', // 从中心缩放
-                            backgroundColor: 'white',
+                            backgroundColor: 'var(--xt-bg-container)',
                             borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                            boxShadow: 'var(--xt-shadow-lg)',
                             padding: '40px',
                             width: '100%',
                             height: '100%',
@@ -412,7 +412,7 @@ export const PptxViewer: React.FC<PptxViewerProps> = ({ path }) => {
                     max-width: 100%;
                     height: auto;
                     border-radius: 4px;
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                    box-shadow: var(--xt-shadow);
                     object-fit: contain;
                 }
             `}</style>

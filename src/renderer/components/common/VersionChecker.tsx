@@ -79,7 +79,7 @@ export const VersionChecker: React.FC = () => {
                                 e.preventDefault();
                                 handleClose();
                             }}
-                            style={{ fontSize: '12px', color: '#999', cursor: 'pointer' }}
+                            style={{ fontSize: '12px', color: 'var(--xt-text-tertiary)', cursor: 'pointer' }}
                         >
                             <CloseOutlined style={{ fontSize: '14px' }} />
                         </a>
@@ -93,7 +93,7 @@ export const VersionChecker: React.FC = () => {
                                 e.preventDefault();
                                 window.electronAPI.openExternal(updateInfo.link);
                             }}
-                            style={{ marginLeft: '0px', color: '#1890ff', cursor: 'pointer', textDecoration: 'underline' }}
+                            style={{ marginLeft: '0px', color: 'var(--xt-color-primary)', cursor: 'pointer', textDecoration: 'underline' }}
                         >
                             {updateInfo.message} <LinkOutlined style={{ marginLeft: '4px', fontSize: '12px' }} />
                         </a>

@@ -10,7 +10,7 @@
     max-width: 100%;
     font-size: var(--markdown-font-size);
     line-height: var(--markdown-line-height);
-    color: #333;
+    color: var(--xt-text);
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     padding: 32px;
 }
@@ -26,7 +26,7 @@
 .markdown-source pre {
     margin: 0;
     padding: 16px;
-    /*background: #f6f8fa;*/
+    /*background: var(--xt-code-bg);*/
     border-radius: 6px;
     overflow: auto;
     white-space: pre-wrap;
@@ -39,7 +39,7 @@
     border: none;
     font-family: inherit;
     font-size: inherit;
-    color: #24292e;
+    color: var(--xt-code-fg);
 }
 
 /* 标题样式 */
@@ -55,18 +55,18 @@
     padding-bottom: 8px;
     font-weight: 600;
     line-height: var(--markdown-heading-line-height);
-    color: #24292e;
+    color: var(--xt-text);
 }
 
 .markdown-content h1 {
     font-size: 2em;
-    border-bottom: 1px solid #eaecef;
+    border-bottom: 1px solid var(--xt-border-light);
     padding-bottom: 0.3em;
 }
 
 .markdown-content h2 {
     font-size: 1.5em;
-    border-bottom: 1px solid #eaecef;
+    border-bottom: 1px solid var(--xt-border-light);
     padding-bottom: 0.3em;
 }
 
@@ -84,7 +84,7 @@
 
 .markdown-content h6 {
     font-size: 0.85em;
-    color: #6a737d;
+    color: var(--xt-text-secondary);
 }
 
 /* 段落样式 */
@@ -94,7 +94,7 @@
 
 /* 链接样式 */
 .markdown-content a {
-    color: #0366d6;
+    color: var(--xt-color-primary);
     text-decoration: none;
 }
 
@@ -117,8 +117,8 @@
 .markdown-content blockquote {
     margin: 0 0 16px 0;
     padding: 0 1em;
-    color: #6a737d;
-    border-left: 0.25em solid #dfe2e5;
+    color: var(--xt-text-secondary);
+    border-left: 0.25em solid var(--xt-border);
 }
 
 .markdown-content blockquote > :first-child {
@@ -134,7 +134,7 @@
     padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
-    background-color: rgba(27, 31, 35, 0.05);
+    background-color: var(--xt-code-inline-bg);
     border-radius: 3px;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
@@ -145,7 +145,7 @@
     overflow: auto;
     font-size: 85%;
     line-height: var(--markdown-line-height);
-    background-color: #f6f8fa;
+    background-color: var(--xt-code-bg);
     border-radius: 6px;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
@@ -173,16 +173,16 @@
 .markdown-content table th,
 .markdown-content table td {
     padding: 6px 13px;
-    border: 1px solid #dfe2e5;
+    border: 1px solid var(--xt-border);
 }
 
 .markdown-content table th {
     font-weight: 600;
-    background-color: #f6f8fa;
+    background-color: var(--xt-code-bg);
 }
 
 .markdown-content table tr:nth-child(2n) {
-    background-color: #f6f8fa;
+    background-color: var(--xt-code-bg);
 }
 
 /* 分隔线样式 */
@@ -190,7 +190,7 @@
     height: 0.25em;
     padding: 0;
     margin: 24px 0;
-    background-color: #e1e4e8;
+    background-color: var(--xt-border);
     border: 0;
 }
 
@@ -209,15 +209,70 @@
 
 /* 代码高亮主题覆盖 */
 .markdown-content .hljs {
-    background: #f6f8fa !important;
-    color: #24292e;
+    background: var(--xt-code-bg) !important;
+    color: var(--xt-code-fg);
+}
+
+/* 深色模式下的代码高亮配色（对应 github-dark 主题） */
+:root[data-theme='dark'] .markdown-content .hljs-comment,
+:root[data-theme='dark'] .markdown-content .hljs-quote {
+    color: #8b949e;
+}
+
+:root[data-theme='dark'] .markdown-content .hljs-keyword,
+:root[data-theme='dark'] .markdown-content .hljs-selector-tag,
+:root[data-theme='dark'] .markdown-content .hljs-literal,
+:root[data-theme='dark'] .markdown-content .hljs-section,
+:root[data-theme='dark'] .markdown-content .hljs-doctag,
+:root[data-theme='dark'] .markdown-content .hljs-type,
+:root[data-theme='dark'] .markdown-content .hljs-name,
+:root[data-theme='dark'] .markdown-content .hljs-strong {
+    color: #ff7b72;
+}
+
+:root[data-theme='dark'] .markdown-content .hljs-string,
+:root[data-theme='dark'] .markdown-content .hljs-attr,
+:root[data-theme='dark'] .markdown-content .hljs-regexp,
+:root[data-theme='dark'] .markdown-content .hljs-addition,
+:root[data-theme='dark'] .markdown-content .hljs-attribute {
+    color: #a5d6ff;
+}
+
+:root[data-theme='dark'] .markdown-content .hljs-number,
+:root[data-theme='dark'] .markdown-content .hljs-built_in,
+:root[data-theme='dark'] .markdown-content .hljs-symbol,
+:root[data-theme='dark'] .markdown-content .hljs-bullet,
+:root[data-theme='dark'] .markdown-content .hljs-link,
+:root[data-theme='dark'] .markdown-content .hljs-meta {
+    color: #79c0ff;
+}
+
+:root[data-theme='dark'] .markdown-content .hljs-title,
+:root[data-theme='dark'] .markdown-content .hljs-title.function_,
+:root[data-theme='dark'] .markdown-content .hljs-title.class_ {
+    color: #d2a8ff;
+}
+
+:root[data-theme='dark'] .markdown-content .hljs-variable,
+:root[data-theme='dark'] .markdown-content .hljs-template-variable,
+:root[data-theme='dark'] .markdown-content .hljs-params {
+    color: #ffa657;
+}
+
+:root[data-theme='dark'] .markdown-content .hljs-deletion {
+    color: #ffa198;
+    background-color: #490202;
+}
+
+:root[data-theme='dark'] .markdown-content .hljs-addition {
+    background-color: #04260f;
 }
 
 /* 代码块行号样式 */
 .markdown-content .code-block-wrapper {
     display: flex;
     margin: 0 0 16px 0;
-    background-color: #f6f8fa;
+    background-color: var(--xt-code-bg);
     border-radius: 6px;
     overflow: auto;
 }
@@ -241,8 +296,8 @@
 }
 
 .markdown-content .code-line-numbers {
-    background-color: #eaecef;
-    border-right: 1px solid #d0d7de;
+    background-color: var(--xt-code-line-number-bg);
+    border-right: 1px solid var(--xt-code-border);
     text-align: right;
     user-select: none;
     flex-shrink: 0;
@@ -251,7 +306,7 @@
 
 .markdown-content .code-line-number {
     display: block;
-    color: #6a737d;
+    color: var(--xt-text-secondary);
 }
 
 .markdown-content .code-line {
@@ -266,18 +321,18 @@
 
 .markdown-content::-webkit-scrollbar-track,
 .markdown-source::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: var(--xt-scrollbar-track);
 }
 
 .markdown-content::-webkit-scrollbar-thumb,
 .markdown-source::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
+    background: var(--xt-scrollbar-thumb);
     border-radius: 3px;
 }
 
 .markdown-content::-webkit-scrollbar-thumb:hover,
 .markdown-source::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
+    background: var(--xt-scrollbar-thumb-hover);
 }
 
 /* 响应式设计 */
@@ -313,6 +368,10 @@
    height: 100%;
 }
 
+.markdown-source .cm-theme-dark {
+    height: 100%;
+}
+
 /* 移除 CodeMirror 中标题的下划线 */
 .markdown-source .cm-content .ͼ7{
     text-decoration: none;
@@ -333,7 +392,7 @@
         background-color: transparent;
     }
     50% {
-        background-color: orange;
+        background-color: var(--xt-highlight-bg);
     }
     100% {
         background-color: transparent;
@@ -355,6 +414,6 @@
 
 /*右键菜单高亮样式*/
 .context-menu-highlight {
-    background-color: #fff3cd !important;
+    background-color: var(--xt-highlight-bg) !important;
     transition: background-color 0.3s ease-out;
 }

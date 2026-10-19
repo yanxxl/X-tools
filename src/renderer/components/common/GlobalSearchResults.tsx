@@ -162,7 +162,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
 
     if (searchResults.length === 0) {
         return (
-            <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--xt-text-tertiary)' }}>
                 <Text type="secondary">暂无搜索结果</Text>
             </div>
         );
@@ -271,7 +271,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                                                         cursor: 'pointer',
                                                         padding: '8px 0',
                                                         fontSize: 14,
-                                                        color: '#1890ff',
+                                                        color: 'var(--xt-color-primary)',
                                                         fontWeight: 'bold'
                                                     }}
                                                     onClick={() => onResultClick(result.filePath, result.fileName, 1)}
@@ -292,14 +292,14 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                                                                     style={{
                                                                         cursor: 'pointer',
                                                                         padding: '4px 8px',
-                                                                        background: '#f5f5f5',
+                                                                        background: 'var(--xt-bg-hover)',
                                                                         borderRadius: '4px',
                                                                         fontSize: 14,
                                                                         wordBreak: 'break-word',
                                                                         transition: 'background 0.2s'
                                                                     }}
-                                                                    onMouseEnter={(e) => e.currentTarget.style.background = '#e6f7ff'}
-                                                                    onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.background = 'var(--xt-color-primary-bg)'}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.background = 'var(--xt-bg-hover)'}
                                                                 >
                                                                     {match.line > 0 ? (
                                                                         <Text type="secondary" style={{ fontSize: 12, marginRight: 8 }}>
@@ -334,7 +334,7 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                                                 cursor: 'pointer',
                                                 padding: '4px 0',
                                                 fontSize: 14,
-                                                color: '#1890ff',
+                                                color: 'var(--xt-color-primary)',
                                                 fontWeight: 'bold'
                                             }}
                                             onClick={() => onResultClick(result.filePath, result.fileName, 0)}
@@ -357,14 +357,14 @@ export const GlobalSearchResults: React.FC<GlobalSearchResultsProps> = ({
                                                             style={{
                                                                 cursor: 'pointer',
                                                                 padding: '4px 8px',
-                                                                background: '#f5f5f5',
+                                                                background: 'var(--xt-bg-hover)',
                                                                 borderRadius: '4px',
                                                                 fontSize: 14,
                                                                 wordBreak: 'break-word',
                                                                 transition: 'background 0.2s'
                                                             }}
-                                                            onMouseEnter={(e) => e.currentTarget.style.background = '#e6f7ff'}
-                                                            onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--xt-color-primary-bg)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.background = 'var(--xt-bg-hover)'}
                                                         >
                                                             {match.line > 0 ? (
                                                                 <Text type="secondary" style={{ fontSize: 12, marginRight: 8 }}>

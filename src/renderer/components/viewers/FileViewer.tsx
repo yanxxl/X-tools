@@ -112,14 +112,14 @@ export const FileViewer: React.FC<FilePreviewProps> = ({ filePath, fileName, ini
                 justifyContent: 'center',
                 height: '100%',
                 padding: '24px',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: 'var(--xt-bg-subtle)',
                 borderRadius: 8
             }}>
-                <FileTextOutlined style={{ fontSize: 48, color: '#999', marginBottom: 16 }} />
+                <FileTextOutlined style={{ fontSize: 48, color: 'var(--xt-text-tertiary)', marginBottom: 16 }} />
                 <Typography.Title level={4} style={{ marginBottom: 8 }}>
                     文件不存在
                 </Typography.Title>
-                <Typography.Text style={{ marginBottom: 24, color: '#666' }}>
+                <Typography.Text style={{ marginBottom: 24, color: 'var(--xt-text-secondary)' }}>
                     文件可能已被删除、移动或不存在
                 </Typography.Text>
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -148,14 +148,14 @@ export const FileViewer: React.FC<FilePreviewProps> = ({ filePath, fileName, ini
             justifyContent: 'center',
             height: '100%',
             padding: '24px',
-            backgroundColor: '#f5f5f5',
+            backgroundColor: 'var(--xt-bg-subtle)',
             borderRadius: 8
         }}>
-            <FileTextOutlined style={{ fontSize: 48, color: '#999', marginBottom: 16 }} />
+            <FileTextOutlined style={{ fontSize: 48, color: 'var(--xt-text-tertiary)', marginBottom: 16 }} />
             <Typography.Title level={4} style={{ marginBottom: 8 }}>
                 未知文件格式
             </Typography.Title>
-            <Typography.Text style={{ marginBottom: 24, color: '#666' }}>
+            <Typography.Text style={{ marginBottom: 24, color: 'var(--xt-text-secondary)' }}>
                 无法在浏览器中预览此文件，请使用本地软件打开
             </Typography.Text>
             <Button

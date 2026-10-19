@@ -58,7 +58,7 @@ const SettingsPanel: React.FC = () => {
                         <li>文件访问历史</li>
                         <li>其他应用配置</li>
                     </ul>
-                    <p style={{ color: '#ff4d4f', marginTop: 8 }}>此操作不可恢复，请谨慎操作！</p>
+                    <p style={{ color: 'var(--xt-color-danger)', marginTop: 8 }}>此操作不可恢复，请谨慎操作！</p>
                 </div>
             ),
             okText: '确认清理',
@@ -170,7 +170,7 @@ const SettingsPanel: React.FC = () => {
                         <Text strong>{storageInfo.totalItems}</Text>
                     </Descriptions.Item>
                     <Descriptions.Item label="占用空间">
-                        <Text style={{ color: '#1890ff' }}>{formatBytes(storageInfo.totalSize)}</Text>
+                        <Text style={{ color: 'var(--xt-color-primary)' }}>{formatBytes(storageInfo.totalSize)}</Text>
                     </Descriptions.Item>
                 </Descriptions>
             </Card>
@@ -184,7 +184,7 @@ const SettingsPanel: React.FC = () => {
                 </div>
                 <Descriptions size="small" column={1} labelStyle={{ width: '80px', textAlign: 'right' }}>
                     <Descriptions.Item label="版本号">
-                        <Text style={{ color: '#1890ff' }}>v{version}</Text>
+                        <Text style={{ color: 'var(--xt-color-primary)' }}>v{version}</Text>
                     </Descriptions.Item>
                     <Descriptions.Item label="许可证">
                         <Text>MIT</Text>
@@ -196,7 +196,7 @@ const SettingsPanel: React.FC = () => {
                                 e.preventDefault();
                                 window.electronAPI.openExternal('https://thinking.vip');
                             }}
-                            style={{ color: '#1890ff', cursor: 'pointer' }}
+                            style={{ color: 'var(--xt-color-primary)', cursor: 'pointer' }}
                         >
                             萝卜
                         </a>
@@ -208,7 +208,7 @@ const SettingsPanel: React.FC = () => {
                                 e.preventDefault();
                                 window.electronAPI.openExternal('https://github.com/yanxxl/x-tools');
                             }}
-                            style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#1890ff', cursor: 'pointer' }}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--xt-color-primary)', cursor: 'pointer' }}
                         >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                                 <path

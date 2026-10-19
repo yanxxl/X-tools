@@ -36,8 +36,8 @@ export const ToolWindowsPane: React.FC = () => {
         return (
             <div className="tool-windows-pane empty">
                 <div className="empty-state">
-                    <ToolOutlined style={{ fontSize: 24, color: '#ccc' }} />
-                    <div style={{ color: '#999', marginTop: 8 }}>暂无工具窗口</div>
+                    <ToolOutlined style={{ fontSize: 24, color: 'var(--xt-text-quaternary)' }} />
+                    <div style={{ color: 'var(--xt-text-tertiary)', marginTop: 8 }}>暂无工具窗口</div>
                 </div>
             </div>
         );

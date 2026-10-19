@@ -67,8 +67,8 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
             <tr key={rowIndex} style={{ height: '40px' }}>
                 <td
                     style={{
-                        backgroundColor: '#fafafa',
-                        border: '1px solid #e8e8e8',
+                        backgroundColor: 'var(--xt-bg-subtle)',
+                        border: '1px solid var(--xt-border-secondary)',
                         padding: '4px 8px',
                         textAlign: 'center',
                         fontWeight: 'bold',
@@ -84,7 +84,7 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                     <td
                         key={cellIndex}
                         style={{
-                            border: '1px solid #e8e8e8',
+                            border: '1px solid var(--xt-border-secondary)',
                             padding: '4px 8px',
                             textAlign: 'left',
                             verticalAlign: 'top',
@@ -117,8 +117,8 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                 <tr>
                     <th
                         style={{
-                            backgroundColor: '#fafafa',
-                            border: '1px solid #e8e8e8',
+                            backgroundColor: 'var(--xt-bg-subtle)',
+                            border: '1px solid var(--xt-border-secondary)',
                             padding: '4px 8px',
                             textAlign: 'center',
                             fontWeight: 'bold',
@@ -133,8 +133,8 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                         <th
                             key={index}
                             style={{
-                                backgroundColor: '#fafafa',
-                                border: '1px solid #e8e8e8',
+                                backgroundColor: 'var(--xt-bg-subtle)',
+                                border: '1px solid var(--xt-border-secondary)',
                                 padding: '4px 8px',
                                 textAlign: 'center',
                                 fontWeight: 'bold',
@@ -161,7 +161,7 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center', 
-                    color: '#999' 
+                    color: 'var(--xt-text-tertiary)' 
                 }}>
                     工作表为空
                 </div>
@@ -191,10 +191,10 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
             <div style={{ 
                 marginTop: '20px', 
                 padding: '16px', 
-                backgroundColor: '#fafafa', 
+                backgroundColor: 'var(--xt-bg-subtle)', 
                 borderRadius: '8px' 
             }}>
-                <h3 style={{ marginBottom: '12px', fontSize: '16px', color: '#333' }}>
+                <h3 style={{ marginBottom: '12px', fontSize: '16px', color: 'var(--xt-text)' }}>
                     <TableOutlined style={{ marginRight: '8px' }} /> 图片
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -208,7 +208,7 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                                         maxWidth: '100%',
                                         height: 'auto',
                                         borderRadius: '4px',
-                                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                                        boxShadow: 'var(--xt-shadow)',
                                         objectFit: 'contain'
                                     }}
                                 />
@@ -227,7 +227,7 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#f5f5f5'
+                backgroundColor: 'var(--xt-bg-subtle)'
             }}>
                 <div>加载中...</div>
             </div>
@@ -241,7 +241,7 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: '#f5f5f5'
+                backgroundColor: 'var(--xt-bg-subtle)'
             }}>
                 <div>无法解析电子表格内容</div>
             </div>
@@ -265,8 +265,8 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
             {/* 顶部控制栏 */}
             <div style={{
                 padding: '12px 16px',
-                borderBottom: '1px solid #e8e8e8',
-                backgroundColor: '#fafafa',
+                borderBottom: '1px solid var(--xt-border-secondary)',
+                backgroundColor: 'var(--xt-bg-subtle)',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center'
@@ -320,16 +320,16 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                     flex: 1,
                     overflow: 'auto',
                     padding: '20px',
-                    backgroundColor: '#f0f2f5'
+                    backgroundColor: 'var(--xt-bg-body)'
                 }}
             >
                 <div
                     style={{
                         transform: `scale(${zoomLevel / 100})`,
                         transformOrigin: 'top left',
-                        backgroundColor: 'white',
+                        backgroundColor: 'var(--xt-bg-container)',
                         borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                        boxShadow: 'var(--xt-shadow-lg)',
                         padding: '20px',
                         display: 'inline-block'
                     }}
@@ -338,12 +338,12 @@ export const XlsxViewer: React.FC<XlsxViewerProps> = ({ path }) => {
                     <div style={{ 
                         marginBottom: '20px', 
                         paddingBottom: '12px', 
-                        borderBottom: '1px solid #e8e8e8'
+                        borderBottom: '1px solid var(--xt-border-secondary)'
                     }}>
                         <h2 style={{ 
                             margin: 0, 
                             fontSize: '20px', 
-                            color: '#333',
+                            color: 'var(--xt-text)',
                             fontWeight: '500'
                         }}>
                             {currentSheet.name || `工作表 ${currentSheetIndex + 1}`}

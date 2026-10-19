@@ -27,7 +27,7 @@
 
 .history-header .ant-btn.clear-history-btn {
     margin-left: auto;
-    color: #6b7280;
+    color: var(--xt-text-secondary);
     font-size: 12px;
     padding: 2px 8px;
     height: auto;
@@ -38,23 +38,23 @@
 }
 
 .history-header .ant-btn.clear-history-btn:hover {
-    color: #ff4d4f !important;
-    background-color: #fff2f0 !important;
+    color: var(--xt-color-danger) !important;
+    background-color: var(--xt-color-danger-bg) !important;
 }
 
 .history-header .ant-btn.clear-history-btn:active {
-    color: #d9363e !important;
-    background-color: #fff1f0 !important;
+    color: var(--xt-color-danger) !important;
+    background-color: var(--xt-color-danger-bg) !important;
 }
 
 .history-header .ant-btn.clear-history-btn:focus {
-    color: #6b7280 !important;
+    color: var(--xt-text-secondary) !important;
     background-color: transparent !important;
     box-shadow: none !important;
 }
 
 .history-icon {
-  color: #1890ff;
+  color: var(--xt-color-primary);
 }
 
 .history-empty {
@@ -81,13 +81,13 @@
 }
 
 .history-item:hover {
-  background-color: #f5f5f5;
-  border-color: #d9d9d9;
+  background-color: var(--xt-bg-hover);
+  border-color: var(--xt-border);
 }
 
 .history-item:active {
-  background-color: #e6f7ff;
-  border-color: #40a9ff;
+  background-color: var(--xt-color-primary-bg);
+  border-color: var(--xt-color-primary-border);
 }
 
 .history-item-content {
@@ -104,7 +104,7 @@
 }
 
 .file-icon {
-  color: #1890ff;
+  color: var(--xt-color-primary);
   font-size: 14px;
   flex-shrink: 0;
 }
@@ -125,14 +125,14 @@
 }
 
 .time-icon {
-  color: #8c8c8c;
+  color: var(--xt-text-tertiary);
   font-size: 12px;
   flex-shrink: 0;
 }
 
 .access-time {
   font-size: 11px;
-  color: #8c8c8c;
+  color: var(--xt-text-tertiary);
 }
 
 /* 响应式设计 */
@@ -160,15 +160,15 @@
 }
 
 .history-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--xt-scrollbar-track);
   border-radius: 3px;
 }
 
 .history-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--xt-scrollbar-thumb);
   border-radius: 3px;
 }
 
 .history-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--xt-scrollbar-thumb-hover);
 }

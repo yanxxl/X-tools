@@ -123,8 +123,8 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
             {/* 文件名显示和缩放控制栏 */}
             <div style={{
                 padding: '12px 16px',
-                borderBottom: '1px solid #e8e8e8',
-                backgroundColor: '#fafafa',
+                borderBottom: '1px solid var(--xt-border-secondary)',
+                backgroundColor: 'var(--xt-bg-subtle)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between'
@@ -189,7 +189,7 @@ export const DocxViewer: React.FC<DocxViewerProps> = ({ path }) => {
                                 ))}
                             </ul>
                         ) : (
-                            <p style={{ color: '#999' }}>无大纲信息</p>
+                            <p style={{ color: 'var(--xt-text-tertiary)' }}>无大纲信息</p>
                         )}
                     </div>
                 </Splitter.Panel>

@@ -55,9 +55,9 @@ const subtitleDisplayStyle = (isDragging: boolean, x: number, y: number): CSSPro
 const subtitlePanelStyle: CSSProperties = {
   width: "100%",
   height: "100%",
-  backgroundColor: "#f5f5f5",
+  backgroundColor: "var(--xt-bg-subtle)",
   padding: "10px",
-  borderLeft: "1px solid #e0e0e0",
+  borderLeft: "1px solid var(--xt-border-secondary)",
   display: "flex",
   flexDirection: "column",
 };
@@ -72,7 +72,7 @@ const subtitlePanelHeaderStyle: CSSProperties = {
   fontWeight: "bold",
   marginBottom: "10px",
   paddingBottom: "5px",
-  borderBottom: "1px solid #e0e0e0",
+  borderBottom: "1px solid var(--xt-border-secondary)",
   display: "flex",
   flexDirection: "column",
   gap: "8px",
@@ -83,7 +83,7 @@ const subtitlePanelHeaderStyle: CSSProperties = {
 const searchInputStyle: CSSProperties = {
   padding: "4px 8px",
   fontSize: "14px",
-  border: "1px solid #d9d9d9",
+  border: "1px solid var(--xt-border)",
   borderRadius: "4px",
   flex: 1,
   minWidth: "200px",
@@ -92,8 +92,8 @@ const subtitleItemStyle = (isCurrent: boolean, isHovered: boolean): CSSPropertie
   padding: "8px",
   marginBottom: "4px",
   borderRadius: "4px",
-  backgroundColor: isCurrent ? "#e6f7ff" : (isHovered ? "#f5f5f5" : "#fff"),
-  borderLeft: isCurrent ? "4px solid #1890ff" : "4px solid transparent",
+  backgroundColor: isCurrent ? "var(--xt-color-primary-bg)" : (isHovered ? "var(--xt-bg-hover)" : "var(--xt-bg-container)"),
+  borderLeft: isCurrent ? "4px solid var(--xt-color-primary)" : "4px solid transparent",
   cursor: "pointer",
   fontSize: "14px",
   lineHeight: 1.5,
@@ -102,7 +102,7 @@ const subtitleItemStyle = (isCurrent: boolean, isHovered: boolean): CSSPropertie
 
 const subtitleItemIndexStyle: CSSProperties = {
   fontSize: "12px",
-  color: "#888",
+  color: "var(--xt-text-tertiary)",
   marginBottom: "4px",
   display: "flex",
   justifyContent: "space-between",
@@ -114,7 +114,7 @@ const subtitleItemTextStyle: CSSProperties = {
 };
 
 const highlightStyle: CSSProperties = {
-  backgroundColor: "#ffeb3b",
+  backgroundColor: "var(--xt-highlight-search-bg)",
   padding: "1px 2px",
   borderRadius: "2px",
   fontWeight: "bold",
@@ -201,9 +201,9 @@ const subtitleSelectStyle: CSSProperties = {
   marginLeft: "8px", // 减小左边距使其更紧凑
   padding: "2px 6px", // 减小内边距使其更紧凑
   fontSize: "13px", // 减小字体使其低调
-  border: "1px solid #d9d9d9",
+  border: "1px solid var(--xt-border)",
   borderRadius: "4px",
-  backgroundColor: "#fff",
+  backgroundColor: "var(--xt-bg-container)",
   cursor: "pointer",
 };
 
@@ -633,7 +633,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                       style={{ display: "inline-flex", flexDirection: "column", justifyContent: "flex-end", alignItems: "center" }}
                     >
                       <span className="span-icon"
-                        style={{ height: "0.2rem", width: "0.7rem", marginBottom: "0.15rem", background: subtitleVisible ? "#aaa" : "#eee" }}
+                        style={{ height: "0.2rem", width: "0.7rem", marginBottom: "0.15rem", background: subtitleVisible ? "var(--xt-text-quaternary)" : "var(--xt-border-secondary)" }}
                       />
                     </span>
                   
@@ -681,7 +681,7 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                         position: "absolute",
                         right: "12px",
                         fontSize: "12px",
-                        color: "#999",
+                        color: "var(--xt-text-tertiary)",
                         pointerEvents: "none"
                       }}>
                         {filteredSubtitles.length}
@@ -713,14 +713,14 @@ export const VideoViewer: React.FC<VideoViewerProps> = ({ path }) => {
                       }
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = subtitle === currentSubtitle ? "#d4edff" : "#f5f5f5";
+                      e.currentTarget.style.backgroundColor = subtitle === currentSubtitle ? "var(--xt-color-primary-bg)" : "var(--xt-bg-hover)";
                       const timeElement = e.currentTarget.querySelector('.subtitle-time') as HTMLElement;
                       if (timeElement) {
                         timeElement.style.opacity = '1';
                       }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = subtitle === currentSubtitle ? "#e6f7ff" : "#fff";
+                      e.currentTarget.style.backgroundColor = subtitle === currentSubtitle ? "var(--xt-color-primary-bg)" : "var(--xt-bg-container)";
                       if (!searchKeyword) {
                         const timeElement = e.currentTarget.querySelector('.subtitle-time') as HTMLElement;
                         if (timeElement) {

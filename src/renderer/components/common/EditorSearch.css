@@ -1,22 +1,22 @@
 /* 编辑器搜索高亮样式 */
 .editor-search-highlight {
-    background-color: #ffec99;
+    background-color: var(--xt-highlight-search-bg);
     border-radius: 2px;
 }
 
 .editor-search-highlight.current-result {
-    background-color: #ffd43b;
+    background-color: var(--xt-highlight-current-bg);
     animation: pulse 1s infinite;
 }
 
 @keyframes pulse {
     0% {
-        background-color: #ffd43b;
+        background-color: var(--xt-highlight-current-bg);
     }
     50% {
-        background-color: #ffc000;
+        background-color: var(--xt-highlight-current-active-bg);
     }
     100% {
-        background-color: #ffd43b;
+        background-color: var(--xt-highlight-current-bg);
     }
 }

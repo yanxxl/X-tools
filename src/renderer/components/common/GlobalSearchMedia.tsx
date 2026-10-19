@@ -33,11 +33,11 @@ export const GlobalSearchMedia: React.FC<MediaPlayerProps> = ({ file, currentTim
     if (!file) {
       return (
         <div style={{
-          color: "#ff4d4f",
+          color: "var(--xt-color-danger)",
           textAlign: "center",
           padding: "16px",
-          backgroundColor: "#fff2f0",
-          border: "1px solid #ffccc7",
+          backgroundColor: "var(--xt-color-danger-bg)",
+          border: "1px solid var(--xt-color-danger-border)",
           borderRadius: "4px",
           maxWidth: "80%"
         }}>
@@ -89,11 +89,11 @@ export const GlobalSearchMedia: React.FC<MediaPlayerProps> = ({ file, currentTim
     // 默认显示不支持的文件格式提示
     return (
       <div style={{
-        color: "#ff4d4f",
+        color: "var(--xt-color-danger)",
         textAlign: "center",
         padding: "16px",
-        backgroundColor: "#fff2f0",
-        border: "1px solid #ffccc7",
+        backgroundColor: "var(--xt-color-danger-bg)",
+        border: "1px solid var(--xt-color-danger-border)",
         borderRadius: "4px",
         maxWidth: "80%"
       }}>

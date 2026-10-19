@@ -136,8 +136,8 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
                         style={{ 
                             flex: 1,
                             minWidth: 0,
-                            border: '1px solid #1890ff',
-                            boxShadow: '0 0 0 2px rgba(24, 144, 255, 0.2)'
+                            border: '1px solid var(--xt-color-primary)',
+                            boxShadow: '0 0 0 2px var(--xt-color-primary-bg)'
                         }}
                     />
                     <Button
@@ -176,7 +176,7 @@ export const EditableFilePath: React.FC<EditableFilePathProps> = ({ path, onRena
                         transition: 'all 0.2s'
                     }}
                     onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f0f0f0';
+                        e.currentTarget.style.backgroundColor = 'var(--xt-bg-hover)';
                     }}
                     onMouseLeave={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';

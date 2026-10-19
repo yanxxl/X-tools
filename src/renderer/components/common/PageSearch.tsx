@@ -15,16 +15,16 @@ if (!document.getElementById(STYLE_ID)) {
     style.id = STYLE_ID;
     style.textContent = `
         .page-search-highlight {
-            background-color: #ffec99;
+            background-color: var(--xt-highlight-search-bg);
         }
         .page-search-highlight.current-result {
-            background-color: #ffd43b;
+            background-color: var(--xt-highlight-current-bg);
             animation: page-search-pulse 1s infinite;
         }
         @keyframes page-search-pulse {
-            0% { background-color: #ffd43b; }
-            50% { background-color: #ffc000; }
-            100% { background-color: #ffd43b; }
+            0% { background-color: var(--xt-highlight-current-bg); }
+            50% { background-color: var(--xt-highlight-current-active-bg); }
+            100% { background-color: var(--xt-highlight-current-bg); }
         }
     `;
     document.head.appendChild(style);
@@ -39,14 +39,14 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
         display: 'flex',
         alignItems: 'center',
         padding: '0px 4px',
-        border: '1px solid #d9d9d9',
+        border: '1px solid var(--xt-border)',
         borderRadius: '4px',
-        backgroundColor: '#fff',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+        backgroundColor: 'var(--xt-bg-container)',
+        boxShadow: 'var(--xt-shadow)',
         transition: 'all 0.3s ease'
     };
     const SEARCH_BUTTON_STYLE = {
-        color: '#666',
+        color: 'var(--xt-text-secondary)',
         border: 'none',
         padding: '4px 8px',
         borderRadius: '4px',
@@ -62,14 +62,14 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
     };
     const NAV_BUTTON_STYLE = {
         border: 'none',
-        color: '#666',
+        color: 'var(--xt-text-secondary)',
         padding: '4px 8px',
         borderRadius: '4px',
         transition: 'all 0.3s ease'
     };
     const RESULT_COUNT_STYLE = {
         fontSize: '12px',
-        color: '#666',
+        color: 'var(--xt-text-secondary)',
         padding: '0 4px'
     };
 
@@ -373,7 +373,7 @@ const PageSearch: React.FC<PageSearchProps> = ({ cssSelector }) => {
                                 />
                             </>
                         ) : searchExecuted && searchText.trim() ? (
-                            <span style={{ ...RESULT_COUNT_STYLE, color: '#ff4d4f' }}>
+                            <span style={{ ...RESULT_COUNT_STYLE, color: 'var(--xt-color-danger)' }}>
                                 无匹配结果
                             </span>
                         ) : null}

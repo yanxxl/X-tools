@@ -209,7 +209,7 @@ export const FileTree: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <span>转码为 UTF-8</span>
                         <Tooltip title="将非 UTF-8 文本文件转为 UTF-8 编码，并保留原文件">
-                            <InfoCircleOutlined style={{ color: 'gray', fontSize: '12px', marginLeft: '8px' }} />
+                            <InfoCircleOutlined style={{ color: 'var(--xt-text-tertiary)', fontSize: '12px', marginLeft: '8px' }} />
                         </Tooltip>
                     </div>
                 ),
@@ -247,7 +247,7 @@ export const FileTree: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <span>转码为简体</span>
                         <Tooltip title="转为简体中文，并保留原文件">
-                            <InfoCircleOutlined style={{ color: 'gray', fontSize: '12px', marginLeft: '8px' }} />
+                            <InfoCircleOutlined style={{ color: 'var(--xt-text-tertiary)', fontSize: '12px', marginLeft: '8px' }} />
                         </Tooltip>
                     </div>
                 ),
@@ -279,7 +279,7 @@ export const FileTree: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <span>转码为繁体</span>
                         <Tooltip title="转为繁体中文，并保留原文件">
-                            <InfoCircleOutlined style={{ color: 'gray', fontSize: '12px', marginLeft: '8px' }} />
+                            <InfoCircleOutlined style={{ color: 'var(--xt-text-tertiary)', fontSize: '12px', marginLeft: '8px' }} />
                         </Tooltip>
                     </div>
                 ),
@@ -375,7 +375,7 @@ export const FileTree: React.FC = () => {
                         content: (
                             <div>
                                 <p>确定要删除 "{node.name}" 吗？</p>
-                                <p style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
+                                <p style={{ color: 'var(--xt-color-danger)', fontSize: '12px', marginTop: '4px' }}>
                                     此操作会将文件移动到回收站。
                                 </p>
                             </div>
@@ -448,9 +448,9 @@ export const FileTree: React.FC = () => {
                             if (isTreeDragging.current) return;
 
                             if (node.isDirectory) {
-                                (e.target as HTMLElement).style.backgroundColor = 'rgba(24, 144, 255, 0.1)';
+                                (e.target as HTMLElement).style.backgroundColor = 'var(--xt-color-primary-bg)';
                             } else {
-                                (e.target as HTMLElement).style.borderBottom = '2px dashed #1890ff';
+                                (e.target as HTMLElement).style.borderBottom = '2px dashed var(--xt-color-primary)';
                             }
                         }}
                         onDragLeave={(e) => {
@@ -1041,8 +1041,8 @@ export const FileTree: React.FC = () => {
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             <div style={{
-                borderBottom: '1px solid #f0f0f0',
-                // backgroundColor: '#fafafa',
+                borderBottom: '1px solid var(--xt-border-light)',
+                // backgroundColor: 'var(--xt-bg-subtle)',
                 margin: '8px 0px 0px 0px'
             }}>
                 {!showSearchBox ? (
@@ -1141,7 +1141,7 @@ export const FileTree: React.FC = () => {
                                 <Space size="small">
                                     {searchLoading && <LoadingOutlined spin />}
                                     {!searchLoading && searchResultCount > 0 && (
-                                        <span style={{ fontSize: '12px', color: '#666' }}>
+                                        <span style={{ fontSize: '12px', color: 'var(--xt-text-secondary)' }}>
                                             {searchResultCount} 个结果
                                         </span>
                                     )}
@@ -1205,7 +1205,7 @@ export const FileTree: React.FC = () => {
                         onDragLeave={handleTreeDragLeave}
                         draggable={{ icon: false }}
                         expandAction="click"
-                        style={{ padding: '8px 0', backgroundColor: 'rgba(0,0,0,0.01)' }}
+                        style={{ padding: '8px 0', backgroundColor: 'var(--xt-bg-mask)' }}
                     />
                 ) : (
                     <Flex style={{ height: '100%' }} align="center" justify="center">
@@ -1243,10 +1243,10 @@ export const FileTree: React.FC = () => {
                 width={600}
             >
                 <div style={{ marginBottom: 16 }}>
-                    <p style={{ marginBottom: 8, color: '#666' }}>
+                    <p style={{ marginBottom: 8, color: 'var(--xt-text-secondary)' }}>
                         视频文件: <strong>{basename(subtitleTargetFile)}</strong>
                     </p>
-                    <p style={{ marginBottom: 8, color: '#666', fontSize: 12 }}>
+                    <p style={{ marginBottom: 8, color: 'var(--xt-text-secondary)', fontSize: 12 }}>
                         字幕将生成在视频同目录下，文件名与视频相同，格式为 .vtt
                     </p>
                 </div>
@@ -1261,8 +1261,8 @@ export const FileTree: React.FC = () => {
                         placeholder="输入 whisper 命令..."
                     />
                 </div>
-                <div style={{ marginTop: 16, padding: 12, backgroundColor: '#fff7e6', border: '1px solid #ffd591', borderRadius: 4 }}>
-                    <p style={{ margin: 0, fontSize: 12, color: '#fa8c16' }}>
+                <div style={{ marginTop: 16, padding: 12, backgroundColor: 'var(--xt-color-warning-bg)', border: '1px solid var(--xt-color-warning-border)', borderRadius: 4 }}>
+                    <p style={{ margin: 0, fontSize: 12, color: 'var(--xt-color-warning)' }}>
                         <strong>提示:</strong> 执行此命令需要本地已安装 Python 和 openai-whisper 库。
                     </p>
                 </div>

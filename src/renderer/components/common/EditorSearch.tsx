@@ -28,14 +28,14 @@ const EditorSearch: React.FC<EditorSearchProps> = ({ editorView }) => {
         display: 'flex',
         alignItems: 'center',
         padding: '0px 4px',
-        border: '1px solid #d9d9d9',
+        border: '1px solid var(--xt-border)',
         borderRadius: '4px',
-        backgroundColor: '#fff',
-        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+        backgroundColor: 'var(--xt-bg-container)',
+        boxShadow: 'var(--xt-shadow)',
         transition: 'all 0.3s ease'
     };
     const SEARCH_BUTTON_STYLE = {
-        color: '#666',
+        color: 'var(--xt-text-secondary)',
         border: 'none',
         padding: '4px 8px',
         borderRadius: '4px',
@@ -51,14 +51,14 @@ const EditorSearch: React.FC<EditorSearchProps> = ({ editorView }) => {
     };
     const NAV_BUTTON_STYLE = {
         border: 'none',
-        color: '#666',
+        color: 'var(--xt-text-secondary)',
         padding: '4px 8px',
         borderRadius: '4px',
         transition: 'all 0.3s ease'
     };
     const RESULT_COUNT_STYLE = {
         fontSize: '12px',
-        color: '#666',
+        color: 'var(--xt-text-secondary)',
         padding: '0 4px'
     };
 
@@ -348,7 +348,7 @@ const EditorSearch: React.FC<EditorSearchProps> = ({ editorView }) => {
                                 />
                             </>
                         ) : searchExecuted && searchText.trim() ? (
-                            <span style={{ ...RESULT_COUNT_STYLE, color: '#ff4d4f' }}>
+                            <span style={{ ...RESULT_COUNT_STYLE, color: 'var(--xt-color-danger)' }}>
                                 无匹配结果
                             </span>
                         ) : null}

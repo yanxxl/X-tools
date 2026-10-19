@@ -100,7 +100,11 @@ const SortableProviderItem: React.FC<SortableProviderItemProps> = ({ provider, i
                 gap: 8,
                 padding: '6px 8px',
                 borderRadius: 4,
-                background: isDragSource ? '#e6f4ff' : index % 2 === 0 ? '#fafafa' : '#fff',
+                background: isDragSource
+                    ? 'var(--xt-color-primary-bg)'
+                    : index % 2 === 0
+                        ? 'var(--xt-bg-subtle)'
+                        : 'var(--xt-bg-container)',
                 opacity: isDragSource ? 0.6 : 1,
                 transition: 'background 0.2s',
             }}
@@ -111,7 +115,7 @@ const SortableProviderItem: React.FC<SortableProviderItemProps> = ({ provider, i
                 style={{
                     cursor: 'grab',
                     userSelect: 'none',
-                    color: '#bbb',
+                    color: 'var(--xt-text-quaternary)',
                     fontSize: 16,
                     lineHeight: 1,
                     padding: '0 2px',
@@ -234,7 +238,7 @@ const ConfigModal: React.FC<ConfigModalProps> = ({ open, providers, onClose, onS
                         alignItems: 'center',
                         gap: 8,
                         padding: '8px 0',
-                        borderTop: '1px solid #f0f0f0',
+                        borderTop: '1px solid var(--xt-border-light)',
                     }}
                 >
                     <Input

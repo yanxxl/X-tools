@@ -1,3 +1,115 @@
+/*
+ * 应用级语义化颜色变量
+ * - 浅色为默认值，深色由根节点 [data-theme='dark'] 覆盖
+ * - 组件与样式文件统一引用这些变量，不要直接写死颜色值
+ * - 取值尽量与 antd 的默认 token 对齐，保证自定义区域和 antd 组件色调一致
+ */
+:root {
+    color-scheme: light;
+
+    /* 背景 */
+    --xt-bg-body: #f5f5f5;
+    --xt-bg-container: #ffffff;
+    --xt-bg-subtle: #fafafa;
+    --xt-bg-hover: #f5f5f5;
+    --xt-bg-mask: rgba(0, 0, 0, 0.02);
+    --xt-bg-hover-strong: rgba(0, 0, 0, 0.08);
+
+    /* 边框 */
+    --xt-border: #d9d9d9;
+    --xt-border-secondary: #e8e8e8;
+    --xt-border-light: #f0f0f0;
+
+    /* 文本 */
+    --xt-text: rgba(0, 0, 0, 0.88);
+    --xt-text-secondary: rgba(0, 0, 0, 0.65);
+    --xt-text-tertiary: rgba(0, 0, 0, 0.45);
+    --xt-text-quaternary: rgba(0, 0, 0, 0.25);
+
+    /* 功能色 */
+    --xt-color-primary: #1677ff;
+    --xt-color-primary-bg: #e6f4ff;
+    --xt-color-primary-border: #91caff;
+    --xt-color-danger: #ff4d4f;
+    --xt-color-danger-bg: #fff2f0;
+    --xt-color-danger-border: #ffccc7;
+    --xt-color-warning: #d46b08;
+    --xt-color-warning-bg: #fff7e6;
+    --xt-color-warning-border: #ffd591;
+    --xt-color-success: #389e0d;
+
+    /* 搜索/定位高亮 */
+    --xt-highlight-bg: #fff3cd;
+    --xt-highlight-search-bg: #ffec99;
+    --xt-highlight-current-bg: #ffd43b;
+    --xt-highlight-current-active-bg: #ffc000;
+
+    /* 代码块 */
+    --xt-code-bg: #f6f8fa;
+    --xt-code-fg: #24292e;
+    --xt-code-line-number-bg: #eaecef;
+    --xt-code-border: #d0d7de;
+    --xt-code-inline-bg: rgba(27, 31, 35, 0.05);
+
+    /* 滚动条 */
+    --xt-scrollbar-track: #f1f1f1;
+    --xt-scrollbar-thumb: #c1c1c1;
+    --xt-scrollbar-thumb-hover: #a8a8a8;
+
+    /* 阴影 */
+    --xt-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --xt-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --xt-bg-body: #141414;
+    --xt-bg-container: #141414;
+    --xt-bg-subtle: #1d1d1d;
+    --xt-bg-hover: #262626;
+    --xt-bg-mask: rgba(255, 255, 255, 0.03);
+    --xt-bg-hover-strong: rgba(255, 255, 255, 0.12);
+
+    --xt-border: #424242;
+    --xt-border-secondary: #303030;
+    --xt-border-light: #303030;
+
+    --xt-text: rgba(255, 255, 255, 0.85);
+    --xt-text-secondary: rgba(255, 255, 255, 0.65);
+    --xt-text-tertiary: rgba(255, 255, 255, 0.45);
+    --xt-text-quaternary: rgba(255, 255, 255, 0.25);
+
+    --xt-color-primary: #1668dc;
+    --xt-color-primary-bg: #111a2c;
+    --xt-color-primary-border: #15325b;
+    --xt-color-danger: #dc4446;
+    --xt-color-danger-bg: #2c1618;
+    --xt-color-danger-border: #5c2223;
+    --xt-color-warning: #d89614;
+    --xt-color-warning-bg: #2b2111;
+    --xt-color-warning-border: #594214;
+    --xt-color-success: #49aa19;
+
+    --xt-highlight-bg: #594214;
+    --xt-highlight-search-bg: #6b4e00;
+    --xt-highlight-current-bg: #8a6500;
+    --xt-highlight-current-active-bg: #a87c00;
+
+    --xt-code-bg: #161b22;
+    --xt-code-fg: #c9d1d9;
+    --xt-code-line-number-bg: #21262d;
+    --xt-code-border: #30363d;
+    --xt-code-inline-bg: rgba(110, 118, 129, 0.4);
+
+    --xt-scrollbar-track: #1f1f1f;
+    --xt-scrollbar-thumb: #424242;
+    --xt-scrollbar-thumb-hover: #525252;
+
+    --xt-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --xt-shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.55);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,13 +118,14 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: rgba(0,0,0,0.01);
+    background-color: var(--xt-bg-body);
+    color: var(--xt-text);
 }
 
 .top-bar {
     app-region: drag;
     height: 40px;
-    background-color: rgba(0,0,0,0.02);
+    background-color: var(--xt-bg-mask);
 }
 
 /* 为按钮等可交互元素添加 no-drag 属性，确保它们可以正常响应点击事件 */
@@ -45,7 +158,7 @@ body {
 
 /* 自定义图标悬停效果 */
 .span-icon:hover {
-    background-color: rgba(0, 0, 0, 0.08);
+    background-color: var(--xt-bg-hover-strong);
 }
 .span-icon {
     display: inline-block;
@@ -53,7 +166,7 @@ body {
     height: 0.85rem;
     cursor: pointer;
     border-radius: 2px;
-    border: 1px solid gray;
+    border: 1px solid var(--xt-text-tertiary);
     transition: background-color 0.2s;
 }
 

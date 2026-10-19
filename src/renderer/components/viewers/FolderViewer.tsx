@@ -76,7 +76,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
             content: (
                 <div>
                     <p>确定要删除选中的 {selectedFileKeys.length} 个文件吗？</p>
-                    <p style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
+                    <p style={{ color: 'var(--xt-color-danger)', fontSize: '12px', marginTop: '4px' }}>
                         此操作会将文件移动到回收站。
                     </p>
                 </div>
@@ -245,7 +245,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                 <Space>
                     <FileIcon fileName={`test.${ext}`} isDirectory={false} />
                     <span style={{
-                        color: selectedExtension === ext ? '#1890ff' : 'inherit',
+                        color: selectedExtension === ext ? 'var(--xt-color-primary)' : 'inherit',
                         fontWeight: selectedExtension === ext ? 'bold' : 'normal'
                     }}>
                         {ext}
@@ -452,7 +452,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                                     style={{
                                         marginLeft: '8px',
                                         fontSize: '14px',
-                                        color: '#1890ff',
+                                        color: 'var(--xt-color-primary)',
                                         cursor: 'pointer',
                                         fontWeight: 'normal'
                                     }}
@@ -465,7 +465,7 @@ export const FolderViewer: React.FC<FolderViewerProps> = ({ folderPath }) => {
                                     style={{
                                         marginLeft: '8px',
                                         fontSize: '12px',
-                                        color: '#999',
+                                        color: 'var(--xt-text-tertiary)',
                                         fontWeight: 'normal'
                                     }}
                                 >

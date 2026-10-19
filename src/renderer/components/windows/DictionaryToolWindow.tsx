@@ -280,7 +280,7 @@ const DictionaryPanel: React.FC = () => {
             <Flex style={{ height: '100%' }} orientation="vertical">
                 {/* Settings Panel */}
                 {isSettingsVisible && (
-                    <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f5f5f5', borderRadius: 4, border: '1px solid #e8e8e8' }}>
+                    <div style={{ marginBottom: 16, padding: 12, backgroundColor: 'var(--xt-bg-subtle)', borderRadius: 4, border: '1px solid var(--xt-border-secondary)' }}>
 
                         {/* Add Dictionary Button */}
                         <Button
@@ -300,7 +300,7 @@ const DictionaryPanel: React.FC = () => {
                         ) : (
                             <Space orientation="vertical" style={{ width: '100%' }}>
                                 {dictionaries.map((dict, index) => (
-                                    <div key={dict.id} style={{ width: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: 4, borderRadius: 4, backgroundColor: '#fff' }}>
+                                    <div key={dict.id} style={{ width: '100%', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: 4, borderRadius: 4, backgroundColor: 'var(--xt-bg-container)' }}>
                                         <div style={{ flex: 1 }}>
                                             <Checkbox
                                                 checked={dict.enabled}
@@ -382,7 +382,7 @@ const DictionaryPanel: React.FC = () => {
                             style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}
                             dataSource={searchResults}
                             renderItem={(entry, index) => (
-                                <List.Item key={index} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid #f0f0f0', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+                                <List.Item key={index} style={{ marginBottom: 16, paddingBottom: 16, borderBottom: '1px solid var(--xt-border-light)', flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
                                     <div>
                                         {/* 显示catalog */}
                                         {entry.catalog.length > 0 && (

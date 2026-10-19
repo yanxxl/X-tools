@@ -8,8 +8,8 @@ import { GlobalSearchMedia } from './GlobalSearchMedia';
 import { useAppContext } from '../../contexts/AppContext';
 
 // 样式常量
-const HIGHLIGHT_COLOR = '#fff3cd';
-const SEARCH_HIGHLIGHT_COLOR = '#ffeb3b';
+const HIGHLIGHT_COLOR = 'var(--xt-highlight-bg)';
+const SEARCH_HIGHLIGHT_COLOR = 'var(--xt-highlight-search-bg)';
 const HIGHLIGHT_DURATION = 1500;
 const SCROLL_DELAY = 100;
 
@@ -300,17 +300,17 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
         {filePath ? (<div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* 预览标题栏 */}
             <div style={{
-                padding: '8px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa',
+                padding: '8px 16px', borderBottom: '1px solid var(--xt-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--xt-bg-subtle)',
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <FileIcon fileName={fileName || ''} />
                     <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 500 }}>
                         {fileName}
-                        {!line ? '' : (<span style={{ color: '#999', fontSize: '14px', marginLeft: '8px' }}>
+                        {!line ? '' : (<span style={{ color: 'var(--xt-text-tertiary)', fontSize: '14px', marginLeft: '8px' }}>
                             (行 {line}/{totalLines})
                         </span>)}
                         {totalLines > 300 && (
-                            <span style={{ color: '#666', fontSize: '12px', marginLeft: '8px' }}>
+                            <span style={{ color: 'var(--xt-text-secondary)', fontSize: '12px', marginLeft: '8px' }}>
                                 [显示 {currentStartLine}-{Math.min(totalLines, currentStartLine + displayedLines.length - 1)} 行]
                             </span>
                         )}
@@ -330,10 +330,10 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
 
             {/* 媒体播放器 - 有媒体文件时显示 */}
             {mediaFiles.length > 0 && (
-                <div style={{ height: '400px', borderBottom: '1px solid #f0f0f0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ height: '400px', borderBottom: '1px solid var(--xt-border-light)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                     {/* 媒体文件选择器 */}
                     {mediaFiles.length > 1 && (
-                        <div style={{ padding: '8px 16px', backgroundColor: '#f5f5f5', borderBottom: '1px solid #e0e0e0', flexShrink: 0 }}>
+                        <div style={{ padding: '8px 16px', backgroundColor: 'var(--xt-bg-hover)', borderBottom: '1px solid var(--xt-border-secondary)', flexShrink: 0 }}>
                             <Space>
                                 <span>选择媒体文件:</span>
                                 <Select
@@ -362,7 +362,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
             <div style={{
                 flex: 1,
                 overflow: 'auto',
-                backgroundColor: '#fafafa',
+                backgroundColor: 'var(--xt-bg-subtle)',
                 padding: '16px',
                 borderRadius: '4px',
                 height: mediaFiles.length > 0 ? 'calc(100% - 400px)' : '100%'
@@ -377,21 +377,21 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                     />
                 </Center>) : (<div style={{
-                    backgroundColor: '#fff', border: '1px solid #e8e8e8', borderRadius: '4px'
+                    backgroundColor: 'var(--xt-bg-container)', border: '1px solid var(--xt-border-secondary)', borderRadius: '4px'
                 }}>
                     {/* 加载更多按钮 - 顶部 */}
                     {currentStartLine > 1 && (
                         <div style={{
                             padding: '8px 16px',
-                            borderBottom: '1px solid #f0f0f0',
+                            borderBottom: '1px solid var(--xt-border-light)',
                             textAlign: 'center',
-                            backgroundColor: '#f8f9fa'
+                            backgroundColor: 'var(--xt-bg-subtle)'
                         }}>
                             <Button
                                 type="link"
                                 size="small"
                                 onClick={() => loadMoreLines('up')}
-                                style={{ color: '#1890ff' }}
+                                style={{ color: 'var(--xt-color-primary)' }}
                             >
                                 ↑ 加载前面 {Math.min(300, Math.max(0, currentStartLine - 1))} 行
                             </Button>
@@ -412,7 +412,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                                         style={{
                                             display: 'flex',
                                             padding: '2px 0',
-                                            borderBottom: '1px solid #f0f0f0',
+                                            borderBottom: '1px solid var(--xt-border-light)',
                                             transition: 'background-color 0.3s',
                                             cursor: isSubtitle ? 'pointer' : 'default'
                                         }}
@@ -425,7 +425,7 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                                             minWidth: '50px',
                                             textAlign: 'right',
                                             paddingRight: '12px',
-                                            color: '#999',
+                                            color: 'var(--xt-text-tertiary)',
                                             fontSize: '14px',
                                             userSelect: 'none',
                                             fontFamily: 'monospace'
@@ -452,15 +452,15 @@ export const GlobalSearchPreview: React.FC<GlobalSearchPreviewProps> = ({
                     {currentStartLine + displayedLines.length - 1 < totalLines && (
                         <div style={{
                             padding: '8px 16px',
-                            borderTop: '1px solid #f0f0f0',
+                            borderTop: '1px solid var(--xt-border-light)',
                             textAlign: 'center',
-                            backgroundColor: '#f8f9fa'
+                            backgroundColor: 'var(--xt-bg-subtle)'
                         }}>
                             <Button
                                 type="link"
                                 size="small"
                                 onClick={() => loadMoreLines('down')}
-                                style={{ color: '#1890ff' }}
+                                style={{ color: 'var(--xt-color-primary)' }}
                             >
                                 ↓ 加载后面 {Math.min(300, Math.max(0, totalLines - (currentStartLine + displayedLines.length - 1)))} 行
                             </Button>

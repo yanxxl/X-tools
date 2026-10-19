@@ -237,11 +237,11 @@ export const ImageViewer: React.FC<ImageViewerProps> = ({ path }) => {
       {/* 工具栏 */}
       <div style={{
         padding: '8px 16px',
-        borderBottom: '1px solid #f0f0f0',
+        borderBottom: '1px solid var(--xt-border-light)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: '#fafafa',
+        background: 'var(--xt-bg-subtle)',
         zIndex: 1
       }}>
         <Space size="middle">

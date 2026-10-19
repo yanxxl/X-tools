@@ -3,6 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <title>X-tools</title>
+    <script>
+      // 在样式和 React 加载前确定主题，避免深色模式下的浅色闪屏
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme-mode');
+          var mode = saved === 'dark' || saved === 'light'
+            ? saved
+            : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.setAttribute('data-theme', mode);
+          document.documentElement.style.colorScheme = mode;
+        } catch (e) {
+          // 忽略存储不可用等异常，后续由 React 侧兜底
+        }
+      })();
+    </script>
+    <style>
+      html, body {
+        background-color: #f5f5f5;
+      }
+      html[data-theme='dark'], html[data-theme='dark'] body {
+        background-color: #141414;
+      }
+      .app-splash {
+        color: rgba(0, 0, 0, 0.88);
+      }
+      html[data-theme='dark'] .app-splash {
+        color: rgba(255, 255, 255, 0.85);
+      }
+    </style>
   </head>
   <body>
     <div id="root" style="max-width: 100%;overflow: hidden">
@@ -13,9 +42,8 @@
         align-items: center;
         justify-content: center;
       ">
-        <div style="
+        <div class="app-splash" style="
           font-size: 1.6rem;
-          color: #000000;
           animation: pulse 1.2s ease-in-out infinite;
         ">
           ......
@@ -28,7 +56,7 @@
         }
       </style>
     </div>
-    
+
     <script type="module" src="/src/renderer/renderer.tsx"></script>
   </body>
 </html>

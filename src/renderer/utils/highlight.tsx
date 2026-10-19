@@ -15,7 +15,7 @@ import React from 'react';
 export const highlightText = (
     text: string, 
     query: string, 
-    highlightStyle: React.CSSProperties = { backgroundColor: '#fff3cd', fontWeight: 'bold' }
+    highlightStyle: React.CSSProperties = { backgroundColor: 'var(--xt-highlight-bg)', fontWeight: 'bold' }
 ): React.ReactNode => {
     if (!query || !text) return text;
 

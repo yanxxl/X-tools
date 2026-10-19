@@ -68,7 +68,7 @@ const SelectedTextPanel: React.FC = () => {
         >
             <Descriptions size="small" column={1} labelStyle={{width: '80px', textAlign: 'right'}}>
                 <Descriptions.Item label="选中字数">
-                    <Text strong style={{color: '#fa8c16'}}>{selectedTextCount}</Text>
+                    <Text strong style={{color: 'var(--xt-color-warning)'}}>{selectedTextCount}</Text>
                 </Descriptions.Item>
 
                 {selectedText && selectedTextCount !== '0 字' && (

@@ -151,7 +151,7 @@ const FileInfoPanel: React.FC = () => {
     if (!fileInfo) {
         return (
             <div style={{ padding: 16, textAlign: 'center' }}>
-                <div style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }}>📄</div>
+                <div style={{ fontSize: 48, color: 'var(--xt-text-quaternary)', marginBottom: 16 }}>📄</div>
                 <div>
                     <Text type="secondary">请选择文件或文件夹查看信息</Text>
                 </div>
@@ -222,11 +222,11 @@ const FileInfoPanel: React.FC = () => {
                         </Descriptions.Item>
 
                         <Descriptions.Item label="中文字符">
-                            <Text style={{ color: '#1890ff' }}>{fileTextStats.chineseChars.toLocaleString()}</Text>
+                            <Text style={{ color: 'var(--xt-color-primary)' }}>{fileTextStats.chineseChars.toLocaleString()}</Text>
                         </Descriptions.Item>
 
                         <Descriptions.Item label="英文单词">
-                            <Text style={{ color: '#52c41a' }}>{fileTextStats.words.toLocaleString()}</Text>
+                            <Text style={{ color: 'var(--xt-color-success)' }}>{fileTextStats.words.toLocaleString()}</Text>
                         </Descriptions.Item>
                     </Descriptions>
                 </Card>

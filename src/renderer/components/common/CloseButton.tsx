@@ -27,13 +27,13 @@ export const CloseButton: React.FC<CloseButtonProps> = ({ title, onClick }) => {
                 padding: '4px',
                 borderRadius: '4px',
                 transition: 'color 0.2s ease',
-                color: 'lightgray',
+                color: 'var(--xt-text-quaternary)',
             }}
             onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#ff4d4f';
+                e.currentTarget.style.color = 'var(--xt-color-danger)';
             }}
             onMouseLeave={(e) => {
-                e.currentTarget.style.color = 'lightgray';
+                e.currentTarget.style.color = 'var(--xt-text-quaternary)';
             }}
             onClick={onClick}
             title={title}

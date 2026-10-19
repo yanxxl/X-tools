@@ -95,7 +95,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ path }) => {
   };
   
   return (
-    <div style={{width: '100%', height: '100%', background: '#fff', borderRadius: 8, overflow: 'hidden'}}>
+    <div style={{width: '100%', height: '100%', background: 'var(--xt-bg-container)', borderRadius: 8, overflow: 'hidden'}}>
       {viewerUrl && (
         <iframe 
           ref={iframeRef}

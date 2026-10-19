@@ -44,16 +44,16 @@ export const WindowControls: React.FC = () => {
                 <Button
                     type="text"
                     onClick={handleClose}
-                    style={{ padding: 0, width: 36, height: 36, borderRadius: 0, color: '#000000' }}
+                    style={{ padding: 0, width: 36, height: 36, borderRadius: 0, color: 'var(--xt-text)' }}
                     onMouseEnter={(e) => {
                         const target = e.currentTarget;
-                        target.style.backgroundColor = '#ff4d4f';
+                        target.style.backgroundColor = 'var(--xt-color-danger)';
                         target.style.color = '#ffffff';
                     }}
                     onMouseLeave={(e) => {
                         const target = e.currentTarget;
                         target.style.backgroundColor = 'transparent';
-                        target.style.color = '#000000';
+                        target.style.color = 'var(--xt-text)';
                     }}
                 >
                     <CloseOutlined />

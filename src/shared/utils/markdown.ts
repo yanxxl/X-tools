@@ -367,12 +367,12 @@ function buildFrontmatterHtml(frontmatter: Record<string, any>): string {
     try {
         return `
         <div class="markdown-frontmatter">
-          <h3 style="margin-bottom: 8px; color: #666; font-size: 14px; font-weight: normal;">文档信息</h3>
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
+          <h3 style="margin-bottom: 8px; color: var(--xt-text-secondary); font-size: 14px; font-weight: normal;">文档信息</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; background: var(--xt-bg-subtle); border-radius: 4px; overflow: hidden;">
             ${Object.entries(frontmatter).map(([key, value]) => `
               <tr>
-                <td style="padding: 8px 12px; border-bottom: 1px solid #e8e8e8; font-weight: 500; color: #333; min-width: 100px;">${key}</td>
-                <td style="padding: 8px 12px; border-bottom: 1px solid #e8e8e8; color: #666;">${formatFrontmatterValue(value)}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--xt-border-secondary); font-weight: 500; color: var(--xt-text); min-width: 100px;">${key}</td>
+                <td style="padding: 8px 12px; border-bottom: 1px solid var(--xt-border-secondary); color: var(--xt-text-secondary);">${formatFrontmatterValue(value)}</td>
               </tr>
             `).join('')}
           </table>
@@ -676,7 +676,7 @@ export function scrollToHeading(headingId: string) {
             block: 'start'
         });
         // 添加视觉反馈
-        element.style.backgroundColor = '#fff3cd';
+        element.style.backgroundColor = 'var(--xt-highlight-bg)';
         setTimeout(() => {
             element.style.backgroundColor = '';
         }, 1000);

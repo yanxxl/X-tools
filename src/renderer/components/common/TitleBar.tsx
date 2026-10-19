@@ -3,10 +3,11 @@ import React, { useEffect, useState } from 'react';
 
 // 第三方库导入
 import { Button, Divider, Dropdown, Flex, message, Modal, Tooltip } from "antd";
-import { ArrowLeftOutlined, ArrowRightOutlined, DownOutlined, FolderOpenOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, RetweetOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ArrowRightOutlined, DownOutlined, FolderOpenOutlined, MoonOutlined, PlusOutlined, ReloadOutlined, SearchOutlined, RetweetOutlined, SunOutlined } from '@ant-design/icons';
 
 // 应用内部导入
 import { useAppContext } from '../../contexts/AppContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { truncateFolderName } from '../../utils/uiUtils';
 import { removeFolderPath, updateFolderPath } from '@shared/utils/config';
 import { RecentFolder } from '@shared/types/index';
@@ -33,6 +34,9 @@ export const TitleBar: React.FC = () => {
         loopPlay,
         setLoopPlay,
     } = useAppContext();
+
+    // 主题切换
+    const { isDark, toggleThemeMode } = useTheme();
 
     // 2. 平台相关状态
     const [isMac, setIsMac] = useState(false);
@@ -214,7 +218,7 @@ export const TitleBar: React.FC = () => {
             {titleBarVisible && (
                 <Flex
                     className={'top-bar'}
-                    style={{ height: 40, position: 'relative', zIndex: 100, borderBottom: '1px solid #e5e5e5' }}
+                    style={{ height: 40, position: 'relative', zIndex: 100, borderBottom: '1px solid var(--xt-border-light)' }}
                     align={'center'}
                 >
                     {/* Mac平台左侧保留区域 */}
@@ -268,7 +272,7 @@ export const TitleBar: React.FC = () => {
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                         <span style={{
                                                             fontSize: '12px',
-                                                            color: '#999'
+                                                            color: 'var(--xt-text-tertiary)'
                                                         }}>{new Date(folder.timestamp).toLocaleString('zh-CN', {
                                                             month: '2-digit',
                                                             day: '2-digit',
@@ -403,22 +407,31 @@ export const TitleBar: React.FC = () => {
                         <Tooltip title="隐藏/显示左边栏">
                             <span
                                 className="span-icon"
-                                style={{ borderLeft: '4px solid gray' }}
+                                style={{ borderLeft: '4px solid var(--xt-text-tertiary)' }}
                                 onClick={() => setLeftPanelVisible(!leftPanelVisible)}
                             />
                         </Tooltip>
                         <Tooltip title="隐藏/显示标题栏">
                             <span
                                 className="span-icon"
-                                style={{ borderTop: '4px solid gray' }}
+                                style={{ borderTop: '4px solid var(--xt-text-tertiary)' }}
                                 onClick={() => setTitleBarVisible(!titleBarVisible)}
                             />
                         </Tooltip>
                         <Tooltip title="隐藏/显示右边栏" placement="left">
                             <span
                                 className="span-icon"
-                                style={{ borderRight: '4px solid gray' }}
+                                style={{ borderRight: '4px solid var(--xt-text-tertiary)' }}
                                 onClick={() => setRightPanelVisible(!rightPanelVisible)}
+                            />
+                        </Tooltip>
+                        <Tooltip title={isDark ? '切换到浅色模式' : '切换到深色模式'}>
+                            <Button
+                                type="text"
+                                aria-label={isDark ? '切换到浅色模式' : '切换到深色模式'}
+                                icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+                                onClick={toggleThemeMode}
+                                style={{ padding: 0, width: 24, height: 24, borderRadius: 4 }}
                             />
                         </Tooltip>
 

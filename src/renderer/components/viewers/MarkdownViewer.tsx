@@ -30,6 +30,7 @@ import { FontSizeAdjuster } from "../common/FontSizeAdjuster";
 import "../common/EditorSearch.css";
 import { EditableFilePath } from '../common/EditableFilePath';
 import { useAppContext } from '../../contexts/AppContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface MarkdownViewerProps {
     filePath: string;
@@ -57,6 +58,7 @@ const PARSE_CONCURRENCY = 2;
 
 export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileName, initialLine }) => {
     const { setCurrentFile } = useAppContext();
+    const { isDark } = useTheme();
 
     // ============================== State Management ==============================
     const [loading, setLoading] = useState(true);          // 文件读取中
@@ -735,7 +737,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                 key: '__outline_truncated__',
                 disabled: true,
                 label: (
-                    <div style={{ paddingLeft: 16, fontSize: 12, color: '#999' }}>
+                    <div style={{ paddingLeft: 16, fontSize: 12, color: 'var(--xt-text-tertiary)' }}>
                         仅显示前 {MAX_OUTLINE_ITEMS} 项（共 {allItems.length} 项）
                     </div>
                 )
@@ -851,7 +853,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
             <Center>
                 <Space direction="vertical" align="center" size="middle">
                     <Spin />
-                    <span style={{ fontSize: 13, color: '#888' }}>正在读取文件…</span>
+                    <span style={{ fontSize: 13, color: 'var(--xt-text-tertiary)' }}>正在读取文件…</span>
                 </Space>
             </Center>
         );
@@ -870,15 +872,15 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
 
     // ============================== Main Render ==============================
     return (
-        <Flex vertical={true} style={{ height: '100%', background: '#fff' }}>
+        <Flex vertical={true} style={{ height: '100%', background: 'var(--xt-bg-container)' }}>
             {/* 工具栏 */}
             <div style={{
                 padding: '8px 16px',
-                borderBottom: '1px solid #f0f0f0',
+                borderBottom: '1px solid var(--xt-border-light)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                background: '#fafafa'
+                background: 'var(--xt-bg-subtle)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8,flex: '1',marginRight: 16 }}>
                     <FileTextOutlined />
@@ -887,7 +889,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
 
                 <Space size="large">
                     {stage === 'parsing' && (
-                        <span style={{ fontSize: 12, color: '#888' }}>
+                        <span style={{ fontSize: 12, color: 'var(--xt-text-tertiary)' }}>
                             {parseTotal > 1 ? `解析中 ${parseDone}/${parseTotal} 段` : '解析中…'}
                         </span>
                     )}
@@ -947,7 +949,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                         size={sidebarWidth}
                         min={'10%'}
                         max={'50%'}
-                        style={{ background: '#fff', padding: '16px 0px' }}
+                        style={{ background: 'var(--xt-bg-container)', padding: '16px 0px' }}
                         collapsible
                     >
                         <Menu
@@ -956,7 +958,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                         />
                     </Splitter.Panel>
 
-                    <Splitter.Panel style={{ background: '#fff' }}>
+                    <Splitter.Panel style={{ background: 'var(--xt-bg-container)' }}>
                         <div className={'markdown-container'} style={{ height: '100%' }}>
                             {viewMode === 'rendered' ? (
                                 <Dropdown menu={{ items: contextMenuItems }} trigger={['contextMenu']} onOpenChange={handleMenuOpenChange}>
@@ -982,11 +984,11 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                background: '#fff'
+                                                background: 'var(--xt-bg-container)'
                                             }}>
                                                 <Space direction="vertical" align="center" size="middle">
                                                     <Spin />
-                                                    <span style={{ fontSize: 13, color: '#888' }}>{placeholderText}</span>
+                                                    <span style={{ fontSize: 13, color: 'var(--xt-text-tertiary)' }}>{placeholderText}</span>
                                                 </Space>
                                             </div>
                                         )}
@@ -1001,7 +1003,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                                         ref={editorRef}
                                         value={content}
                                         height="100%"
-                                        theme="light"
+                                        theme={isDark ? 'dark' : 'light'}
                                         extensions={[
                                             markdown(),
                                             EditorView.updateListener.of((update) => {
@@ -1014,7 +1016,7 @@ export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ filePath, fileNa
                                             searchHighlightField, // 添加搜索高亮字段
                                             EditorView.theme({
                                                 '& .outline-highlight': {
-                                                    backgroundColor: '#fff3cd',
+                                                    backgroundColor: 'var(--xt-highlight-bg)',
                                                     transition: 'background-color 1.5s ease-out'
                                                 }
                                             })

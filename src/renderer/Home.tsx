@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
 // 第三方库
-import { App, ConfigProvider, Drawer, Splitter } from "antd";
+import { App, ConfigProvider, Drawer, Splitter, theme as antdTheme } from "antd";
 import zhCN from 'antd/locale/zh_CN';
 
 // 上下文
 import { AppProvider, useAppContext } from './contexts/AppContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 // 通用组件
 import { Container } from "./components/common/Container";
@@ -130,7 +131,7 @@ const AppContent: React.FC = () => {
                                 fileName={basename(currentFile)}
                             />
                         ) : (
-                            <Center style={{color: 'gray'}}>
+                            <Center style={{color: 'var(--xt-text-tertiary)'}}>
                                 请在左侧选择一个文件以预览内容
                             </Center>
                         )}
@@ -177,18 +178,31 @@ const AppContent: React.FC = () => {
     );
 };
 
-export const Home: React.FC = () => {
+const ThemedApp: React.FC = () => {
+    const { isDark } = useTheme();
+    const algorithm = isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm;
+
+    // message / Modal.confirm 等静态方法脱离 React 树，需要单独同步主题
+    useEffect(() => {
+        ConfigProvider.config({
+            theme: { algorithm },
+            holderRender: (children) => (
+                <ConfigProvider theme={{ algorithm }}>
+                    {children}
+                </ConfigProvider>
+            ),
+        });
+    }, [algorithm]);
+
     return (
         <ConfigProvider
             locale={zhCN}
             theme={{
+                // antd 推荐的深色模式实现方式：切换主题算法即可让全部组件跟随
+                algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
                 token: {
-                    // Seed Token，影响范围大
-                    // colorPrimary: '#00b96b',
-                    // borderRadius: 2,
-
-                    // 派生变量，影响范围小
-                    // colorBgContainer: 'transparent',
+                    // 与自定义样式中的 --xt-bg-body 保持一致，避免布局背景跳色
+                    colorBgLayout: isDark ? '#141414' : '#f5f5f5',
                 },
                 components: {
                     Splitter: {
@@ -204,5 +218,13 @@ export const Home: React.FC = () => {
                 </AppProvider>
             </App>
         </ConfigProvider>
+    );
+};
+
+export const Home: React.FC = () => {
+    return (
+        <ThemeProvider>
+            <ThemedApp />
+        </ThemeProvider>
     );
 };
