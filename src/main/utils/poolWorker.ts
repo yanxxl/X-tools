@@ -11,6 +11,16 @@ import {parseMarkdownBlocks} from '@shared/utils/markdown';
 import {parseDictionaryContent} from '@shared/utils/dictionaryParserCore';
 import {readTextFile} from './fileTextUtil';
 
+/**
+ * 构造忽略大小写的字面量匹配器
+ * 与渲染层的高亮逻辑保持一致，避免同一关键词因大小写不同得到不同结果
+ * @param query 搜索关键词（按字面量匹配，正则元字符会被转义）
+ */
+function createQueryMatcher(query: string): RegExp {
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(escaped, 'i');
+}
+
 // 搜索文件内容
 async function searchFileContent(filePath: string, query: string, searchMode: 'content' | 'filename'): Promise<SearchResult | null> {
   const startTime = performance.now();
@@ -25,10 +35,12 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
     }
 
     const fileName = path.basename(filePath);
+    // 忽略大小写的匹配器，本次搜索内复用
+    const matcher = createQueryMatcher(query);
 
     // 文件名搜索
     if (searchMode === 'filename') {
-      if (fileName.includes(query)) {
+      if (matcher.test(fileName)) {
         const searchTime = performance.now() - startTime;
         return {
           filePath,
@@ -46,7 +58,7 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
     const matches: Array<{ line: number; content: string }> = [];
 
     lines.forEach((line, index) => {
-      if (line.includes(query)) {
+      if (matcher.test(line)) {
         matches.push({
           line: index + 1,
           content: truncateTextWithQuery(line, 50, query)
@@ -54,7 +66,7 @@ async function searchFileContent(filePath: string, query: string, searchMode: 'c
       }
     });
 
-    if (matches.length > 0 || fileName.includes(query)) {
+    if (matches.length > 0 || matcher.test(fileName)) {
       const searchTime = performance.now() - startTime;
       return {
         filePath,
