@@ -1039,10 +1039,14 @@ export const FileTree: React.FC = () => {
     }, [isExpanded]);
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: 'var(--xt-bg-subtle)'
+        }}>
             <div style={{
                 borderBottom: '1px solid var(--xt-border-light)',
-                // backgroundColor: 'var(--xt-bg-subtle)',
                 margin: '8px 0px 0px 0px'
             }}>
                 {!showSearchBox ? (
@@ -1205,7 +1209,8 @@ export const FileTree: React.FC = () => {
                         onDragLeave={handleTreeDragLeave}
                         draggable={{ icon: false }}
                         expandAction="click"
-                        style={{ padding: '8px 0', backgroundColor: 'var(--xt-bg-mask)' }}
+                        style={{ padding: '8px 0', backgroundColor: 'transparent' }}
+                        styles={{ root: { backgroundColor: 'transparent' } }}
                     />
                 ) : (
                     <Flex style={{ height: '100%' }} align="center" justify="center">
